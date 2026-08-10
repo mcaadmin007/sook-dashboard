@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SooK Lead Generation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef0f4;
+    --bg-2:#f7f8fb;
+    --card:#fff;
+    --ink:#0f1115; --ink-2:#525a6b; --ink-3:#8b93a3; --ink-4:#aab1bf;
+    --line:#e4e7ec; --line-2:#eff1f5; --line-3:#f5f6f9;
+    --black:#101319; --black-2:#1b1f28;
+    --blue:#2f5fe0; --blue-2:#4d7bf0; --blue-soft:#eef3ff; --blue-line:#c9d8fb;
+    --green:#127a45; --green-soft:#e7f6ed; --green-line:#bfe6cf;
+    --amber:#a35a06; --amber-soft:#fdf2e0; --amber-line:#f3ddb4;
+    --red:#b3261e; --red-soft:#fdecea; --red-line:#f5c9c4;
+    --radius:16px; --radius-sm:10px;
+    --sh-1:0 1px 2px rgba(15,17,21,.04);
+    --sh-2:0 1px 2px rgba(15,17,21,.04), 0 10px 28px -14px rgba(15,17,21,.20);
+    --sh-3:0 2px 6px rgba(15,17,21,.06), 0 18px 40px -18px rgba(15,17,21,.28);
+    --ring:0 0 0 3.5px rgba(47,95,224,.14);
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'IBM Plex Sans Thai','IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink);font-size:15px;line-height:1.55;
+    background:var(--bg);
+    background-image:
+      radial-gradient(900px 460px at 15% -8%, #ffffff 0%, rgba(255,255,255,0) 62%),
+      radial-gradient(760px 420px at 92% 0%, #e7ecfa 0%, rgba(231,236,250,0) 58%);
+    background-attachment:fixed;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+    font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1,'kern' 1;
+  }
+  .wrap{max-width:1440px;margin:0 auto;padding:24px 18px 84px}
+
+  ::-webkit-scrollbar{height:10px;width:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#cdd2db;border-radius:99px;border:3px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-thumb:hover{background:#b3bac6;background-clip:content-box;border:3px solid transparent}
+
+  /* ===== header ===== */
+  header.top{
+    position:relative;overflow:hidden;
+    padding:22px 24px;border-radius:var(--radius);margin-bottom:20px;
+    background:linear-gradient(135deg,#171b24 0%,#0f1218 55%,#141a26 100%);
+    color:#fff;box-shadow:var(--sh-3);
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  }
+  header.top::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(520px 220px at 88% -40%, rgba(77,123,240,.30), transparent 70%);
+  }
+  header.top::after{
+    content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);
+  }
+  header.top h1{
+    position:relative;font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em;
+    display:flex;align-items:center;gap:11px;
+  }
+  header.top h1::before{
+    content:'';width:9px;height:9px;border-radius:50%;flex:none;
+    background:#5b86f5;box-shadow:0 0 0 4px rgba(91,134,245,.20),0 0 14px rgba(91,134,245,.65);
+  }
+  .nav{
+    position:relative;display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+    background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);
+    padding:4px;border-radius:12px;
+  }
+  .navbtn{
+    font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;
+    color:#aeb7c6;background:transparent;border:none;padding:7px 15px;border-radius:9px;
+    transition:.18s var(--ease);letter-spacing:.005em;
+  }
+  .navbtn:hover{color:#fff;background:rgba(255,255,255,.08)}
+  .navbtn.on{
+    color:#0f1115;background:linear-gradient(180deg,#fff,#eef1f7);
+    box-shadow:0 2px 8px -2px rgba(0,0,0,.45);
+  }
+  .navbtn.on:hover{background:linear-gradient(180deg,#fff,#e9edf5)}
+
+  /* ===== sections ===== */
+  section{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--sh-2);margin-bottom:20px;overflow:hidden;
+  }
+  .sec-head{
+    padding:15px 20px;border-bottom:1px solid var(--line-2);
+    background:linear-gradient(180deg,#fcfdfe,#fff);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .sec-head h2{
+    margin:0;font-size:14.5px;font-weight:600;letter-spacing:-.01em;
+    display:flex;align-items:center;gap:9px;white-space:nowrap;
+  }
+  .sec-head h2::before{
+    content:'';width:3px;height:15px;border-radius:99px;flex:none;
+    background:linear-gradient(180deg,var(--blue-2),var(--blue));
+  }
+  .sec-body{padding:18px 20px}
+  .head-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap;min-width:0}
+
+  /* ===== tabs ===== */
+  .tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:3px;max-width:100%;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{
+    font:inherit;font-size:12.5px;font-weight:600;white-space:nowrap;cursor:pointer;
+    padding:6px 14px;border-radius:99px;border:1px solid var(--line);
+    background:#fff;color:var(--ink-2);
+    transition:.18s var(--ease);display:inline-flex;align-items:center;gap:9px;
+  }
+  .tab:hover{border-color:#c7cedb;color:var(--ink);background:#fbfcfe;transform:translateY(-1px)}
+  .tab.on{
+    background:linear-gradient(180deg,var(--black-2),var(--black));
+    border-color:var(--black);color:#fff;box-shadow:0 3px 10px -3px rgba(16,19,25,.5);
+  }
+  .tab.on:hover{transform:translateY(-1px);background:linear-gradient(180deg,#242935,var(--black-2))}
+  .tab .x{
+    font-size:14px;line-height:1;opacity:.4;margin-right:-4px;
+    width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;
+    border-radius:50%;transition:.15s var(--ease);
+  }
+  .tab .x:hover{opacity:1;background:rgba(255,255,255,.16)}
+  .tab:not(.on) .x:hover{background:var(--red-soft);color:var(--red)}
+
+  .addwrap{display:flex;align-items:center;gap:8px}
+  .addwrap input[hidden]{display:none}
+  .addwrap input{
+    font:inherit;font-size:13px;font-weight:600;padding:6px 11px;
+    border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;color:var(--ink);
+    transition:.18s var(--ease);
+  }
+  .addwrap input:focus{outline:none;border-color:var(--blue);box-shadow:var(--ring)}
+  .btn-add{
+    font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;color:#fff;
+    background:linear-gradient(180deg,var(--black-2),var(--black));border:none;
+    padding:8px 16px;border-radius:var(--radius-sm);white-space:nowrap;
+    box-shadow:0 3px 10px -3px rgba(16,19,25,.5);transition:.18s var(--ease);
+  }
+  .btn-add:hover{background:linear-gradient(180deg,#252a36,#1a1e26);transform:translateY(-1px);
+    box-shadow:0 6px 16px -6px rgba(16,19,25,.55)}
+  .btn-add:active{transform:translateY(0)}
+
+  /* ===== fields ===== */
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(3,1fr)}
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-3);
+    margin-bottom:6px;letter-spacing:.02em}
+  .field input{
+    width:100%;font:inherit;font-size:16px;font-weight:600;padding:10px 13px;
+    border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--bg-2);color:var(--ink);transition:.18s var(--ease);
+  }
+  .field input:hover{border-color:#d3d9e2;background:#fff}
+  .field input:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:var(--ring)}
+  .field input:disabled{background:#f4f5f8;color:var(--ink-3)}
+
+  /* ===== KPI ===== */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .kpi{
+    position:relative;border:1px solid var(--line);border-radius:14px;padding:15px 16px;
+    background:linear-gradient(180deg,#fff,#fcfdff);
+    transition:.2s var(--ease);
+  }
+  .kpi:hover{border-color:#d5dce8;box-shadow:var(--sh-2);transform:translateY(-2px)}
+  .kpi .k-label{
+    font-size:11.5px;color:var(--ink-3);font-weight:600;margin-bottom:8px;letter-spacing:.015em;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .kpi .k-val{font-size:25px;font-weight:700;letter-spacing:-.035em;line-height:1.12}
+  .kpi .k-val small{font-size:13px;font-weight:500;color:var(--ink-4);letter-spacing:-.01em}
+  .kpi .k-sub{font-size:11.5px;color:var(--ink-3);margin-top:6px}
+  button.kpi{
+    font:inherit;color:inherit;text-align:left;width:100%;cursor:pointer;display:block;
+    -webkit-appearance:none;appearance:none;
+  }
+  button.kpi:focus-visible{outline:none;border-color:var(--blue);box-shadow:var(--ring)}
+  button.kpi.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink),var(--sh-2)}
+  button.kpi.on .k-label{color:var(--ink-2)}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+  .d-hot {background:#d93a30;box-shadow:0 0 0 3px rgba(217,58,48,.14)}
+  .d-warm{background:#dd8a0b;box-shadow:0 0 0 3px rgba(221,138,11,.14)}
+  .d-cold{background:#3a6ce6;box-shadow:0 0 0 3px rgba(58,108,230,.14)}
+  .d-none{background:#b6bcc8;box-shadow:0 0 0 3px rgba(182,188,200,.16)}
+  .empty{
+    text-align:center;color:var(--ink-4);font-size:20px;letter-spacing:.12em;
+    padding:64px 10px;border:1px dashed var(--line);border-radius:14px;background:var(--bg-2);
+  }
+  .bar{height:5px;border-radius:99px;background:var(--line-2);margin-top:11px;overflow:hidden}
+  .bar > i{display:block;height:100%;border-radius:99px;
+    background:linear-gradient(90deg,var(--blue-2),var(--blue));transition:width .45s var(--ease)}
+
+  /* ===== pills ===== */
+  .pill{
+    display:inline-block;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;
+    white-space:nowrap;letter-spacing:.02em;border:1px solid transparent;
+  }
+  .p-green{background:var(--green-soft);color:var(--green);border-color:var(--green-line)}
+  .p-blue {background:var(--blue-soft); color:var(--blue); border-color:var(--blue-line)}
+  .p-amber{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+  .p-red  {background:var(--red-soft);  color:var(--red);  border-color:var(--red-line)}
+  .p-grey {background:#f2f4f7;color:var(--ink-3);border-color:var(--line)}
+
+  /* ===== table ===== */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:1180px;font-size:13.5px}
+  thead th{
+    background:var(--black);color:#fff;font-weight:600;font-size:11px;letter-spacing:.03em;
+    padding:10px;text-align:right;vertical-align:middle;white-space:nowrap;
+    position:sticky;top:26px;z-index:3;
+  }
+  thead tr.g th{
+    font-size:10px;text-transform:uppercase;color:#8f98a9;background:#191d25;
+    padding:6px 10px;letter-spacing:.11em;top:0;z-index:4;font-weight:700;
+  }
+  thead th.l{text-align:left}
+  thead th.c{text-align:center}
+  thead th.span2{top:0;z-index:4;background:var(--black);color:#fff;font-size:11px;
+    text-transform:none;letter-spacing:.03em}
+
+  tbody td{
+    padding:9px 10px;border-bottom:1px solid var(--line-3);text-align:right;
+    white-space:nowrap;vertical-align:middle;transition:background .12s var(--ease);
+  }
+  tbody td.l{text-align:left}
+  tbody td.c{text-align:center}
+  tbody tr.chan td{
+    background:linear-gradient(180deg,#f6f8fb,#f2f5f9);font-weight:700;
+    border-bottom:1px solid var(--line);border-top:1px solid var(--line-2);
+  }
+  tbody tr.chan td.l{font-size:13.5px;letter-spacing:-.005em}
+  tbody tr:hover td{background:#f9fbfe}
+  tbody tr.chan:hover td{background:linear-gradient(180deg,#f1f4f9,#edf1f7)}
+  .obj{padding-left:20px;color:var(--ink-2);font-weight:500;position:relative}
+  .obj::before{
+    content:'';position:absolute;left:8px;top:50%;width:5px;height:1px;
+    background:var(--ink-4);opacity:.7;
+  }
+  .muted{color:var(--ink-4)}
+  td.sep-l,th.sep-l{border-left:1px solid var(--line)}
+  thead th.sep-l{border-left:1px solid #333947}
+
+  .num-in{
+    width:80px;font:inherit;font-size:13px;font-weight:600;text-align:right;padding:6px 8px;
+    border:1px solid #e7eaf0;border-radius:8px;background:#fff;color:var(--ink);
+    transition:.16s var(--ease);
+  }
+  .num-in:hover{border-color:#ccd4e0;background:#fcfdff}
+  .num-in:focus{outline:none;border-color:var(--blue);box-shadow:var(--ring);background:#fff}
+  .num-in.w-md{width:106px}
+  tbody td.act-cell{background:#fffcf3}
+  tbody tr:hover td.act-cell{background:#fff9e9}
+
+  tfoot td{
+    padding:12px 10px;text-align:right;font-weight:700;
+    background:linear-gradient(180deg,#f4f6fa,#eef1f6);
+    border-top:2px solid var(--line);white-space:nowrap;font-size:13.5px;
+  }
+  tfoot td.l{text-align:left;letter-spacing:.01em}
+  tfoot td.c{text-align:center}
+
+  /* sticky ID columns (desktop) */
+  @media (min-width:760px){
+    table:not(.lead) thead tr:not(.g) th:nth-child(1),
+    table:not(.lead) tbody td:nth-child(1){position:sticky;left:0;z-index:2;min-width:138px;width:138px}
+    table:not(.lead) tfoot td:nth-child(1){position:sticky;left:0;z-index:2}
+    table:not(.lead) thead tr:not(.g) th:nth-child(2),
+    table:not(.lead) tbody td:nth-child(2){position:sticky;left:138px;z-index:2;min-width:152px}
+    table:not(.lead) thead tr:not(.g) th:nth-child(1),
+    table:not(.lead) thead tr:not(.g) th:nth-child(2){z-index:5}
+    table:not(.lead) tbody td:nth-child(1),
+    table:not(.lead) tbody td:nth-child(2){background:#fff}
+    table:not(.lead) tbody tr.chan td:nth-child(1),
+    table:not(.lead) tbody tr.chan td:nth-child(2){background:#f4f7fa}
+    table:not(.lead) tbody tr:hover td:nth-child(1),
+    table:not(.lead) tbody tr:hover td:nth-child(2){background:#f9fbfe}
+    table:not(.lead) tbody tr.chan:hover td:nth-child(1),
+    table:not(.lead) tbody tr.chan:hover td:nth-child(2){background:#eff3f8}
+    table:not(.lead) tbody td:nth-child(2),
+    table:not(.lead) thead tr:not(.g) th:nth-child(2){box-shadow:6px 0 10px -8px rgba(15,17,21,.28)}
+    table:not(.lead) tfoot td:nth-child(1){box-shadow:6px 0 10px -8px rgba(15,17,21,.28)}
+    table.lead thead th:nth-child(1),
+    table.lead tbody td:nth-child(1){position:sticky;left:0;z-index:2;background:#fff;
+      min-width:132px;width:132px}
+    table.lead thead th:nth-child(2),
+    table.lead tbody td:nth-child(2){position:sticky;left:132px;z-index:2;background:#fff;
+      box-shadow:6px 0 10px -8px rgba(15,17,21,.28)}
+    table.lead thead th:nth-child(1),
+    table.lead thead th:nth-child(2){z-index:5;background:var(--black)}
+    table.lead tbody tr:nth-child(even) td:nth-child(2){background:#fcfdfe}
+    table.lead tbody tr:hover td:nth-child(1),
+    table.lead tbody tr:hover td:nth-child(2){background:#f5f9ff}
+  }
+
+  /* ===== lead table ===== */
+  table.lead{min-width:1760px}
+  table.lead thead th{text-align:left;top:0}
+  table.lead thead th.r{text-align:right}
+  table.lead tbody td{text-align:left;color:var(--ink-2);font-weight:500}
+  table.lead tbody td.k{color:var(--ink);font-weight:600}
+  table.lead tbody td.r{text-align:right}
+  table.lead tbody td.mono{
+    font-size:12px;color:var(--ink-3);letter-spacing:.01em;
+    font-family:'IBM Plex Sans',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  table.lead thead th.c{text-align:center}
+
+  /* ===== lead scoring ===== */
+  table.lead tbody td.sc{padding:5px 8px}
+  .csel{
+    font:inherit;font-size:11.5px;font-weight:600;width:100%;min-width:118px;max-width:168px;
+    padding:6px 24px 6px 9px;border:1px solid var(--line);border-radius:8px;cursor:pointer;
+    background:#fbfcfe url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a94a6' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center/9px 6px;
+    color:var(--ink-4);transition:.16s var(--ease);
+    -webkit-appearance:none;appearance:none;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;
+  }
+  .csel:hover{border-color:#d3d9e2;background-color:#fff}
+  .csel:focus{outline:none;border-color:var(--blue);background-color:#fff;box-shadow:var(--ring)}
+  .csel.has{color:var(--ink);background-color:#fff;border-color:#d9dfe8}
+  .csel.v5{border-color:var(--green-line);background-color:var(--green-soft)}
+  .csel.v4{border-color:#bfe0c6;background-color:#f2faf4}
+  .csel.v3{border-color:var(--amber-line);background-color:var(--amber-soft)}
+  .csel.v2{border-color:#f3d3ae;background-color:#fdf5ec}
+  .csel.v1{border-color:var(--red-line);background-color:var(--red-soft)}
+
+  table.lead tbody td.sco{padding:6px 10px;white-space:nowrap}
+  .scv{font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-right:7px}
+  .scv small{font-size:10.5px;font-weight:500;color:var(--ink-4);letter-spacing:0}
+  .gbadge{
+    display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;
+    padding:3px 8px;border-radius:99px;color:#fff;vertical-align:2px;
+  }
+  .g-hot {background:linear-gradient(180deg,#e0453a,#c9302c)}
+  .g-warm{background:linear-gradient(180deg,#e8930f,#cf7a06)}
+  .g-cold{background:linear-gradient(180deg,#4d7bf0,#2f5fe0)}
+  .g-none{background:#c3c9d4}
+
+  table.lead tbody tr:nth-child(even) td{background:#fcfdfe}
+  table.lead tbody tr:nth-child(even) td:nth-child(1){background:#fcfdfe}
+  table.lead tbody tr:hover td{background:#f5f9ff}
+  .lead-none td{text-align:center;color:var(--ink-4);padding:34px 10px;font-size:18px;letter-spacing:.1em}
+  .lead-none:hover td{background:transparent}
+
+  /* ===== dashboard : criteria ===== */
+  .crits{display:grid;gap:13px}
+  .crit{
+    display:grid;grid-template-columns:190px 1fr 78px;gap:16px;align-items:center;
+    border:1px solid var(--line);border-radius:12px;padding:13px 16px;
+    background:linear-gradient(180deg,#fff,#fcfdff);transition:.2s var(--ease);
+  }
+  .crit:hover{border-color:#d5dce8;box-shadow:var(--sh-2)}
+  .crit .c-name{font-size:12.5px;font-weight:600;color:var(--ink-2);letter-spacing:.01em}
+  .crit .c-bar{height:9px;border-radius:99px;background:var(--line-2);overflow:hidden}
+  .crit .c-bar > i{display:block;height:100%;border-radius:99px;
+    background:linear-gradient(90deg,var(--blue-2),var(--blue));transition:width .45s var(--ease)}
+  .crit .c-val{text-align:right;font-size:19px;font-weight:700;letter-spacing:-.03em;white-space:nowrap}
+  .crit .c-val small{font-size:11px;font-weight:500;color:var(--ink-4);letter-spacing:0}
+  .crit .c-dist{grid-column:2/4;display:flex;gap:6px;flex-wrap:wrap;margin-top:-4px}
+  .chip{
+    font-size:10.5px;font-weight:600;color:var(--ink-3);background:#f4f6f9;
+    border:1px solid var(--line-2);border-radius:99px;padding:2px 8px;white-space:nowrap;
+  }
+  .chip b{color:var(--ink);font-weight:700}
+  .chip.z{opacity:.45}
+
+  /* ===== dashboard : ranking ===== */
+  table.rank{min-width:900px}
+  table.rank thead th{text-align:center;top:0}
+  table.rank thead th.l{text-align:left}
+  table.rank tbody td{text-align:center;color:var(--ink-2);font-weight:600}
+  table.rank tbody td.l{text-align:left;color:var(--ink);font-weight:600}
+  table.rank tbody td.rk{color:var(--ink-4);font-weight:700;font-size:12px}
+  table.rank tbody td.tot{font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
+  table.rank tbody tr:nth-child(even) td{background:#fcfdfe}
+  table.rank tbody tr:hover td{background:#f5f9ff}
+  table.rank tbody td.sv{font-variant-numeric:tabular-nums}
+  .sv i{
+    display:inline-block;font-style:normal;min-width:22px;padding:2px 0;border-radius:6px;
+    font-size:12px;font-weight:700;
+  }
+  .sv i.v5{background:var(--green-soft);color:var(--green)}
+  .sv i.v4{background:#f2faf4;color:#3d8b53}
+  .sv i.v3{background:var(--amber-soft);color:var(--amber)}
+  .sv i.v2{background:#fdf5ec;color:#b9761a}
+  .sv i.v1{background:var(--red-soft);color:var(--red)}
+  .sv i.v0{background:#f4f6f9;color:var(--ink-4)}
+
+  /* ===== dashboard : rubric ===== */
+  table.rub{min-width:900px;font-size:12.5px}
+  table.rub thead th{text-align:center;top:0}
+  table.rub thead th.l{text-align:left}
+  table.rub tbody td{text-align:center;color:var(--ink-2);font-weight:500;line-height:1.45}
+  table.rub tbody td.l{text-align:left;color:var(--ink);font-weight:700;font-size:12px}
+  table.rub tbody tr:hover td{background:#f9fbfe}
+  table.rub tbody td.dash{color:var(--ink-4)}
+  .legend{
+    display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;
+    margin-top:14px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;
+    background:var(--bg-2);font-size:12.5px;color:var(--ink-2);
+  }
+  .legend .lg{display:flex;align-items:center;gap:8px;font-weight:600}
+  .legend .lg b{font-weight:700;color:var(--ink)}
+
+  /* ===== funnel ===== */
+  .funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .fn{
+    position:relative;border:1px solid var(--line);border-radius:14px;padding:14px 15px;
+    background:linear-gradient(180deg,#fff,#fcfdff);transition:.2s var(--ease);
+  }
+  .fn:hover{border-color:#d5dce8;box-shadow:var(--sh-2);transform:translateY(-2px)}
+  .fn.hi{border-color:var(--blue-line);background:linear-gradient(180deg,#f5f9ff,#fff)}
+  .fn.hi::after{
+    content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:99px;
+    background:linear-gradient(180deg,var(--blue-2),var(--blue));
+  }
+  .fn .f-lab{font-size:11.5px;color:var(--ink-3);font-weight:600;margin-bottom:7px;letter-spacing:.015em}
+  .fn .f-plan{font-size:20px;font-weight:700;letter-spacing:-.03em}
+  .fn .f-plan small{font-size:11.5px;font-weight:500;color:var(--ink-4);letter-spacing:0}
+  .fn .f-act{
+    font-size:12px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .fn .f-act b{font-size:14px;letter-spacing:-.02em}
+
+  /* ===== responsive ===== */
+  @media (max-width:1100px){
+    .kpis{grid-template-columns:repeat(3,1fr)}
+    .funnel{grid-template-columns:repeat(3,1fr)}
+  }
+  @media (max-width:640px){
+    body{font-size:14.5px;background-attachment:scroll}
+    .wrap{padding:14px 12px 64px}
+    .kpis,.funnel{grid-template-columns:repeat(2,1fr);gap:10px}
+    .grid{grid-template-columns:1fr 1fr;gap:12px}
+    header.top{padding:16px 17px;border-radius:14px}
+    header.top h1{font-size:18px}
+    .nav{width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+    .nav::-webkit-scrollbar{display:none}
+    .navbtn{flex:1;padding:8px 10px;font-size:12px}
+    .empty{padding:44px 10px}
+    .crit{grid-template-columns:1fr 64px;gap:8px 12px;padding:12px 13px}
+    .crit .c-name{grid-column:1/3}
+    .crit .c-dist{grid-column:1/3;margin-top:2px}
+    .crit .c-val{font-size:17px}
+    .legend{gap:8px 16px;padding:12px 13px;font-size:12px}
+    .sec-body{padding:14px}
+    .sec-head{padding:13px 15px;align-items:stretch;flex-direction:column}
+    .kpi{padding:13px}
+    .kpi .k-val{font-size:21px}
+    .fn{padding:12px 13px}
+    .fn .f-plan{font-size:17px}
+    .addwrap input{flex:1}
+    .btn-add{padding:9px 16px}
+  }
+  .fb-err{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;
+    background:#d93a30;color:#fff;font-size:12px;font-weight:600;letter-spacing:.01em;
+    padding:8px 15px;border-radius:999px;box-shadow:0 8px 22px rgba(217,58,48,.34)}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important}
+    .tab:hover,.kpi:hover,.fn:hover,.btn-add:hover{transform:none}
+  }
+  @media print{
+    body{background:#fff;background-image:none}
+    section{box-shadow:none;break-inside:avoid;border-color:#d5d8de}
+    header.top{background:#fff;color:#000;box-shadow:none;border:1px solid #d5d8de}
+    header.top h1{color:#000}
+    header.top::before,header.top::after{display:none}
+    .nav{display:none}
+    .table-scroll{overflow:visible}
+    table{min-width:0;font-size:10px}
+    thead th{background:#1a1d24 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .addwrap,.tab .x{display:none}
+    .csel{background-image:none;border-color:#d5d8de;padding-right:9px}
+    .fb-err{display:none}
+    .gbadge,.sv i,.chip,.kpi .bar > i,.crit .c-bar > i{
+      -webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .crit,.legend{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>SooK Lead Generation</h1>
+    <nav class="nav" id="nav"></nav>
+  </header>
+
+  <section id="secKPI" data-page="plan">
+    <div class="sec-head"><h2>สรุปภาพรวม</h2><span id="scopeTag"></span></div>
+    <div class="sec-body"><div class="kpis" id="kpiRow"></div></div>
+  </section>
+
+  <section data-page="plan">
+    <div class="sec-body">
+      <div class="grid">
+        <div class="field">
+          <label>Budget รวม (บาท/เดือน)</label>
+          <input type="number" id="inBudget" value="721000" step="1000">
+        </div>
+        <div class="field">
+          <label>เป้า Lead รวม (Qualified)</label>
+          <input type="number" id="inTarget" value="200">
+        </div>
+        <div class="field">
+          <label>ระยะเวลา (เดือน)</label>
+          <input type="number" id="inMonths" value="6">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="secPlan" data-page="plan">
+    <div class="sec-head">
+      <div class="head-left">
+        <h2>Plan on Month Estimate</h2>
+        <div class="tabs" id="tabs"></div>
+      </div>
+      <div class="addwrap">
+        <input type="month" id="inMonth" hidden>
+        <button class="btn-add" id="btnAdd">+ เพิ่มแผน</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr class="g">
+            <th class="l" colspan="4">Plan</th>
+            <th class="c" colspan="2">Estimate Result</th>
+            <th class="c" colspan="2">Cost per Result</th>
+            <th class="c sep-l" colspan="4">Actual</th>
+            <th class="c sep-l span2" rowspan="2">Status</th>
+          </tr>
+          <tr>
+            <th class="l">Channel</th>
+            <th class="l">Objective</th>
+            <th>Percentage</th>
+            <th>Budget (THB)</th>
+            <th>Min</th>
+            <th>Max</th>
+            <th>Min</th>
+            <th>Max</th>
+            <th class="sep-l">Spend จริง</th>
+            <th>Result จริง</th>
+            <th>Cost จริง</th>
+            <th>% ของเป้า</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section id="secFunnel" data-page="plan">
+    <div class="sec-head"><h2>Funnel</h2><span id="funnelTag"></span></div>
+    <div class="sec-body"><div class="funnel" id="funnelRow"></div></div>
+  </section>
+
+  <section id="secLeadStat" data-page="leads">
+    <div class="sec-head">
+      <div class="head-left">
+        <h2>Status Lead</h2>
+        <div class="tabs" id="leadTabs"></div>
+      </div>
+      <span id="statTag"></span>
+    </div>
+    <div class="sec-body"><div class="kpis" id="statRow"></div></div>
+  </section>
+
+  <section id="secLeads" data-page="leads">
+    <div class="sec-head">
+      <div class="head-left">
+        <h2>รายชื่อ Lead</h2>
+        <div class="tabs" id="srcTabs"></div>
+      </div>
+      <span id="leadTag"></span>
+    </div>
+    <div class="table-scroll">
+      <table class="lead">
+        <thead id="leadHead"></thead>
+        <tbody id="leadBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="secDash" data-page="dash">
+    <div class="sec-head">
+      <div class="head-left">
+        <h2>Lead Score Summary</h2>
+        <div class="tabs" id="dashTabs"></div>
+      </div>
+      <span id="dashTag"></span>
+    </div>
+    <div class="sec-body"><div class="kpis" id="dashKPI"></div></div>
+  </section>
+
+  <section id="secDashCrit" data-page="dash">
+    <div class="sec-head"><h2>คะแนนเฉลี่ยรายเกณฑ์</h2><span id="critTag"></span></div>
+    <div class="sec-body"><div class="crits" id="critRow"></div></div>
+  </section>
+
+  <section id="secDashRank" data-page="dash">
+    <div class="sec-head"><h2>จัดอันดับ Lead ตามคะแนน</h2><span id="rankTag"></span></div>
+    <div class="table-scroll">
+      <table class="rank">
+        <thead id="rankHead"></thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="secRubric" data-page="dash">
+    <div class="sec-head"><h2>เกณฑ์การให้คะแนน</h2><span id="rubTag"></span></div>
+    <div class="table-scroll">
+      <table class="rub">
+        <thead id="rubHead"></thead>
+        <tbody id="rubBody"></tbody>
+      </table>
+    </div>
+    <div class="sec-body" style="padding-top:0"><div class="legend" id="rubLegend"></div></div>
+  </section>
+
+</div>
+
+<div id="fbErr" class="fb-err" hidden>เชื่อมต่อคลาวด์ไม่ได้</div>
+
+<script>
+/* ===== ค่าคงที่ ===== */
+const CONV = { message: 0.10, click: 0.005 };
+const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* ===== โครงแผนตั้งต้น ===== */
+const TEMPLATE = [
+  { name:'Facebook Ads', share:0.35, rows:[
+    { obj:'Post Engage', kind:'engage',  unit:'engagement', share:0.15,  cMin:0.5, cMax:1.2 },
+    { obj:'Message',     kind:'message', unit:'ข้อความ',     share:0.425, cMin:200, cMax:500 },
+    { obj:'Click',       kind:'click',   unit:'คลิก',        share:0.425, cMin:10,  cMax:15  },
+  ]},
+  { name:'Instagram', share:0.35, rows:[
+    { obj:'Post Engage', kind:'engage',  unit:'engagement', share:0.15,  cMin:0.8, cMax:1.5 },
+    { obj:'Message',     kind:'message', unit:'ข้อความ',     share:0.425, cMin:300, cMax:600 },
+    { obj:'Click',       kind:'click',   unit:'คลิก',        share:0.425, cMin:10,  cMax:15  },
+  ]},
+  { name:'Google Ads', share:0.30, rows:[
+    { obj:'Maximize Clicks', kind:'click', unit:'คลิก', share:1, cMin:13, cMax:42 },
+  ]},
+];
+
+/* =========================================================
+   ACTUAL FEED — read-only ในหน้าเว็บ ดึงจากแพลตฟอร์มจริง
+   key = "YYYY-MM|Channel|Objective"
+     updateActual({ "2026-08|Facebook Ads|Message": { spend: 34000, result: 95 } })
+     fetchActual('https://api.example.com/ads/actual')
+   ========================================================= */
+let ACTUAL = {
+  '2026-07|Facebook Ads|Post Engage'   : { spend:37500,  result:41000 },
+  '2026-07|Facebook Ads|Message'       : { spend:106000, result:310   },
+  '2026-07|Facebook Ads|Click'         : { spend:107000, result:8900  },
+  '2026-07|Instagram|Post Engage'      : { spend:36000,  result:25000 },
+  '2026-07|Instagram|Message'          : { spend:105000, result:150   },
+  '2026-07|Instagram|Click'            : { spend:108000, result:7200  },
+  '2026-07|Google Ads|Maximize Clicks' : { spend:214000, result:17500 },
+
+  '2026-08|Facebook Ads|Post Engage'   : { spend:12000, result:15000 },
+  '2026-08|Facebook Ads|Message'       : { spend:34000, result:95    },
+  '2026-08|Facebook Ads|Click'         : { spend:33500, result:2900  },
+  '2026-08|Instagram|Post Engage'      : { spend:11500, result:9800  },
+  '2026-08|Instagram|Message'          : { spend:32000, result:42    },
+  '2026-08|Instagram|Click'            : { spend:34000, result:2600  },
+  '2026-08|Google Ads|Maximize Clicks' : { spend:68000, result:5600  },
+};
+
+/* =========================================================
+   LEAD FEED — read-only ดึงจากแพลตฟอร์มจริง
+     updateLeads({ meta:[...], google:[...] })   // แทนที่ทั้งชุด
+     fetchLeads('https://api.example.com/leads')
+   ========================================================= */
+/* ===== เกณฑ์ให้คะแนน Lead (5 เกณฑ์ × 5 คะแนน = 25) ===== */
+const SCORE_CRIT = [
+  { k:'type',   h:'Business Type',      s:'Type',   opts:{
+      5:'Hospital / Wellness / Spa',
+      4:'Hotel / Property Develop / Aesthetic Clinic',
+      3:'Fitness / Sport Team / Sport Place' } },
+  { k:'years',  h:'Year of Operation',  s:'Years',  opts:{
+      5:'> 10 Years', 4:'> 5 Years', 3:'> 3 Years', 2:'> 1 Years', 1:'0 Years' } },
+  { k:'pl',     h:'P/L Previous Year',  s:'P/L',    opts:{
+      5:'Profit > 100M', 4:'Profit > 10M', 3:'Profit > 5M', 2:'Profit > 1M', 1:'No Profit' } },
+  { k:'budget', h:'Allocated Budget',   s:'Budget', opts:{
+      5:'Already Budget Approved',
+      4:'Work on process to approval budget',
+      3:'Will propose for the budget approval',
+      2:'Need to wait for next year budget',
+      1:'No Planning' } },
+  { k:'period', h:'Period of Buying',   s:'Period', opts:{
+      5:'Immediately', 4:'In 3 Months', 3:'In 6 Months', 2:'In 12 Months', 1:'No Period' } },
+];
+const SCORE_MAX  = SCORE_CRIT.length * 5;
+const LEAD_STATUS = [ {v:'hot',h:'HOT'}, {v:'warm',h:'WARM'}, {v:'cold',h:'COLD'} ];
+const GRADE_MIN   = { hot:20, warm:12 };
+const LEAD_TYPE   = { 5:'High-performance chamber buyer', 4:'Normal-performance chamber', 3:'Other devices' };
+const gradeOf = t => t >= GRADE_MIN.hot ? 'hot' : t >= GRADE_MIN.warm ? 'warm' : 'cold';
+
+const CRIT_COLS = SCORE_CRIT.map(c => ({ k:'__'+c.k, h:c.h, t:'crit', c:c.k }));
+const LEAD_COLS = {
+  meta: [
+    { k:'created_time',  h:'Created Time',  t:'dt' },
+    { k:'full_name',     h:'ชื่อ-นามสกุล',  t:'key' },
+    { k:'__score',       h:'Lead Score',    t:'score' },
+    ...CRIT_COLS,
+    { k:'platform',      h:'Platform' },
+    { k:'campaign_name', h:'Campaign Name' },
+    { k:'adset_name',    h:'Ad Set Name' },
+    { k:'ad_name',       h:'Ad Name' },
+    { k:'form_name',     h:'Form Name' },
+    { k:'email',         h:'Email' },
+    { k:'phone_number',  h:'Phone Number' },
+  ],
+  google: [
+    { k:'submission_time', h:'Submission Time', t:'dt' },
+    { k:'full_name',       h:'ชื่อ-นามสกุล',    t:'key' },
+    { k:'__score',         h:'Lead Score',      t:'score' },
+    ...CRIT_COLS,
+    { k:'campaign_name',   h:'Campaign Name' },
+    { k:'ad_group_name',   h:'Ad Group Name' },
+    { k:'form_name',       h:'Lead Form' },
+    { k:'email',           h:'Email' },
+    { k:'phone_number',    h:'Phone Number' },
+    { k:'postal_code',     h:'Postal Code' },
+    { k:'gclid',           h:'GCLID',           t:'mono' },
+    { k:'is_test',         h:'Is Test',         t:'bool' },
+  ],
+};
+const LEAD_SRC = [ {id:'meta', name:'Meta Lead Form'}, {id:'google', name:'Google Lead Form'} ];
+
+let LEADS = {
+  meta: [
+    { created_time:'2026-08-09T10:41:00', id:'l_10098431', platform:'fb', campaign_name:'SooK | Lead Gen',  adset_name:'LAL 1% Purchaser',    ad_name:'VDO Testimonial A', form_name:'SooK Register Form', full_name:'ณัฐพล สุวรรณโชติ',   email:'nattapon.s@gmail.com',  phone_number:'0812345671', is_organic:false },
+    { created_time:'2026-08-08T19:05:00', id:'l_10098407', platform:'ig', campaign_name:'SooK | Lead Gen',  adset_name:'Interest Health 25-44', ad_name:'Carousel Promo',   form_name:'SooK Register Form', full_name:'ปวีณา ทองใบ',        email:'paveena.t@hotmail.com', phone_number:'0812345672', is_organic:false },
+    { created_time:'2026-08-07T13:52:00', id:'l_10098366', platform:'fb', campaign_name:'SooK | Lead Gen',  adset_name:'Retarget 30D',        ad_name:'Static Offer B',    form_name:'SooK Register Form', full_name:'กิตติศักดิ์ ใจดี',   email:'kittisak.j@gmail.com',  phone_number:'0812345673', is_organic:false },
+    { created_time:'2026-08-05T09:18:00', id:'l_10098291', platform:'ig', campaign_name:'SooK | Lead Gen',  adset_name:'LAL 1% Purchaser',    ad_name:'Reels Hook 03',     form_name:'SooK Register Form', full_name:'สุภาพร มณีรัตน์',    email:'supaporn.m@gmail.com',  phone_number:'0812345674', is_organic:false },
+    { created_time:'2026-08-02T21:36:00', id:'l_10098155', platform:'fb', campaign_name:'SooK | Lead Gen',  adset_name:'Broad TH 25-54',      ad_name:'VDO Testimonial A', form_name:'SooK Register Form', full_name:'ธนกฤต พงษ์ไพบูลย์',  email:'thanakrit.p@gmail.com', phone_number:'0812345675', is_organic:true  },
+    { created_time:'2026-07-27T16:12:00', id:'l_10097842', platform:'fb', campaign_name:'SooK | Lead Gen',  adset_name:'Retarget 30D',        ad_name:'Static Offer B',    form_name:'SooK Register Form', full_name:'อรพรรณ ศรีสมบัติ',   email:'orapan.s@gmail.com',    phone_number:'0812345676', is_organic:false },
+    { created_time:'2026-07-19T11:04:00', id:'l_10097511', platform:'ig', campaign_name:'SooK | Lead Gen',  adset_name:'Interest Health 25-44', ad_name:'Carousel Promo',   form_name:'SooK Register Form', full_name:'วิชญ์พล เจริญสุข',   email:'wichyapol.c@gmail.com', phone_number:'0812345677', is_organic:false },
+  ],
+  google: [
+    { submission_time:'2026-08-09T15:27:00', lead_id:'g_774102', campaign_name:'SooK | Search Brand', ad_group_name:'Brand Exact', form_name:'SooK Lead Form', full_name:'ชลธิชา ภูวเดช',  email:'chonthicha.p@gmail.com', phone_number:'0898765431', postal_code:'10110', gclid:'Cj0KCQjw_a1', is_test:false },
+    { submission_time:'2026-08-06T12:09:00', lead_id:'g_773845', campaign_name:'SooK | Search Generic', ad_group_name:'Health Program', form_name:'SooK Lead Form', full_name:'ภาณุวัฒน์ ตั้งจิต', email:'panuwat.t@gmail.com',   phone_number:'0898765432', postal_code:'50200', gclid:'Cj0KCQjw_b7', is_test:false },
+    { submission_time:'2026-07-24T18:44:00', lead_id:'g_772630', campaign_name:'SooK | Search Brand', ad_group_name:'Brand Phrase', form_name:'SooK Lead Form', full_name:'ศิริพร วัฒนกิจ',  email:'siriporn.w@gmail.com',   phone_number:'0898765433', postal_code:'20150', gclid:'Cj0KCQjw_c2', is_test:false },
+  ],
+};
+
+/* ===== state ===== */
+const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'leads',h:'Lead Generation'}, {id:'dash',h:'Dashboard'} ];
+const state = { plans:[], active:null, adding:false, src:'meta', leadScore:{}, page:'plan', leadFilter:'' };
+
+/* ===== helper ===== */
+const $ = id => document.getElementById(id);
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+const fmt = (n,d=0) => (isFinite(n)?n:0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtCost  = n => { n=isFinite(n)?n:0; return n>0 && n<100 ? fmt(n,2) : fmt(n,0); };
+const fx2 = n => (isFinite(n)?n:0).toFixed(2);
+const fmtPct = n => { const r = Math.round((isFinite(n)?n:0)*100)/100; return (Number.isInteger(r) ? fmt(r,0) : fmt(r,2)) + '%'; };
+const pill = (cls,t) => `<span class="pill ${cls}">${t}</span>`;
+const label = m => MN[+m.split('-')[1]-1] + ' ' + m.split('-')[0];
+const monthKey = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+const nextMonth = m => { const [y,mo]=m.split('-').map(Number); const d=new Date(y,mo,1); return monthKey(d); };
+
+function costStatus(actual,cMin,cMax){
+  if(!(actual>0)) return {cls:'p-grey',key:'none',label:'—'};
+  if(actual<=cMin) return {cls:'p-green',key:'good',label:'ดีกว่าแผน'};
+  if(actual<=cMax) return {cls:'p-blue',key:'ok',label:'ตามแผน'};
+  if(actual<=cMax*1.25) return {cls:'p-amber',key:'warn',label:'เริ่มแพง'};
+  return {cls:'p-red',key:'bad',label:'แพงเกิน'};
+}
+
+function pacingFor(m){
+  const now = new Date();
+  const [y,mo] = m.split('-').map(Number);
+  const cy = now.getFullYear(), cm = now.getMonth()+1;
+  if(y<cy || (y===cy && mo<cm)) return 1;
+  if(y>cy || (y===cy && mo>cm)) return 0;
+  const dt = new Date(y,mo,0).getDate();
+  return Math.min(1, now.getDate()/dt);
+}
+function daysOf(m){
+  const now = new Date();
+  const [y,mo] = m.split('-').map(Number);
+  const dt = new Date(y,mo,0).getDate();
+  const cur = (y===now.getFullYear() && mo===now.getMonth()+1);
+  return { dayNow: cur ? now.getDate() : dt, dayTot: dt };
+}
+
+/* ===== แผน ===== */
+function makePlan(month, total, from){
+  const src = from ? from.channels : null;
+  return {
+    month,
+    channels: TEMPLATE.map((ch,ci) => ({
+      name: ch.name,
+      rows: ch.rows.map((r,ri) => {
+        const s = src ? src[ci].rows[ri] : null;
+        return {
+          obj:r.obj, kind:r.kind, unit:r.unit,
+          budget: s ? s.budget : Math.round(total*ch.share)*r.share,
+          cMin: s ? s.cMin : r.cMin,
+          cMax: s ? s.cMax : r.cMax,
+          aSpend:0, aRes:0
+        };
+      })
+    })),
+    lastTotal: total
+  };
+}
+function addPlan(month){
+  if(!/^\d{4}-\d{2}$/.test(month)) return false;
+  if(!state.plans.some(p=>p.month===month)){
+    const last = state.plans[state.plans.length-1];
+    const np = makePlan(month, 0, last);          // แผนใหม่เริ่มที่งบ 0
+    np.channels.forEach(ch=>ch.rows.forEach(r=>r.budget=0));
+    np.lastTotal = 0;
+    state.plans.push(np);
+    state.plans.sort((a,b)=>a.month<b.month?-1:1);
+    applyActual();
+  }
+  state.active = month;
+  render();
+  return true;
+}
+function removePlan(month){
+  if(state.plans.length<=1) return;
+  const i = state.plans.findIndex(p=>p.month===month);
+  if(i<0) return;
+  state.plans.splice(i,1);
+  if(state.active===month) state.active = state.plans[Math.max(0,i-1)].month;
+  render();
+}
+const planTotal = p => p.channels.reduce((s,ch)=>s+ch.rows.reduce((t,r)=>t+r.budget,0),0);
+
+/* กระจายงบรวมลงทุกแถวตามสัดส่วนตั้งต้น (ใช้ตอนแผนยังเป็น 0) */
+function distribute(p, total){
+  p.channels.forEach((ch,ci)=>ch.rows.forEach((r,ri)=>{
+    r.budget = Math.round(total*TEMPLATE[ci].share) * TEMPLATE[ci].rows[ri].share;
+  }));
+  p.lastTotal = total;
+}
+
+function applyActual(){
+  state.plans.forEach(p => p.channels.forEach(ch => ch.rows.forEach(r => {
+    const a = ACTUAL[p.month+'|'+ch.name+'|'+r.obj] || {};
+    r.aSpend = num(a.spend);
+    r.aRes   = num(a.result);
+  })));
+}
+function updateActual(payload){
+  ACTUAL = Object.assign({}, ACTUAL, payload||{});
+  applyActual(); render();
+}
+async function fetchActual(url, options){
+  const res = await fetch(url, options);
+  updateActual(await res.json());
+}
+window.updateActual = updateActual;
+window.fetchActual  = fetchActual;
+
+/* =========================================================
+   AUTO SAVE — เก็บลงเครื่องผู้ใช้ บันทึกเองทุกครั้งที่แก้
+   ========================================================= */
+const SKEY = 'sook-leadgen-v1';
+const store = (()=>{ try{ const s=window.localStorage; s.setItem('__t','1'); s.removeItem('__t'); return s; }catch(e){ return null; } })();
+let saveTimer=null;
+
+function saveNow(){
+  if(!store) return;
+  try{
+    store.setItem(SKEY, JSON.stringify({
+      v:1,
+      plans: state.plans.map(p=>({
+        month:p.month,
+        channels:p.channels.map(ch=>({ name:ch.name, rows:ch.rows.map(r=>({obj:r.obj,budget:r.budget,cMin:r.cMin,cMax:r.cMax})) })),
+        lastTotal:p.lastTotal
+      })),
+      active: state.active,
+      src: state.src,
+      page: state.page,
+      leadFilter: state.leadFilter,
+      leadScore: state.leadScore,
+      target: num($('inTarget').value),
+      months: num($('inMonths').value),
+      at: Date.now()
+    }));
+  }catch(e){}
+}
+function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ saveNow(); cloudPush(); }, 400); }
+
+function planFromRaw(sp){
+  if(!sp || !/^\d{4}-\d{2}$/.test(String(sp.month||''))) return null;
+  const p = makePlan(sp.month, 0);
+  p.channels.forEach((ch,ci)=>{
+    const sc = (sp.channels||[]).find(x=>x.name===ch.name) || (sp.channels||[])[ci];
+    ch.rows.forEach((r,ri)=>{
+      const sr = sc && ((sc.rows||[]).find(x=>x.obj===r.obj) || (sc.rows||[])[ri]);
+      if(sr){ r.budget=num(sr.budget); r.cMin=num(sr.cMin); r.cMax=num(sr.cMax); }
+      else  { r.budget=0; }
+    });
+  });
+  p.lastTotal = num(sp.lastTotal);
+  return p;
+}
+function cleanScore(raw){
+  if(!raw || typeof raw!=='object') return null;
+  const clean = {};
+  SCORE_CRIT.forEach(c=>{ const v = +raw[c.k]; if(c.opts[v]!==undefined) clean[c.k] = v; });
+  return Object.keys(clean).length ? clean : null;
+}
+
+function loadSaved(){
+  if(!store) return false;
+  let d; try{ d = JSON.parse(store.getItem(SKEY)||'null'); }catch(e){ return false; }
+  if(!d || !Array.isArray(d.plans) || !d.plans.length) return false;
+  try{
+    state.plans = d.plans.map(planFromRaw).filter(Boolean);
+    if(!state.plans.length) return false;
+    state.plans.sort((a,b)=>a.month<b.month?-1:1);
+    state.active = state.plans.some(p=>p.month===d.active) ? d.active : state.plans[state.plans.length-1].month;
+    if(LEAD_COLS[d.src]) state.src = d.src;
+    if(d.leadScore && typeof d.leadScore==='object'){
+      Object.keys(d.leadScore).forEach(k=>{
+        const clean = cleanScore(d.leadScore[k]);
+        if(clean) state.leadScore[k] = clean;
+      });
+    }
+    if(PAGES.some(p=>p.id===d.page)) state.page = d.page;
+    if(d.leadFilter==='none' || LEAD_STATUS.some(s=>s.v===d.leadFilter)) state.leadFilter = d.leadFilter;
+    if(d.target>0) $('inTarget').value = d.target;
+    if(d.months>0) $('inMonths').value = d.months;
+    return true;
+  }catch(e){ return false; }
+}
+
+/* =========================================================
+   CLOUD SYNC — Firebase Firestore
+   วางค่า firebaseConfig จาก Firebase Console ตรง FB_CONFIG
+   ปล่อยว่าง = ใช้เฉพาะเครื่องนี้ (localStorage)
+
+   โครงข้อมูล  boards/{FB_BOARD}/
+     plans/{YYYY-MM}                        ← หน้าเว็บเขียน
+     settings/app                           ← หน้าเว็บเขียน
+     leadScores/{src|leadId}                ← หน้าเว็บเขียน
+     leads/{src|leadId}                     ← ระบบภายนอกเขียน
+     actuals/{YYYY-MM|Channel|Objective}    ← ระบบภายนอกเขียน
+   ========================================================= */
+const FB_CONFIG = {
+  apiKey:            'AIzaSyBjYdB_Vr3GWHwPu7fcC_1qARyzptS5LAw',
+  authDomain:        'sook-lead-generation.firebaseapp.com',
+  projectId:         'sook-lead-generation',
+  storageBucket:     'sook-lead-generation.firebasestorage.app',
+  messagingSenderId: '205291682510',
+  appId:             '1:205291682510:web:5ad812d02ef9dd14e6ae9f',
+};
+const FB_BOARD = 'sook';
+const FB_VER   = '10.12.2';
+
+let fb = null, fbReady = false, fbApplying = false;
+const fbLast = { plans:{}, scores:{}, settings:'' };
+
+function fbErr(on){ const el = document.getElementById('fbErr'); if(el) el.hidden = !on; }
+
+const planDoc = p => ({
+  month: p.month,
+  channels: p.channels.map(ch=>({
+    name: ch.name,
+    rows: ch.rows.map(r=>({ obj:r.obj, budget:r.budget, cMin:r.cMin, cMax:r.cMax })),
+  })),
+  lastTotal: p.lastTotal,
+});
+const settingsDoc = () => ({ target: num($('inTarget').value), months: num($('inMonths').value) });
+
+function fbStamp(which){
+  if(which==='plans'){
+    fbLast.plans = {};
+    state.plans.forEach(p=>{ fbLast.plans[p.month] = JSON.stringify(planDoc(p)); });
+  }
+  if(which==='scores'){
+    fbLast.scores = {};
+    Object.keys(state.leadScore).forEach(k=>{ fbLast.scores[k] = JSON.stringify(state.leadScore[k]); });
+  }
+  if(which==='settings') fbLast.settings = JSON.stringify(settingsDoc());
+}
+function fbApply(which, fn){
+  fbApplying = true;
+  try{ fn(); if(which) fbStamp(which); render(); }
+  catch(e){}
+  finally{ fbApplying = false; }
+}
+
+async function fbInit(){
+  if(!FB_CONFIG.projectId) return;
+  try{
+    const base = 'https://www.gstatic.com/firebasejs/' + FB_VER + '/';
+    const [App, Auth, FS] = await Promise.all([
+      import(base + 'firebase-app.js'),
+      import(base + 'firebase-auth.js'),
+      import(base + 'firebase-firestore.js'),
+    ]);
+    const app = App.initializeApp(FB_CONFIG);
+    await Auth.signInAnonymously(Auth.getAuth(app));
+    fb = { db: FS.getFirestore(app), fs: FS };
+    fbReady = true;
+    fbErr(false);
+    fbWatch();
+  }catch(e){ fbErr(true); }
+}
+
+function fbWatch(){
+  const { db, fs } = fb;
+  const sub = (name, fn) => fs.onSnapshot(
+    fs.collection(db, 'boards', FB_BOARD, name),
+    snap => { if(!snap.metadata.hasPendingWrites){ try{ fn(snap); }catch(e){} } },
+    () => fbErr(true)
+  );
+
+  sub('plans', snap=>{
+    if(snap.empty){ fbSeed(); return; }
+    const list = [];
+    snap.forEach(doc=>{ const d = Object.assign({ month:doc.id }, doc.data()); list.push(d); });
+    const plans = list.map(planFromRaw).filter(Boolean).sort((a,b)=>a.month<b.month?-1:1);
+    if(!plans.length) return;
+    fbApply('plans', ()=>{
+      state.plans = plans;
+      if(!plans.some(p=>p.month===state.active)) state.active = plans[plans.length-1].month;
+      applyActual();
+    });
+  });
+
+  sub('settings', snap=>{
+    const doc = snap.docs.find(x=>x.id==='app');
+    if(!doc) return;
+    const d = doc.data()||{};
+    fbApply('settings', ()=>{
+      if(num(d.target)>0) $('inTarget').value = num(d.target);
+      if(num(d.months)>0) $('inMonths').value = num(d.months);
+    });
+  });
+
+  sub('leadScores', snap=>{
+    const next = {};
+    snap.forEach(doc=>{ const c = cleanScore(doc.data()); if(c) next[doc.id] = c; });
+    fbApply('scores', ()=>{ state.leadScore = next; });
+  });
+
+  sub('leads', snap=>{
+    if(snap.empty) return;
+    const next = {};
+    LEAD_SRC.forEach(s=>{ next[s.id] = []; });
+    snap.forEach(doc=>{
+      const d   = Object.assign({}, doc.data());
+      const seg = String(doc.id).split('|');
+      const src = LEAD_COLS[d.src] ? d.src : seg[0];
+      if(!next[src]) return;
+      delete d.src;
+      if(!d.id && !d.lead_id) d.id = seg.slice(1).join('|') || doc.id;
+      next[src].push(d);
+    });
+    fbApply(null, ()=>{ LEADS = next; });
+  });
+
+  sub('actuals', snap=>{
+    if(snap.empty) return;
+    const next = {};
+    snap.forEach(doc=>{ const d = doc.data()||{}; next[doc.id] = { spend:num(d.spend), result:num(d.result) }; });
+    fbApply(null, ()=>{ ACTUAL = next; applyActual(); });
+  });
+}
+
+function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; cloudPush(); }
+
+async function cloudPush(){
+  if(!fbReady || fbApplying) return;
+  const { db, fs } = fb;
+  const ref  = (name, id) => fs.doc(db, 'boards', FB_BOARD, name, id);
+  const jobs = [];
+
+  const seenM = {};
+  state.plans.forEach(p=>{
+    const doc = planDoc(p), j = JSON.stringify(doc);
+    seenM[p.month] = 1;
+    if(fbLast.plans[p.month] !== j){ fbLast.plans[p.month] = j; jobs.push(fs.setDoc(ref('plans', p.month), doc)); }
+  });
+  Object.keys(fbLast.plans).forEach(m=>{
+    if(!seenM[m]){ delete fbLast.plans[m]; jobs.push(fs.deleteDoc(ref('plans', m))); }
+  });
+
+  const seenS = {};
+  Object.keys(state.leadScore).forEach(k=>{
+    const j = JSON.stringify(state.leadScore[k]);
+    seenS[k] = 1;
+    if(fbLast.scores[k] !== j){ fbLast.scores[k] = j; jobs.push(fs.setDoc(ref('leadScores', k), state.leadScore[k])); }
+  });
+  Object.keys(fbLast.scores).forEach(k=>{
+    if(!seenS[k]){ delete fbLast.scores[k]; jobs.push(fs.deleteDoc(ref('leadScores', k))); }
+  });
+
+  const st = settingsDoc(), sj = JSON.stringify(st);
+  if(fbLast.settings !== sj){ fbLast.settings = sj; jobs.push(fs.setDoc(ref('settings', 'app'), st)); }
+
+  if(!jobs.length) return;
+  try{ await Promise.all(jobs); fbErr(false); }catch(e){ fbErr(true); }
+}
+
+/* ===== view ===== */
+const activePlan = () => state.plans.find(p=>p.month===state.active) || state.plans[0];
+
+function aggregateChannels(){
+  const map = new Map();
+  state.plans.forEach(p => p.channels.forEach(ch => {
+    if(!map.has(ch.name)) map.set(ch.name, { name:ch.name, rows:[] });
+    const t = map.get(ch.name);
+    ch.rows.forEach(r => {
+      let x = t.rows.find(q=>q.obj===r.obj);
+      if(!x){ x = { obj:r.obj, kind:r.kind, unit:r.unit, budget:0, _min:0, _max:0, aSpend:0, aRes:0 }; t.rows.push(x); }
+      x.budget += r.budget;
+      x._min   += r.cMax>0 ? r.budget/r.cMax : 0;
+      x._max   += r.cMin>0 ? r.budget/r.cMin : 0;
+      x.aSpend += r.aSpend;
+      x.aRes   += r.aRes;
+    });
+  }));
+  const arr = [...map.values()];
+  arr.forEach(ch => ch.rows.forEach(r => {
+    r.cMin = r._max>0 ? r.budget/r._max : 0;
+    r.cMax = r._min>0 ? r.budget/r._min : 0;
+  }));
+  return arr;
+}
+function aggregatePacing(){
+  let b=0, w=0;
+  state.plans.forEach(p=>{ const pb = planTotal(p); b += pb; w += pb*pacingFor(p.month); });
+  return b>0 ? w/b : 0;
+}
+
+/* ===== compute ===== */
+function compute(chans, pacing, dm){
+  let total=0, sumSpend=0;
+  let msgMin=0,msgMax=0,msgAct=0, clkMin=0,clkMax=0,clkAct=0;
+
+  chans.forEach(ch=>{
+    ch.budget = ch.rows.reduce((s,r)=>s+r.budget,0);
+    total += ch.budget;
+  });
+  chans.forEach(ch=>{
+    ch.pct = total>0 ? ch.budget/total*100 : 0;
+    ch.rows.forEach(r=>{
+      r.pct  = ch.budget>0 ? r.budget/ch.budget*100 : 0;
+      r.rMin = r.cMax>0 ? r.budget/r.cMax : 0;
+      r.rMax = r.cMin>0 ? r.budget/r.cMin : 0;
+      r.rMid = (r.rMin+r.rMax)/2;
+      r.aCost = r.aRes>0 ? r.aSpend/r.aRes : 0;
+      r.paceTarget = r.rMid*pacing;
+      r.achieve = r.paceTarget>0 ? r.aRes/r.paceTarget : 0;
+      r.status = costStatus(r.aCost, r.cMin, r.cMax);
+      sumSpend += r.aSpend;
+      if(r.kind==='message'){ msgMin+=r.rMin; msgMax+=r.rMax; msgAct+=r.aRes; }
+      if(r.kind==='click'){   clkMin+=r.rMin; clkMax+=r.rMax; clkAct+=r.aRes; }
+    });
+  });
+
+  const leadMsgMin=msgMin*CONV.message, leadMsgMax=msgMax*CONV.message, leadMsgAct=msgAct*CONV.message;
+  const leadClkMin=clkMin*CONV.click,   leadClkMax=clkMax*CONV.click,   leadClkAct=clkAct*CONV.click;
+
+  return { total, pacing, dayNow:dm.dayNow, dayTot:dm.dayTot, sumSpend,
+    msgMin,msgMax,msgAct, clkMin,clkMax,clkAct,
+    leadMsgMin,leadMsgMax,leadMsgAct, leadClkMin,leadClkMax,leadClkAct,
+    leadMin:leadMsgMin+leadClkMin, leadMax:leadMsgMax+leadClkMax, leadProj:leadMsgAct+leadClkAct };
+}
+
+/* ===== tabs ===== */
+function renderTabs(){
+  const canDel = state.plans.length>1;
+  $('tabs').innerHTML = state.plans.map(p =>
+    `<button class="tab ${state.active===p.month?'on':''}" data-tab="${p.month}">${label(p.month)}` +
+    (canDel ? `<span class="x" data-del="${p.month}">×</span>` : '') + `</button>`).join('');
+  $('leadTabs').innerHTML = state.plans.map(p =>
+    `<button class="tab ${state.active===p.month?'on':''}" data-tab="${p.month}">${label(p.month)}</button>`).join('');
+}
+
+/* ===== หน้า ===== */
+function renderNav(){
+  $('nav').innerHTML = PAGES.map(p =>
+    `<button class="navbtn ${state.page===p.id?'on':''}" data-page-go="${p.id}">${p.h}</button>`).join('');
+  document.querySelectorAll('section[data-page]').forEach(s=>{
+    s.style.display = s.dataset.page===state.page ? '' : 'none';
+  });
+}
+
+/* ===== table ===== */
+function renderTable(c, chans){
+  let html='';
+  chans.forEach((ch,ci)=>{
+    html += `<tr class="chan">
+      <td class="l">${ch.name}</td><td class="l"></td>
+      <td>${c.total>0?fmtPct(ch.pct):'—'}</td><td></td>
+      <td colspan="4"></td><td class="sep-l" colspan="4"></td><td class="sep-l"></td></tr>`;
+    ch.rows.forEach((r,ri)=>{
+      const d = `data-ch="${ci}" data-r="${ri}"`;
+      const typing = f => focusKey && focusKey.ch===ci && focusKey.r===ri && focusKey.f===f;
+      const achStyle = !(r.aRes>0 && r.paceTarget>0) ? 'class="muted"'
+        : r.achieve>=1 ? 'style="color:var(--green);font-weight:600"'
+        : r.achieve>=0.8 ? 'style="color:var(--amber);font-weight:600"'
+        : 'style="color:var(--red);font-weight:600"';
+      const budgetCell = `<input class="num-in w-md" type="number" step="1000" value="${Math.round(r.budget)}" ${d} data-f="budget">`;
+      const cMinCell   = `<input class="num-in" type="number" step="any" value="${typing('cMin')?r.cMin:fx2(r.cMin)}" ${d} data-f="cMin">`;
+      const cMaxCell   = `<input class="num-in" type="number" step="any" value="${typing('cMax')?r.cMax:fx2(r.cMax)}" ${d} data-f="cMax">`;
+      html += `<tr>
+        <td class="l"></td>
+        <td class="l obj">${r.obj}</td>
+        <td class="muted">${c.total>0?fmtPct(r.pct):'—'}</td>
+        <td>${budgetCell}</td>
+        <td>${fmt(r.rMin)}</td>
+        <td>${fmt(r.rMax)}</td>
+        <td>${cMinCell}</td>
+        <td>${cMaxCell}</td>
+        <td class="sep-l act-cell">${r.aSpend>0?fmt(r.aSpend):'<span class="muted">—</span>'}</td>
+        <td class="act-cell">${r.aRes>0?fmt(r.aRes):'<span class="muted">—</span>'}</td>
+        <td>${r.aCost>0?fmtCost(r.aCost):'<span class="muted">—</span>'}</td>
+        <td ${achStyle}>${(r.aRes>0 && r.paceTarget>0)?fmt(r.achieve*100)+'%':'—'}</td>
+        <td class="c sep-l">${pill(r.status.cls, r.status.label)}</td>
+      </tr>`;
+    });
+  });
+  $('tbody').innerHTML = html;
+
+  $('tfoot').innerHTML = `<tr>
+    <td class="l" colspan="2">Total</td>
+    <td>${c.total>0?'100%':'—'}</td>
+    <td>${fmt(c.total)}</td>
+    <td colspan="4"></td>
+    <td class="sep-l">${fmt(c.sumSpend)}</td>
+    <td colspan="2"></td>
+    <td>${c.total>0?fmt(c.sumSpend/c.total*100,1)+'%':'—'}</td>
+    <td class="c sep-l"></td></tr>`;
+}
+
+/* ===== KPI ===== */
+function renderKPI(c, target){
+  const spend  = c.sumSpend;
+  const spendPct = c.total>0 ? spend/c.total*100 : 0;
+  const pacePct  = c.pacing*100;
+  const expected = c.total*c.pacing;
+
+  let paceTag;
+  if(spend<=0) paceTag = pill('p-grey','—');
+  else if(spend > expected*1.1) paceTag = pill('p-amber','ใช้เร็วกว่าแผน');
+  else if(spend < expected*0.8) paceTag = pill('p-blue','ใช้ช้ากว่าแผน');
+  else paceTag = pill('p-green','ตามแผน');
+
+  const lead = c.leadProj;
+  const leadPacePct = target>0 && c.pacing>0 ? lead/(target*c.pacing)*100 : 0;
+  let leadTag;
+  if(lead<=0) leadTag = pill('p-grey','—');
+  else if(leadPacePct>=100) leadTag = pill('p-green','ทันเป้า');
+  else if(leadPacePct>=80)  leadTag = pill('p-amber','ต่ำกว่าเป้าเล็กน้อย');
+  else leadTag = pill('p-red','ต่ำกว่าเป้ามาก');
+
+  const cplMin = c.leadMax>0 ? c.total/c.leadMax : 0;
+  const cplMax = c.leadMin>0 ? c.total/c.leadMin : 0;
+  const cplAct = lead>0 ? spend/lead : 0;
+  const cplStat = costStatus(cplAct, cplMin, cplMax);
+
+  $('kpiRow').innerHTML = `
+    <div class="kpi">
+      <div class="k-label"><span>งบใช้จริง</span>${paceTag}</div>
+      <div class="k-val">${fmt(spend)}<small> / ${fmt(c.total)}</small></div>
+      <div class="bar"><i style="width:${Math.min(100,spendPct)}%"></i></div>
+      <div class="k-sub">${fmt(spendPct,1)}% · pacing ${fmt(pacePct,0)}% (${fmt(expected)})</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span>Qualified Lead</span>${leadTag}</div>
+      <div class="k-val">${fmt(lead)}<small> / ${fmt(target)}</small></div>
+      <div class="bar"><i style="width:${target>0?Math.min(100,lead/target*100):0}%;background:${leadPacePct>=100?'var(--green)':leadPacePct>=80?'var(--amber)':'var(--red)'}"></i></div>
+      <div class="k-sub">เป้า ณ วันนี้ ${fmt(target*c.pacing)}</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span>Cost per Lead</span>${pill(cplStat.cls,cplStat.label)}</div>
+      <div class="k-val">${cplAct>0?fmt(cplAct):'—'}<small> บาท</small></div>
+      <div class="k-sub">แผน ${fmt(cplMin)}–${fmt(cplMax)}</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span>Total Message</span>${c.msgAct>0?pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber', c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
+      <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
+      <div class="bar"><i style="width:${c.msgMax>0?Math.min(100,c.msgAct/c.msgMax*100):0}%;background:#7c3aed"></i></div>
+      <div class="k-sub">Lead ${fmt(c.leadMsgAct)} / ${fmt(c.leadMsgMin)}–${fmt(c.leadMsgMax)}</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span>Total Click</span>${c.clkAct>0?pill(c.clkAct>=c.clkMin*c.pacing?'p-green':'p-amber', c.clkAct>=c.clkMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
+      <div class="k-val">${fmt(c.clkAct)}<small> / ${fmt(c.clkMin)}–${fmt(c.clkMax)}</small></div>
+      <div class="bar"><i style="width:${c.clkMax>0?Math.min(100,c.clkAct/c.clkMax*100):0}%;background:#0891b2"></i></div>
+      <div class="k-sub">Lead ${fmt(c.leadClkAct)} / ${fmt(c.leadClkMin)}–${fmt(c.leadClkMax)}</div>
+    </div>`;
+}
+
+/* ===== funnel ===== */
+function renderFunnel(c){
+  const cell=(lab,pMin,pMax,act,unit,hi)=>`
+    <div class="fn ${hi?'hi':''}">
+      <div class="f-lab">${lab}</div>
+      <div class="f-plan">${fmt(pMin)} – ${fmt(pMax)} <small>${unit}</small></div>
+      <div class="f-act"><span class="muted">Actual</span><b>${act>0?fmt(act):'—'}</b></div>
+    </div>`;
+  $('funnelRow').innerHTML =
+    cell('Total Message', c.msgMin, c.msgMax, c.msgAct, 'ทัก') +
+    cell('Leads Form Message', c.leadMsgMin, c.leadMsgMax, c.leadMsgAct, 'ราย', true) +
+    cell('Total Click', c.clkMin, c.clkMax, c.clkAct, 'คลิก') +
+    cell('Leads Form Click', c.leadClkMin, c.leadClkMax, c.leadClkAct, 'ราย', true) +
+    cell('Total Leads', c.leadMin, c.leadMax, c.leadProj, 'ราย', true);
+}
+
+/* ===== รายชื่อ Lead ===== */
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const leadTime = r => r.created_time || r.submission_time || '';
+const fmtDT = s => {
+  const m = String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if(!m) return String(s||'—');
+  return `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
+};
+const leadsOf = (src, month) =>
+  (LEADS[src]||[]).filter(r => String(leadTime(r)).slice(0,7) === month)
+                  .sort((a,b) => leadTime(a) < leadTime(b) ? 1 : -1);
+const leadKey = (src, r) => src + '|' + (r.id || r.lead_id || leadTime(r));
+
+/* ===== ให้คะแนน Lead ===== */
+const scoreOf = (src, r) => state.leadScore[leadKey(src, r)] || {};
+function scoreSum(sc){
+  let total = 0, filled = 0;
+  SCORE_CRIT.forEach(c => { const v = +sc[c.k] || 0; if(v >= 1 && v <= 5){ total += v; filled++; } });
+  return { total, filled, done: filled === SCORE_CRIT.length };
+}
+const statOf = (src, r) => {
+  const s = scoreSum(scoreOf(src, r));
+  return s.done ? gradeOf(s.total) : 'none';
+};
+function setLeadScore(key, crit, v){
+  const c = SCORE_CRIT.find(x => x.k === crit);
+  if(!c) return;
+  const cur = Object.assign({}, state.leadScore[key]);
+  const n = +v;
+  if(c.opts[n] !== undefined) cur[crit] = n; else delete cur[crit];
+  if(Object.keys(cur).length) state.leadScore[key] = cur;
+  else delete state.leadScore[key];
+  render();
+}
+function critCell(src, r, ck){
+  const crit = SCORE_CRIT.find(c => c.k === ck);
+  const key  = leadKey(src, r);
+  const cur  = String(scoreOf(src, r)[ck] || '');
+  const vals = Object.keys(crit.opts).sort((a,b) => b - a);
+  return `<td class="sc"><select class="csel${cur?' has v'+cur:''}" data-lead="${esc(key)}" data-crit="${ck}">` +
+    `<option value=""${cur?'':' selected'}>—</option>` +
+    vals.map(v => `<option value="${v}"${cur===v?' selected':''}>${v} · ${esc(crit.opts[v])}</option>`).join('') +
+    `</select></td>`;
+}
+const GNAME = { hot:'HOT LEAD', warm:'WARM LEAD', cold:'COLD LEAD', none:'ยังไม่ประเมิน' };
+function scoreCell(src, r){
+  const s = scoreSum(scoreOf(src, r));
+  if(!s.done) return `<td class="sco"><span class="scv">${s.filled?fmt(s.total):'—'}<small> / ${SCORE_MAX}</small></span>` +
+    `<span class="gbadge g-none">${s.filled}/${SCORE_CRIT.length} ข้อ</span></td>`;
+  const g = gradeOf(s.total);
+  return `<td class="sco"><span class="scv">${fmt(s.total)}<small> / ${SCORE_MAX}</small></span>` +
+    `<span class="gbadge g-${g}">${GNAME[g]}</span></td>`;
+}
+
+/* ===== การ์ดแยก Status Lead ===== */
+const STAT_CARD = [
+  { v:'',     h:'ทั้งหมด',        dot:'',       col:'#6b7488' },
+  { v:'hot',  h:'HOT',            dot:'d-hot',  col:'#d93a30' },
+  { v:'warm', h:'WARM',           dot:'d-warm', col:'#dd8a0b' },
+  { v:'cold', h:'COLD',           dot:'d-cold', col:'#3a6ce6' },
+  { v:'none', h:'ยังไม่ประเมิน',  dot:'d-none', col:'#b6bcc8' },
+];
+function renderLeadStat(month){
+  const src  = state.src;
+  const rows = leadsOf(src, month);
+  const n = { hot:0, warm:0, cold:0, none:0 };
+  rows.forEach(r => n[statOf(src, r)]++);
+  const tot = rows.length;
+  const srcName = (LEAD_SRC.find(s=>s.id===src)||{}).name || src;
+
+  $('statTag').innerHTML = pill('p-grey', srcName) + ' ' + pill('p-blue', fmt(tot) + ' ราย');
+  $('statRow').innerHTML = STAT_CARD.map(cd => {
+    const v = cd.v==='' ? tot : n[cd.v];
+    const pc = tot>0 ? v/tot*100 : 0;
+    return `<button type="button" class="kpi ${state.leadFilter===cd.v&&cd.v!==''?'on':''}" data-lf="${cd.v}">
+      <div class="k-label"><span>${cd.h}</span>${cd.dot?`<span class="dot ${cd.dot}"></span>`:''}</div>
+      <div class="k-val">${fmt(v)} <small>ราย</small></div>
+      <div class="k-sub">${tot>0?fmt(pc,1)+'%':'—'}</div>
+      <div class="bar"><i style="width:${pc}%;background:${cd.col}"></i></div>
+    </button>`;
+  }).join('');
+}
+
+function renderLeads(month){
+  const src  = state.src;
+  const cols = LEAD_COLS[src] || [];
+  const all  = leadsOf(src, month);
+  const f    = state.leadFilter;
+  const rows = f ? all.filter(r => statOf(src, r) === f) : all;
+
+  $('srcTabs').innerHTML = LEAD_SRC.map(s =>
+    `<button class="tab ${src===s.id?'on':''}" data-src="${s.id}">${s.name}</button>`).join('');
+  const fName = f ? (STAT_CARD.find(c=>c.v===f)||{}).h : '';
+  $('leadTag').innerHTML = pill('p-grey', label(month)) +
+    (f ? ' ' + pill('p-amber', fName) : '') +
+    ' ' + pill('p-blue', fmt(rows.length) + ' ราย');
+
+  $('leadHead').innerHTML = '<tr>' + cols.map((c,i) =>
+    `<th class="${i===0?'l':''}${c.t==='bool'?' r':''}">${c.h}</th>`).join('') + '</tr>';
+
+  if(!rows.length){
+    $('leadBody').innerHTML = `<tr class="lead-none"><td colspan="${cols.length}">—</td></tr>`;
+    return;
+  }
+  $('leadBody').innerHTML = rows.map(r => '<tr>' + cols.map(c => {
+    const v = r[c.k];
+    if(c.t==='score') return scoreCell(src, r);
+    if(c.t==='crit')  return critCell(src, r, c.c);
+    if(c.t==='dt')   return `<td class="mono">${esc(fmtDT(v))}</td>`;
+    if(c.t==='mono') return `<td class="mono">${esc(v)||'—'}</td>`;
+    if(c.t==='bool') return `<td class="r">${v===true||v==='true'?'Yes':'No'}</td>`;
+    if(c.t==='key')  return `<td class="k">${esc(v)||'—'}</td>`;
+    return `<td>${esc(v)||'<span class="muted">—</span>'}</td>`;
+  }).join('') + '</tr>').join('');
+}
+
+/* ===== Dashboard ===== */
+const allLeadsOf = month => LEAD_SRC.flatMap(s =>
+  leadsOf(s.id, month).map(r => ({ src:s.id, srcName:s.name, r, s:scoreSum(scoreOf(s.id, r)) })));
+
+function renderDash(month){
+  const rows = allLeadsOf(month);
+  const done = rows.filter(x => x.s.done);
+  const tot  = rows.length;
+  const n = { hot:0, warm:0, cold:0 };
+  done.forEach(x => n[gradeOf(x.s.total)]++);
+  const avg = done.length ? done.reduce((a,x) => a + x.s.total, 0) / done.length : 0;
+
+  $('dashTabs').innerHTML = state.plans.map(p =>
+    `<button class="tab ${state.active===p.month?'on':''}" data-tab="${p.month}">${label(p.month)}</button>`).join('');
+  $('dashTag').innerHTML = pill('p-grey', label(month)) + ' ' +
+    pill('p-blue', fmt(tot) + ' ราย') + ' ' +
+    pill(done.length===tot && tot>0 ? 'p-green' : 'p-amber', 'ประเมินแล้ว ' + fmt(done.length) + '/' + fmt(tot));
+
+  const card = (h, dot, col, val, unit, sub, pc) =>
+    `<div class="kpi">
+      <div class="k-label"><span>${h}</span>${dot?`<span class="dot ${dot}"></span>`:''}</div>
+      <div class="k-val">${val} <small>${unit}</small></div>
+      <div class="k-sub">${sub}</div>
+      <div class="bar"><i style="width:${Math.max(0,Math.min(100,pc))}%;background:${col}"></i></div>
+    </div>`;
+  const pcOf = v => done.length ? v/done.length*100 : 0;
+  $('dashKPI').innerHTML =
+    card('Total Leads', '', '#6b7488', fmt(tot), 'ราย',
+         tot ? 'ยังไม่ประเมิน ' + fmt(tot-done.length) + ' ราย' : '—', tot ? done.length/tot*100 : 0) +
+    card('HOT LEAD',  'd-hot',  '#d93a30', fmt(n.hot),  'ราย', done.length ? fmt(pcOf(n.hot),1)+'%'  : '—', pcOf(n.hot)) +
+    card('WARM LEAD', 'd-warm', '#dd8a0b', fmt(n.warm), 'ราย', done.length ? fmt(pcOf(n.warm),1)+'%' : '—', pcOf(n.warm)) +
+    card('COLD LEAD', 'd-cold', '#3a6ce6', fmt(n.cold), 'ราย', done.length ? fmt(pcOf(n.cold),1)+'%' : '—', pcOf(n.cold)) +
+    card('คะแนนเฉลี่ย', '', '#2f5fe0', done.length ? fmt(avg,1) : '—', '/ ' + SCORE_MAX,
+         done.length ? GNAME[gradeOf(avg)] : '—', done.length ? avg/SCORE_MAX*100 : 0);
+
+  /* คะแนนเฉลี่ยรายเกณฑ์ */
+  $('critTag').innerHTML = pill('p-grey', label(month)) + ' ' +
+    pill('p-blue', 'ฐาน ' + fmt(done.length) + ' ราย');
+  $('critRow').innerHTML = SCORE_CRIT.map(c => {
+    const vs = done.map(x => +scoreOf(x.src, x.r)[c.k] || 0).filter(v => v >= 1);
+    const a  = vs.length ? vs.reduce((s,v) => s+v, 0) / vs.length : 0;
+    const dist = [5,4,3,2,1].filter(v => c.opts[v] !== undefined)
+      .map(v => { const k = vs.filter(x => x===v).length;
+        return `<span class="chip${k?'':' z'}">${v} · ${esc(c.opts[v])} <b>${fmt(k)}</b></span>`; }).join('');
+    return `<div class="crit">
+      <div class="c-name">${c.h}</div>
+      <div class="c-bar"><i style="width:${a/5*100}%"></i></div>
+      <div class="c-val">${vs.length?fmt(a,1):'—'} <small>/ 5</small></div>
+      <div class="c-dist">${dist}</div>
+    </div>`;
+  }).join('');
+
+  /* จัดอันดับ */
+  const rk = done.slice().sort((a,b) => b.s.total - a.s.total ||
+    (leadTime(a.r) < leadTime(b.r) ? 1 : -1));
+  $('rankTag').innerHTML = pill('p-grey', label(month)) + ' ' + pill('p-blue', fmt(rk.length) + ' ราย');
+  $('rankHead').innerHTML = '<tr><th class="l">#</th><th class="l">ชื่อ-นามสกุล</th><th class="l">ที่มา</th>' +
+    SCORE_CRIT.map(c => `<th>${c.s}</th>`).join('') +
+    '<th>Total</th><th>Grade</th><th class="l">Type</th></tr>';
+  if(!rk.length){
+    $('rankBody').innerHTML = `<tr class="lead-none"><td colspan="${SCORE_CRIT.length+6}">—</td></tr>`;
+  }else{
+    $('rankBody').innerHTML = rk.map((x,i) => {
+      const sc = scoreOf(x.src, x.r);
+      const g  = gradeOf(x.s.total);
+      const ty = +sc.type || 0;
+      return `<tr><td class="rk">${i+1}</td>` +
+        `<td class="l">${esc(x.r.full_name)||'—'}</td>` +
+        `<td class="l">${esc(x.srcName)}</td>` +
+        SCORE_CRIT.map(c => { const v = +sc[c.k] || 0;
+          return `<td class="sv"><i class="v${v}">${v||'—'}</i></td>`; }).join('') +
+        `<td class="tot">${fmt(x.s.total)}</td>` +
+        `<td><span class="gbadge g-${g}">${GNAME[g]}</span></td>` +
+        `<td class="l">${ty ? 'Type ' + ty + ' · ' + esc(LEAD_TYPE[ty]) : '—'}</td></tr>`;
+    }).join('');
+  }
+
+  /* เกณฑ์การให้คะแนน */
+  $('rubTag').innerHTML = pill('p-grey', 'เต็ม ' + SCORE_MAX + ' คะแนน');
+  $('rubHead').innerHTML = '<tr><th class="l">CRITERIA</th>' +
+    [5,4,3,2,1].map(v => `<th>${v}</th>`).join('') + '</tr>';
+  $('rubBody').innerHTML = SCORE_CRIT.map(c => '<tr><td class="l">' + c.h + '</td>' +
+    [5,4,3,2,1].map(v => c.opts[v] !== undefined
+      ? `<td>${esc(c.opts[v])}</td>` : `<td class="dash">—</td>`).join('') + '</tr>').join('');
+  $('rubLegend').innerHTML =
+    [5,4,3].map(v => `<span class="lg"><span class="sv"><i class="v${v}">${v}</i></span> Type ${v} = ${LEAD_TYPE[v]}</span>`).join('') +
+    `<span class="lg"><span class="gbadge g-hot">HOT LEAD</span> <b>${GRADE_MIN.hot}+</b></span>` +
+    `<span class="lg"><span class="gbadge g-warm">WARM LEAD</span> <b>${GRADE_MIN.warm}–${GRADE_MIN.hot-1}</b></span>` +
+    `<span class="lg"><span class="gbadge g-cold">COLD LEAD</span> <b>${SCORE_CRIT.length}–${GRADE_MIN.warm-1}</b></span>`;
+}
+
+function updateLeads(payload){
+  LEADS = Object.assign({}, LEADS, payload||{});
+  render();
+}
+async function fetchLeads(url, options){
+  const res = await fetch(url, options);
+  updateLeads(await res.json());
+}
+window.updateLeads = updateLeads;
+window.fetchLeads  = fetchLeads;
+
+/* ===== render ===== */
+let focusKey=null, critKey=null;
+function render(){
+  if(!state.plans.length) return;
+  const p = activePlan();
+  state.active = p.month;
+  const monthTarget = num($('inTarget').value);
+
+  /* ---- เดือนที่เลือก : ตาราง / funnel / optimize ---- */
+  const chans = p.channels;
+  const c = compute(chans, pacingFor(p.month), daysOf(p.month));
+  p.lastTotal = c.total;
+
+  /* ---- Overall : สรุปภาพรวมทุกเดือน ---- */
+  const agg = compute(aggregateChannels(), aggregatePacing(), daysOf(monthKey(new Date())));
+  const span = state.plans.length>1
+    ? `${label(state.plans[0].month)} – ${label(state.plans[state.plans.length-1].month)} · ${state.plans.length} เดือน`
+    : label(state.plans[0].month);
+
+  $('scopeTag').innerHTML  = pill('p-grey', span);
+  $('funnelTag').innerHTML = pill('p-grey', label(p.month));
+
+  if(document.activeElement !== $('inBudget')) $('inBudget').value = Math.round(c.total);
+
+  renderNav();
+  renderTabs();
+  renderTable(c, chans);
+  renderKPI(agg, monthTarget*state.plans.length);
+  renderFunnel(c);
+  renderLeadStat(p.month);
+  renderLeads(p.month);
+  renderDash(p.month);
+
+  if(focusKey){
+    const el = document.querySelector(`[data-ch="${focusKey.ch}"][data-r="${focusKey.r}"][data-f="${focusKey.f}"]`);
+    if(el){ el.focus(); const v=el.value; el.value=''; el.value=v; }
+  }
+  if(critKey){
+    const el = document.querySelector(`select[data-lead="${critKey.k}"][data-crit="${critKey.c}"]`);
+    if(el) el.focus();
+    critKey = null;
+  }
+  save();
+}
+function setAdding(on){
+  state.adding = on;
+  const inp=$('inMonth'), btn=$('btnAdd');
+  inp.hidden = !on;
+  btn.textContent = on ? 'เพิ่ม' : '+ เพิ่มแผน';
+  if(on){
+    inp.value = nextMonth(state.plans[state.plans.length-1].month);
+    inp.focus();
+  }
+}
+
+/* ===== events ===== */
+document.addEventListener('input', e=>{
+  const t=e.target;
+  if(t.dataset && t.dataset.f && t.dataset.ch!==undefined){
+    const ci=+t.dataset.ch, ri=+t.dataset.r, f=t.dataset.f;
+    activePlan().channels[ci].rows[ri][f] = num(t.value);
+    focusKey={ch:ci,r:ri,f};
+    render();
+    return;
+  }
+  if(t.id==='inBudget'){
+    const newTotal = num(t.value);
+    if(!(newTotal>0)) return;
+    const p = activePlan();
+    if(p){
+      if(p.lastTotal>0){
+        const k = newTotal/p.lastTotal;
+        p.channels.forEach(ch=>ch.rows.forEach(r=>r.budget*=k));
+        p.lastTotal = newTotal;
+      } else {
+        distribute(p, newTotal);
+      }
+      focusKey=null; render();
+    }
+    return;
+  }
+  if(t.id==='inTarget' || t.id==='inMonths'){ focusKey=null; render(); }
+});
+
+document.addEventListener('click', e=>{
+  const go = e.target.closest('[data-page-go]');
+  if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
+  const lf = e.target.closest('[data-lf]');
+  if(lf){
+    const v = lf.dataset.lf;
+    state.leadFilter = (v==='' || state.leadFilter===v) ? '' : v;
+    focusKey=null; render(); return;
+  }
+  const del = e.target.closest('[data-del]');
+  if(del){ focusKey=null; removePlan(del.dataset.del); return; }
+  const tab = e.target.closest('[data-tab]');
+  if(tab){ state.active = tab.dataset.tab; focusKey=null; render(); return; }
+  const src = e.target.closest('[data-src]');
+  if(src){ state.src = src.dataset.src; focusKey=null; render(); return; }
+  if(e.target.id==='btnAdd'){
+    focusKey=null;
+    if(!state.adding){ setAdding(true); }
+    else if(addPlan($('inMonth').value)){ setAdding(false); }
+  }
+});
+document.addEventListener('change', e=>{
+  const s = e.target.closest ? e.target.closest('select[data-crit]') : null;
+  if(s){
+    focusKey = null;
+    critKey  = { k:s.dataset.lead, c:s.dataset.crit };
+    setLeadScore(s.dataset.lead, s.dataset.crit, s.value);
+  }
+});
+document.addEventListener('keydown', e=>{
+  if(e.target.id!=='inMonth') return;
+  if(e.key==='Enter'){ if(addPlan($('inMonth').value)) setAdding(false); }
+  if(e.key==='Escape'){ setAdding(false); }
+});
+
+/* ===== init ===== */
+(function init(){
+  if(!loadSaved()){
+    const cur = monthKey(new Date());
+    const prev = (()=>{ const [y,m]=cur.split('-').map(Number); return monthKey(new Date(y,m-2,1)); })();
+    const base = num($('inBudget').value);
+    state.plans = [ makePlan(prev, base), makePlan(cur, base) ];
+    state.active = cur;
+  }
+  applyActual();
+  render();
+  fbInit();
+})();
+window.addEventListener('beforeunload', saveNow);
+</script>
+</body>
+</html>
