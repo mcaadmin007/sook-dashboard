@@ -509,6 +509,33 @@
     .gt-n span{font-size:11.5px}
   }
 
+  /* ===== log feed ===== */
+  .lgfeed{display:flex;flex-direction:column;gap:0}
+  .lg-day{display:flex;align-items:center;gap:10px;padding:15px 0 9px}
+  .lg-day:first-child{padding-top:2px}
+  .lg-day b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .lg-day i{flex:1;height:1px;background:var(--line-2)}
+  .lgi{display:flex;gap:12px;padding:12px 13px;border:1px solid var(--line-2);
+    border-radius:12px;background:#fff;cursor:pointer;margin-bottom:8px;
+    transition:.16s var(--ease)}
+  .lgi:hover{border-color:#d3d9e2;background:var(--bg-2);box-shadow:var(--sh-1)}
+  .lgi-r{width:3px;border-radius:2px;background:var(--line);flex:none}
+  .lgi:hover .lgi-r{background:var(--blue)}
+  .lgi-x{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+  .lgi-h{font-size:13.5px;font-weight:700;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lgi-b{font-size:12.5px;font-weight:500;color:var(--ink-2);line-height:1.55;
+    white-space:pre-wrap;overflow-wrap:anywhere;
+    display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .lg-empty{padding:30px 12px;text-align:center;font-size:12px;color:var(--ink-4);font-weight:600}
+  .lg-foot{padding-top:6px;display:flex;justify-content:flex-start}
+  .cf textarea{width:100%;font:inherit;font-size:14px;font-weight:500;padding:10px 12px;
+    min-height:150px;resize:vertical;line-height:1.6;
+    border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--bg-2);color:var(--ink);transition:.18s var(--ease)}
+  .cf textarea:hover{border-color:#d3d9e2;background:#fff}
+  .cf textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:var(--ring)}
+
   /* ===== modal ===== */
   .modal{position:fixed;inset:0;z-index:70;background:rgba(15,17,21,.44);
     display:flex;align-items:flex-end;justify-content:center}
@@ -764,6 +791,20 @@
     </div>
   </section>
 
+  <section id="secLog" data-page="log">
+    <div class="sec-head">
+      <div class="head-left">
+        <h2>Log บันทึกผล</h2>
+        <span id="lgTag"></span>
+      </div>
+      <div class="addwrap"><button class="btn-add" id="lgNew" type="button">+ เพิ่ม Log</button></div>
+    </div>
+    <div class="sec-body">
+      <div class="lgfeed" id="lgFeed"></div>
+      <div class="lg-foot"><button class="btn-add" id="lgNew2" type="button">+ เพิ่ม Log</button></div>
+    </div>
+  </section>
+
   <section id="secDash" data-page="dash">
     <div class="sec-head">
       <div class="head-left">
@@ -819,6 +860,16 @@
     </div>
   </section>
 
+</div>
+
+<div class="modal" id="lModal" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3 id="lmTitle"></h3>
+      <button class="xbtn" id="lmClose" type="button">&times;</button>
+    </div>
+    <div class="sheet-body" id="lmBody"></div>
+  </div>
 </div>
 
 <div class="modal" id="gModal" hidden>
@@ -938,11 +989,12 @@ const LEAD_SRC = [ {id:'meta', name:'Meta Lead Form'}, {id:'google', name:'Googl
 let LEADS = { meta: [], google: [] };
 
 /* ===== state ===== */
-const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'content',h:'Content Plan'}, {id:'leads',h:'Lead Generation'}, {id:'dash',h:'Dashboard'} ];
+const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'content',h:'Content Plan'}, {id:'leads',h:'Lead Generation'}, {id:'log',h:'Log'}, {id:'dash',h:'Dashboard'} ];
 const state = { plans:[], active:null, adding:false, src:'meta', leadScore:{}, page:'plan', leadFilter:'',
-  content:{}, cimg:{}, cMonth:'', cDay:null, timeline:{} };
+  content:{}, cimg:{}, cMonth:'', cDay:null, timeline:{}, logs:{} };
 let cDraft = null, cView = '';
 let gDraft = null, gView = '';
+let lDraft = null, lView = '';
 
 /* ===== helper ===== */
 const $ = id => document.getElementById(id);
@@ -1072,6 +1124,7 @@ function saveNow(){
       content: state.content,
       cMonth: state.cMonth,
       timeline: state.timeline,
+      logs: state.logs,
       at: Date.now()
     });
   try{ store.setItem(SKEY, JSON.stringify(Object.assign({}, snap, { cimg: state.cimg }))); }
@@ -1125,6 +1178,9 @@ function loadSaved(){
     if(d.timeline && typeof d.timeline==='object'){
       Object.keys(d.timeline).forEach(k=>{ const t = cleanTask(d.timeline[k]); if(t) state.timeline[k] = t; });
     }
+    if(d.logs && typeof d.logs==='object'){
+      Object.keys(d.logs).forEach(k=>{ const l = cleanLog(d.logs[k]); if(l) state.logs[k] = l; });
+    }
     if(/^\d{4}-\d{2}$/.test(String(d.cMonth||''))) state.cMonth = d.cMonth;
     if(PAGES.some(p=>p.id===d.page)) state.page = d.page;
     if(d.leadFilter==='none' || LEAD_STATUS.some(s=>s.v===d.leadFilter)) state.leadFilter = d.leadFilter;
@@ -1146,6 +1202,7 @@ function loadSaved(){
      leadScores/{src|leadId}                ← หน้าเว็บเขียน
      content/{contentId}                    ← หน้าเว็บเขียน
      timeline/{taskId}                      ← หน้าเว็บเขียน
+     logs/{logId}                           ← หน้าเว็บเขียน
      contentImages/{contentId}              ← หน้าเว็บเขียน
      leads/{src|leadId}                     ← ระบบภายนอกเขียน
      actuals/{YYYY-MM|Channel|Objective}    ← ระบบภายนอกเขียน
@@ -1162,7 +1219,7 @@ const FB_BOARD = 'sook';
 const FB_VER   = '10.12.2';
 
 let fb = null, fbReady = false, fbApplying = false;
-const fbLast = { plans:{}, scores:{}, settings:'', content:{}, cimg:{}, timeline:{} };
+const fbLast = { plans:{}, scores:{}, settings:'', content:{}, cimg:{}, timeline:{}, logs:{} };
 
 function fbErr(on){ const el = document.getElementById('fbErr'); if(el) el.hidden = !on; }
 
@@ -1189,6 +1246,7 @@ function fbStamp(which){
   if(which==='content'){ fbLast.content = {}; Object.keys(state.content).forEach(k=>{ fbLast.content[k] = JSON.stringify(state.content[k]); }); }
   if(which==='cimg'){ fbLast.cimg = {}; Object.keys(state.cimg).forEach(k=>{ fbLast.cimg[k] = imgSig(state.cimg[k]); }); }
   if(which==='timeline'){ fbLast.timeline = {}; Object.keys(state.timeline).forEach(k=>{ fbLast.timeline[k] = JSON.stringify(state.timeline[k]); }); }
+  if(which==='logs'){ fbLast.logs = {}; Object.keys(state.logs).forEach(k=>{ fbLast.logs[k] = JSON.stringify(state.logs[k]); }); }
   if(which==='settings') fbLast.settings = JSON.stringify(settingsDoc());
 }
 function fbApply(which, fn){
@@ -1282,6 +1340,13 @@ function fbWatch(){
     fbApply('timeline', ()=>{ state.timeline = next; });
   });
 
+  sub('logs', (snap, first)=>{
+    if(first && snap.empty && Object.keys(state.logs).length){ fbStamp('logs'); fbLast.logs={}; cloudPush(); return; }
+    const next = {};
+    snap.forEach(doc=>{ const l = cleanLog(doc.data()); if(l) next[doc.id] = l; });
+    fbApply('logs', ()=>{ state.logs = next; });
+  });
+
   sub('leads', snap=>{
     if(snap.empty) return;
     const next = {};
@@ -1306,7 +1371,7 @@ function fbWatch(){
   });
 }
 
-function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; fbLast.timeline = {}; cloudPush(); }
+function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; fbLast.timeline = {}; fbLast.logs = {}; cloudPush(); }
 
 async function cloudPush(){
   if(!fbReady || fbApplying) return;
@@ -1342,6 +1407,16 @@ async function cloudPush(){
   });
   Object.keys(fbLast.timeline).forEach(k=>{
     if(!seenT[k]){ delete fbLast.timeline[k]; jobs.push(fs.deleteDoc(ref('timeline', k))); }
+  });
+
+  const seenL = {};
+  Object.keys(state.logs).forEach(k=>{
+    const j = JSON.stringify(state.logs[k]);
+    seenL[k] = 1;
+    if(fbLast.logs[k] !== j){ fbLast.logs[k] = j; jobs.push(fs.setDoc(ref('logs', k), state.logs[k])); }
+  });
+  Object.keys(fbLast.logs).forEach(k=>{
+    if(!seenL[k]){ delete fbLast.logs[k]; jobs.push(fs.deleteDoc(ref('logs', k))); }
   });
 
   const seenC = {};
@@ -1670,6 +1745,87 @@ function delTask(){
   if(gDraft && gDraft.id) delete state.timeline[gDraft.id];
   gDraft = null;
   renderGModal(true);
+  render();
+}
+
+/* ===== log บันทึกผล ===== */
+const newLid = () => 'l_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+function cleanLog(raw){
+  if(!raw || typeof raw !== 'object') return null;
+  const date = String(raw.date||'');
+  if(!isDay(date)) return null;
+  const title = String(raw.title||'').slice(0,180);
+  const body  = String(raw.body||'').slice(0,6000);
+  if(!title && !body) return null;
+  return { date, title, body };
+}
+function logList(){
+  return Object.keys(state.logs)
+    .map(k => Object.assign({ id:k }, state.logs[k]))
+    .sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+}
+function renderLog(){
+  const list = logList();
+  $('lgTag').innerHTML = pill('p-grey', list.length ? list.length + ' รายการ' : '—');
+  if(!list.length){ $('lgFeed').innerHTML = `<div class="lg-empty">—</div>`; return; }
+  let html = '', day = '';
+  list.forEach(l=>{
+    if(l.date !== day){
+      day = l.date;
+      html += `<div class="lg-day"><b>${dayLabel(day)}</b><i></i></div>`;
+    }
+    html += `<div class="lgi" data-log="${l.id}"><div class="lgi-r"></div><div class="lgi-x">`
+      + `<div class="lgi-h">${esc(l.title) || '—'}</div>`
+      + (l.body ? `<div class="lgi-b">${esc(l.body)}</div>` : '')
+      + `</div></div>`;
+  });
+  $('lgFeed').innerHTML = html;
+}
+function lFormHtml(){
+  const l = lDraft;
+  return `<div class="cf"><label>วันที่</label><input type="date" id="lfDate" value="${esc(l.date)}"></div>`
+    + `<div class="cf"><label>หัวข้อ</label><input type="text" id="lfTitle" value="${esc(l.title)}"></div>`
+    + `<div class="cf"><label>สรุปผล</label><textarea id="lfBody">${esc(l.body)}</textarea></div>`
+    + `<div class="cbtns">`
+    + (l.id ? `<button class="btn-ghost btn-danger" id="lfDel" type="button">ลบ</button>` : '')
+    + `<button class="btn-ghost" id="lfCancel" type="button">ยกเลิก</button>`
+    + `<button class="btn-add" id="lfSave" type="button">บันทึก</button></div>`;
+}
+function renderLModal(force){
+  const m = $('lModal');
+  if(!lDraft){ m.hidden = true; lView = ''; return; }
+  m.hidden = false;
+  $('lmTitle').textContent = lDraft.id ? 'แก้ไข Log' : 'เพิ่ม Log';
+  const sig = 'l:' + (lDraft.id || 'new');
+  if(sig === lView && !force) return;
+  lView = sig;
+  $('lmBody').innerHTML = lFormHtml();
+}
+function newLog(){
+  lDraft = { id:'', date:dayKey(new Date()), title:'', body:'' };
+  renderLModal(true);
+}
+function editLog(id){
+  const l = state.logs[id];
+  if(!l) return;
+  lDraft = Object.assign({ id }, l);
+  renderLModal(true);
+}
+function saveLog(){
+  if(!lDraft) return;
+  const id = lDraft.id || newLid();
+  const l  = cleanLog(lDraft);
+  if(!l){ lDraft = null; renderLModal(true); return; }
+  state.logs[id] = l;
+  lDraft = null;
+  renderLModal(true);
+  render();
+}
+function delLog(){
+  if(lDraft && lDraft.id) delete state.logs[lDraft.id];
+  lDraft = null;
+  renderLModal(true);
   render();
 }
 
@@ -2132,6 +2288,8 @@ function render(){
   renderModal();
   renderTimeline();
   renderGModal();
+  renderLog();
+  renderLModal();
 
   if(focusKey){
     const el = document.querySelector(`[data-ch="${focusKey.ch}"][data-r="${focusKey.r}"][data-f="${focusKey.f}"]`);
@@ -2162,6 +2320,12 @@ document.addEventListener('input', e=>{
     if(t.id==='cfName') cDraft.name = t.value;
     if(t.id==='cfTime') cDraft.time = t.value;
     if(t.id==='cfLink') cDraft.link = t.value;
+    return;
+  }
+  if(lDraft && (t.id==='lfDate' || t.id==='lfTitle' || t.id==='lfBody')){
+    if(t.id==='lfDate')  lDraft.date  = t.value;
+    if(t.id==='lfTitle') lDraft.title = t.value;
+    if(t.id==='lfBody')  lDraft.body  = t.value;
     return;
   }
   if(gDraft && (t.id==='gfName' || t.id==='gfStart' || t.id==='gfEnd' || t.id==='gfRev')){
@@ -2214,6 +2378,12 @@ document.addEventListener('click', e=>{
   if(e.target.id==='gmClose' || e.target.id==='gModal' || e.target.id==='gfCancel'){
     gDraft=null; renderGModal(true); return;
   }
+  if(e.target.id==='lmClose' || e.target.id==='lModal' || e.target.id==='lfCancel'){ lDraft=null; renderLModal(true); return; }
+  if(e.target.id==='lgNew' || e.target.id==='lgNew2'){ newLog(); return; }
+  if(e.target.id==='lfSave'){ saveLog(); return; }
+  if(e.target.id==='lfDel'){ delLog(); return; }
+  const lgi = e.target.closest('[data-log]');
+  if(lgi){ editLog(lgi.dataset.log); return; }
   if(e.target.id==='gtNew'){ newTask(); return; }
   if(e.target.id==='gfSave'){ saveTask(); return; }
   if(e.target.id==='gfDel'){ delTask(); return; }
@@ -2268,6 +2438,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('keydown', e=>{
   if(e.key!=='Escape') return;
   if(!$('lbox').hidden){ $('lbox').hidden = true; return; }
+  if(lDraft){ lDraft=null; renderLModal(true); return; }
   if(gDraft){ gDraft=null; renderGModal(true); return; }
   if(state.cDay){ if(cDraft){ cDraft=null; renderModal(true); } else { closeDay(); } }
 });
