@@ -852,12 +852,12 @@ const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','D
 const TEMPLATE = [
   { name:'Facebook Ads', share:0.35, rows:[
     { obj:'Post Engage', kind:'engage',  unit:'engagement', share:0.15,  cMin:0.5, cMax:1.2 },
-    { obj:'Message',     kind:'message', unit:'ข้อความ',     share:0.425, cMin:200, cMax:500 },
+    { obj:'Leadform',    kind:'message', unit:'ฟอร์ม',       share:0.425, cMin:200, cMax:500 },
     { obj:'Click',       kind:'click',   unit:'คลิก',        share:0.425, cMin:10,  cMax:15  },
   ]},
   { name:'Instagram', share:0.35, rows:[
     { obj:'Post Engage', kind:'engage',  unit:'engagement', share:0.15,  cMin:0.8, cMax:1.5 },
-    { obj:'Message',     kind:'message', unit:'ข้อความ',     share:0.425, cMin:300, cMax:600 },
+    { obj:'Leadform',    kind:'message', unit:'ฟอร์ม',       share:0.425, cMin:300, cMax:600 },
     { obj:'Click',       kind:'click',   unit:'คลิก',        share:0.425, cMin:10,  cMax:15  },
   ]},
   { name:'Google Ads', share:0.30, rows:[
@@ -868,7 +868,7 @@ const TEMPLATE = [
 /* =========================================================
    ACTUAL FEED — read-only ในหน้าเว็บ ดึงจากแพลตฟอร์มจริง
    key = "YYYY-MM|Channel|Objective"
-     updateActual({ "2026-08|Facebook Ads|Message": { spend: 34000, result: 95 } })
+     updateActual({ "2026-08|Facebook Ads|Leadform": { spend: 34000, result: 95 } })
      fetchActual('https://api.example.com/ads/actual')
    ========================================================= */
 let ACTUAL = {};
@@ -1027,14 +1027,6 @@ function removePlan(month){
 }
 const planTotal = p => p.channels.reduce((s,ch)=>s+ch.rows.reduce((t,r)=>t+r.budget,0),0);
 
-/* กระจายงบรวมลงทุกแถวตามสัดส่วนตั้งต้น (ใช้ตอนแผนยังเป็น 0) */
-function distribute(p, total){
-  p.channels.forEach((ch,ci)=>ch.rows.forEach((r,ri)=>{
-    r.budget = Math.round(total*TEMPLATE[ci].share) * TEMPLATE[ci].rows[ri].share;
-  }));
-  p.lastTotal = total;
-}
-
 function applyActual(){
   state.plans.forEach(p => p.channels.forEach(ch => ch.rows.forEach(r => {
     const a = ACTUAL[p.month+'|'+ch.name+'|'+r.obj] || {};
@@ -1074,6 +1066,7 @@ function saveNow(){
       page: state.page,
       leadFilter: state.leadFilter,
       leadScore: state.leadScore,
+      budget: num($('inBudget').value),
       target: num($('inTarget').value),
       months: num($('inMonths').value),
       content: state.content,
@@ -1135,6 +1128,7 @@ function loadSaved(){
     if(/^\d{4}-\d{2}$/.test(String(d.cMonth||''))) state.cMonth = d.cMonth;
     if(PAGES.some(p=>p.id===d.page)) state.page = d.page;
     if(d.leadFilter==='none' || LEAD_STATUS.some(s=>s.v===d.leadFilter)) state.leadFilter = d.leadFilter;
+    if(d.budget>0) $('inBudget').value = d.budget;
     if(d.target>0) $('inTarget').value = d.target;
     if(d.months>0) $('inMonths').value = d.months;
     return true;
@@ -1181,7 +1175,7 @@ const planDoc = p => ({
   lastTotal: p.lastTotal,
 });
 const imgSig = u => String(u||'').length + ':' + String(u||'').slice(-48);
-const settingsDoc = () => ({ target: num($('inTarget').value), months: num($('inMonths').value) });
+const settingsDoc = () => ({ budget: num($('inBudget').value), target: num($('inTarget').value), months: num($('inMonths').value) });
 
 function fbStamp(which){
   if(which==='plans'){
@@ -1255,6 +1249,7 @@ function fbWatch(){
     if(!doc) return;
     const d = doc.data()||{};
     fbApply('settings', ()=>{
+      if(num(d.budget)>0) $('inBudget').value = num(d.budget);
       if(num(d.target)>0) $('inTarget').value = num(d.target);
       if(num(d.months)>0) $('inMonths').value = num(d.months);
     });
@@ -1856,7 +1851,7 @@ function renderKPI(c, target){
       <div class="k-sub">แผน ${fmt(cplMin)}–${fmt(cplMax)}</div>
     </div>
     <div class="kpi">
-      <div class="k-label"><span>Total Message</span>${c.msgAct>0?pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber', c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
+      <div class="k-label"><span>Total Leadform</span>${c.msgAct>0?pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber', c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
       <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
       <div class="bar"><i style="width:${c.msgMax>0?Math.min(100,c.msgAct/c.msgMax*100):0}%;background:#7c3aed"></i></div>
       <div class="k-sub">Lead ${fmt(c.leadMsgAct)} / ${fmt(c.leadMsgMin)}–${fmt(c.leadMsgMax)}</div>
@@ -1878,10 +1873,10 @@ function renderFunnel(c){
       <div class="f-act"><span class="muted">Actual</span><b>${act>0?fmt(act):'—'}</b></div>
     </div>`;
   $('funnelRow').innerHTML =
-    cell('Total Message', c.msgMin, c.msgMax, c.msgAct, 'ทัก') +
-    cell('Leads Form Message', c.leadMsgMin, c.leadMsgMax, c.leadMsgAct, 'ราย', true) +
+    cell('Total Leadform', c.msgMin, c.msgMax, c.msgAct, 'ฟอร์ม') +
+    cell('Leads from Leadform', c.leadMsgMin, c.leadMsgMax, c.leadMsgAct, 'ราย', true) +
     cell('Total Click', c.clkMin, c.clkMax, c.clkAct, 'คลิก') +
-    cell('Leads Form Click', c.leadClkMin, c.leadClkMax, c.leadClkAct, 'ราย', true) +
+    cell('Leads from Click', c.leadClkMin, c.leadClkMax, c.leadClkAct, 'ราย', true) +
     cell('Total Leads', c.leadMin, c.leadMax, c.leadProj, 'ราย', true);
 }
 
@@ -2125,8 +2120,6 @@ function render(){
   $('scopeTag').innerHTML  = pill('p-grey', span);
   $('funnelTag').innerHTML = pill('p-grey', label(p.month));
 
-  if(document.activeElement !== $('inBudget')) $('inBudget').value = Math.round(c.total);
-
   renderNav();
   renderTabs();
   renderTable(c, chans);
@@ -2185,23 +2178,7 @@ document.addEventListener('input', e=>{
     render();
     return;
   }
-  if(t.id==='inBudget'){
-    const newTotal = num(t.value);
-    if(!(newTotal>0)) return;
-    const p = activePlan();
-    if(p){
-      if(p.lastTotal>0){
-        const k = newTotal/p.lastTotal;
-        p.channels.forEach(ch=>ch.rows.forEach(r=>r.budget*=k));
-        p.lastTotal = newTotal;
-      } else {
-        distribute(p, newTotal);
-      }
-      focusKey=null; render();
-    }
-    return;
-  }
-  if(t.id==='inTarget' || t.id==='inMonths'){ focusKey=null; render(); }
+  if(t.id==='inBudget' || t.id==='inTarget' || t.id==='inMonths'){ focusKey=null; render(); }
 });
 
 document.addEventListener('click', e=>{
