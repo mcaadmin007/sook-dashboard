@@ -465,6 +465,50 @@
   .cchip span{overflow:hidden;text-overflow:ellipsis}
   .cmore{font-size:10.5px;font-weight:700;color:var(--ink-3);padding-left:3px}
 
+  /* ===== project timeline ===== */
+  .d-test{background:var(--amber)}
+  .d-run {background:var(--green)}
+  .d-pause{background:var(--ink-4)}
+  .d-done{background:var(--line)}
+  .gt{min-width:640px}
+  .gt-head,.gt-row{display:grid;grid-template-columns:186px 1fr;align-items:stretch}
+  .gt-head{border-bottom:1px solid var(--line-2);position:sticky;top:0;background:var(--card);z-index:2}
+  .gt-hl{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.03em;
+    padding:0 12px 7px;display:flex;align-items:flex-end}
+  .gt-days{display:grid;padding-bottom:7px}
+  .gt-days div{font-size:9.5px;font-weight:700;color:var(--ink-4);text-align:center;line-height:1.3}
+  .gt-days div.wk{color:var(--ink-3)}
+  .gt-days div.now{color:var(--blue)}
+  .gt-row{border-bottom:1px solid var(--line-2);cursor:pointer;transition:.14s var(--ease)}
+  .gt-row:last-child{border-bottom:none}
+  .gt-row:hover{background:var(--bg-2)}
+  .gt-n{padding:11px 12px;display:flex;align-items:center;gap:7px;min-width:0}
+  .gt-n span{font-size:12.5px;font-weight:600;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gt-lane{position:relative;display:grid;align-items:center;padding:11px 0}
+  .gt-grid{position:absolute;inset:0;display:grid;pointer-events:none}
+  .gt-grid i{border-left:1px solid var(--line-3)}
+  .gt-grid i.wk{background:#fafbfd}
+  .gt-grid i.now{border-left:1.5px solid var(--blue-line);background:var(--blue-soft)}
+  .gt-bar{position:relative;height:19px;border-radius:6px;display:flex;align-items:center;
+    padding:0 7px;overflow:hidden;min-width:0}
+  .gt-bar b{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .b-test{background:var(--amber-soft);border:1px solid var(--amber-line);color:var(--amber)}
+  .b-run {background:var(--green-soft);border:1px solid var(--green-line);color:var(--green)}
+  .b-pause{background:var(--line-3);border:1px solid var(--line);color:var(--ink-3)}
+  .b-done{background:#fff;border:1px dashed var(--line);color:var(--ink-4)}
+  .gt-cut-l{border-top-left-radius:0;border-bottom-left-radius:0;border-left-style:dotted}
+  .gt-cut-r{border-top-right-radius:0;border-bottom-right-radius:0;border-right-style:dotted}
+  .gt-rev{position:absolute;top:50%;width:9px;height:9px;background:var(--blue);
+    border:1.5px solid #fff;border-radius:2px;transform:translate(-50%,-50%) rotate(45deg);
+    box-shadow:var(--sh-1);z-index:3}
+  .gt-empty{padding:26px 12px;text-align:center;font-size:12px;color:var(--ink-4);font-weight:600}
+  .gt-foot{padding-top:13px;display:flex;justify-content:flex-start}
+  @media (max-width:640px){
+    .gt-head,.gt-row{grid-template-columns:124px 1fr}
+    .gt-n span{font-size:11.5px}
+  }
+
   /* ===== modal ===== */
   .modal{position:fixed;inset:0;z-index:70;background:rgba(15,17,21,.44);
     display:flex;align-items:flex-end;justify-content:center}
@@ -671,6 +715,28 @@
     <div class="sec-body"><div class="funnel" id="funnelRow"></div></div>
   </section>
 
+  <section id="secTime" data-page="plan">
+    <div class="sec-head">
+      <div class="head-left">
+        <h2>Project Timeline</h2>
+        <span id="gtTag"></span>
+      </div>
+      <div class="callegend" id="gtLegend"></div>
+    </div>
+    <div class="sec-body">
+      <div class="table-scroll">
+        <div class="gt">
+          <div class="gt-head">
+            <div class="gt-hl">งาน</div>
+            <div class="gt-days" id="gtDays"></div>
+          </div>
+          <div id="gtRows"></div>
+        </div>
+      </div>
+      <div class="gt-foot"><button class="btn-add" id="gtNew" type="button">+ เพิ่มงาน</button></div>
+    </div>
+  </section>
+
   <section id="secLeadStat" data-page="leads">
     <div class="sec-head">
       <div class="head-left">
@@ -753,6 +819,16 @@
     </div>
   </section>
 
+</div>
+
+<div class="modal" id="gModal" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3 id="gmTitle"></h3>
+      <button class="xbtn" id="gmClose" type="button">&times;</button>
+    </div>
+    <div class="sheet-body" id="gmBody"></div>
+  </div>
 </div>
 
 <div class="modal" id="cModal" hidden>
@@ -862,10 +938,11 @@ const LEAD_SRC = [ {id:'meta', name:'Meta Lead Form'}, {id:'google', name:'Googl
 let LEADS = { meta: [], google: [] };
 
 /* ===== state ===== */
-const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'leads',h:'Lead Generation'}, {id:'content',h:'Content Plan'}, {id:'dash',h:'Dashboard'} ];
+const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'content',h:'Content Plan'}, {id:'leads',h:'Lead Generation'}, {id:'dash',h:'Dashboard'} ];
 const state = { plans:[], active:null, adding:false, src:'meta', leadScore:{}, page:'plan', leadFilter:'',
-  content:{}, cimg:{}, cMonth:'', cDay:null };
+  content:{}, cimg:{}, cMonth:'', cDay:null, timeline:{} };
 let cDraft = null, cView = '';
+let gDraft = null, gView = '';
 
 /* ===== helper ===== */
 const $ = id => document.getElementById(id);
@@ -1001,6 +1078,7 @@ function saveNow(){
       months: num($('inMonths').value),
       content: state.content,
       cMonth: state.cMonth,
+      timeline: state.timeline,
       at: Date.now()
     });
   try{ store.setItem(SKEY, JSON.stringify(Object.assign({}, snap, { cimg: state.cimg }))); }
@@ -1051,6 +1129,9 @@ function loadSaved(){
     if(d.cimg && typeof d.cimg==='object'){
       Object.keys(d.cimg).forEach(k=>{ if(state.content[k] && typeof d.cimg[k]==='string') state.cimg[k] = d.cimg[k]; });
     }
+    if(d.timeline && typeof d.timeline==='object'){
+      Object.keys(d.timeline).forEach(k=>{ const t = cleanTask(d.timeline[k]); if(t) state.timeline[k] = t; });
+    }
     if(/^\d{4}-\d{2}$/.test(String(d.cMonth||''))) state.cMonth = d.cMonth;
     if(PAGES.some(p=>p.id===d.page)) state.page = d.page;
     if(d.leadFilter==='none' || LEAD_STATUS.some(s=>s.v===d.leadFilter)) state.leadFilter = d.leadFilter;
@@ -1070,6 +1151,7 @@ function loadSaved(){
      settings/app                           ← หน้าเว็บเขียน
      leadScores/{src|leadId}                ← หน้าเว็บเขียน
      content/{contentId}                    ← หน้าเว็บเขียน
+     timeline/{taskId}                      ← หน้าเว็บเขียน
      contentImages/{contentId}              ← หน้าเว็บเขียน
      leads/{src|leadId}                     ← ระบบภายนอกเขียน
      actuals/{YYYY-MM|Channel|Objective}    ← ระบบภายนอกเขียน
@@ -1086,7 +1168,7 @@ const FB_BOARD = 'sook';
 const FB_VER   = '10.12.2';
 
 let fb = null, fbReady = false, fbApplying = false;
-const fbLast = { plans:{}, scores:{}, settings:'', content:{}, cimg:{} };
+const fbLast = { plans:{}, scores:{}, settings:'', content:{}, cimg:{}, timeline:{} };
 
 function fbErr(on){ const el = document.getElementById('fbErr'); if(el) el.hidden = !on; }
 
@@ -1112,6 +1194,7 @@ function fbStamp(which){
   }
   if(which==='content'){ fbLast.content = {}; Object.keys(state.content).forEach(k=>{ fbLast.content[k] = JSON.stringify(state.content[k]); }); }
   if(which==='cimg'){ fbLast.cimg = {}; Object.keys(state.cimg).forEach(k=>{ fbLast.cimg[k] = imgSig(state.cimg[k]); }); }
+  if(which==='timeline'){ fbLast.timeline = {}; Object.keys(state.timeline).forEach(k=>{ fbLast.timeline[k] = JSON.stringify(state.timeline[k]); }); }
   if(which==='settings') fbLast.settings = JSON.stringify(settingsDoc());
 }
 function fbApply(which, fn){
@@ -1197,6 +1280,13 @@ function fbWatch(){
     fbApply('cimg', ()=>{ state.cimg = next; });
   });
 
+  sub('timeline', (snap, first)=>{
+    if(first && snap.empty && Object.keys(state.timeline).length){ fbStamp('timeline'); fbLast.timeline={}; cloudPush(); return; }
+    const next = {};
+    snap.forEach(doc=>{ const t = cleanTask(doc.data()); if(t) next[doc.id] = t; });
+    fbApply('timeline', ()=>{ state.timeline = next; });
+  });
+
   sub('leads', snap=>{
     if(snap.empty) return;
     const next = {};
@@ -1221,7 +1311,7 @@ function fbWatch(){
   });
 }
 
-function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; cloudPush(); }
+function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; fbLast.timeline = {}; cloudPush(); }
 
 async function cloudPush(){
   if(!fbReady || fbApplying) return;
@@ -1247,6 +1337,16 @@ async function cloudPush(){
   });
   Object.keys(fbLast.scores).forEach(k=>{
     if(!seenS[k]){ delete fbLast.scores[k]; jobs.push(fs.deleteDoc(ref('leadScores', k))); }
+  });
+
+  const seenT = {};
+  Object.keys(state.timeline).forEach(k=>{
+    const j = JSON.stringify(state.timeline[k]);
+    seenT[k] = 1;
+    if(fbLast.timeline[k] !== j){ fbLast.timeline[k] = j; jobs.push(fs.setDoc(ref('timeline', k), state.timeline[k])); }
+  });
+  Object.keys(fbLast.timeline).forEach(k=>{
+    if(!seenT[k]){ delete fbLast.timeline[k]; jobs.push(fs.deleteDoc(ref('timeline', k))); }
   });
 
   const seenC = {};
@@ -1444,6 +1544,138 @@ function shrinkImg(file, cb){
 function takeImg(file){
   if(!file || !/^image\//.test(file.type||'')) return;
   shrinkImg(file, url => { if(url && cDraft){ cDraft.img = url; renderModal(true); } });
+}
+
+/* ===== project timeline ===== */
+const G_STATUS = [
+  { v:'test',  h:'กำลังเทส',     d:'d-test',  b:'b-test'  },
+  { v:'run',   h:'รันอยู่',       d:'d-run',   b:'b-run'   },
+  { v:'pause', h:'หยุดชั่วคราว', d:'d-pause', b:'b-pause' },
+  { v:'done',  h:'จบแล้ว',       d:'d-done',  b:'b-done'  },
+];
+const gStat  = v => G_STATUS.find(s=>s.v===v) || G_STATUS[0];
+const newGid = () => 'g_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const isDay  = k => /^\d{4}-\d{2}-\d{2}$/.test(String(k||''));
+
+function cleanTask(raw){
+  if(!raw || typeof raw !== 'object') return null;
+  const start = String(raw.start||'');
+  if(!isDay(start)) return null;
+  let end = isDay(raw.end) ? String(raw.end) : start;
+  if(end < start) end = start;
+  const review = isDay(raw.review) ? String(raw.review) : '';
+  return {
+    start, end, review,
+    name:   String(raw.name||'').slice(0,180),
+    status: G_STATUS.some(s=>s.v===raw.status) ? String(raw.status) : 'test',
+  };
+}
+function tasksIn(month){
+  const from = month + '-01', to = month + '-31';
+  return Object.keys(state.timeline)
+    .map(k => Object.assign({ id:k }, state.timeline[k]))
+    .filter(t => t.start <= to && t.end >= from)
+    .sort((a,b) => a.start.localeCompare(b.start) || (a.name||'').localeCompare(b.name||''));
+}
+
+function renderTimeline(){
+  const month = activePlan().month;
+  const [y,mo] = month.split('-').map(Number);
+  const n = daysOf(month).dayTot;
+  const today = dayKey(new Date());
+  const cols = `grid-template-columns:repeat(${n},1fr)`;
+
+  $('gtTag').innerHTML = pill('p-grey', label(month));
+  $('gtLegend').innerHTML = G_STATUS.map(s=>`<span><i class="dot ${s.d}"></i>${s.h}</span>`).join('');
+
+  let head = '';
+  for(let i=1;i<=n;i++){
+    const d = new Date(y, mo-1, i), wd = d.getDay();
+    const k = dayKey(d);
+    head += `<div class="${k===today?'now':(wd===0||wd===6?'wk':'')}">${i}</div>`;
+  }
+  $('gtDays').style.cssText = cols;
+  $('gtDays').innerHTML = head;
+
+  let grid = '';
+  for(let i=1;i<=n;i++){
+    const d = new Date(y, mo-1, i), wd = d.getDay();
+    const k = dayKey(d);
+    grid += `<i class="${k===today?'now':(wd===0||wd===6?'wk':'')}"></i>`;
+  }
+
+  const list = tasksIn(month);
+  if(!list.length){ $('gtRows').innerHTML = `<div class="gt-empty">—</div>`; return; }
+
+  $('gtRows').innerHTML = list.map(t=>{
+    const s = gStat(t.status);
+    const a = t.start.slice(0,7) < month ? 1 : +t.start.slice(8);
+    const b = t.end.slice(0,7)   > month ? n : +t.end.slice(8);
+    const cut = (t.start.slice(0,7) < month ? ' gt-cut-l' : '') + (t.end.slice(0,7) > month ? ' gt-cut-r' : '');
+    const rev = t.review && t.review.slice(0,7) === month
+      ? `<i class="gt-rev" style="left:${((+t.review.slice(8) - 0.5) / n * 100).toFixed(3)}%" title="สรุปผล ${dayLabel(t.review)}"></i>` : '';
+    return `<div class="gt-row" data-gtask="${t.id}">`
+      + `<div class="gt-n"><i class="dot ${s.d}"></i><span>${esc(t.name) || '—'}</span></div>`
+      + `<div class="gt-lane" style="${cols}">`
+      + `<div class="gt-grid" style="${cols}">${grid}</div>`
+      + `<div class="gt-bar ${s.b}${cut}" style="grid-column:${a} / ${b+1}"><b>${esc(t.name)}</b></div>`
+      + rev + `</div></div>`;
+  }).join('');
+}
+
+function gFormHtml(){
+  const t = gDraft;
+  return `<div class="cf"><label>ชื่องาน / แอดที่ทดสอบ</label>`
+    + `<input type="text" id="gfName" value="${esc(t.name)}"></div>`
+    + `<div class="cf"><label>วันเริ่ม</label><input type="date" id="gfStart" value="${esc(t.start)}"></div>`
+    + `<div class="cf"><label>วันจบ</label><input type="date" id="gfEnd" value="${esc(t.end)}"></div>`
+    + `<div class="cf"><label>วันสรุปผล</label><input type="date" id="gfRev" value="${esc(t.review)}"></div>`
+    + `<div class="cf"><label>สถานะ</label><div class="seg" id="gfSeg">`
+    + G_STATUS.map(s=>`<button type="button" data-gst="${s.v}" class="${t.status===s.v?'on':''}">${s.h}</button>`).join('')
+    + `</div></div>`
+    + `<div class="cbtns">`
+    + (t.id ? `<button class="btn-ghost btn-danger" id="gfDel" type="button">ลบ</button>` : '')
+    + `<button class="btn-ghost" id="gfCancel" type="button">ยกเลิก</button>`
+    + `<button class="btn-add" id="gfSave" type="button">บันทึก</button></div>`;
+}
+function renderGModal(force){
+  const m = $('gModal');
+  if(!gDraft){ m.hidden = true; gView = ''; return; }
+  m.hidden = false;
+  $('gmTitle').textContent = gDraft.id ? 'แก้ไขงาน' : 'เพิ่มงาน';
+  const sig = 'g:' + (gDraft.id || 'new');
+  if(sig === gView && !force) return;
+  gView = sig;
+  $('gmBody').innerHTML = gFormHtml();
+}
+function newTask(){
+  const month = activePlan().month;
+  const now = dayKey(new Date());
+  const start = now.slice(0,7) === month ? now : month + '-01';
+  gDraft = { id:'', name:'', start, end:start, review:'', status:'test' };
+  renderGModal(true);
+}
+function editTask(id){
+  const t = state.timeline[id];
+  if(!t) return;
+  gDraft = Object.assign({ id }, t);
+  renderGModal(true);
+}
+function saveTask(){
+  if(!gDraft) return;
+  const id = gDraft.id || newGid();
+  const t  = cleanTask(gDraft);
+  if(!t){ gDraft = null; renderGModal(true); return; }
+  state.timeline[id] = t;
+  gDraft = null;
+  renderGModal(true);
+  render();
+}
+function delTask(){
+  if(gDraft && gDraft.id) delete state.timeline[gDraft.id];
+  gDraft = null;
+  renderGModal(true);
+  render();
 }
 
 /* ===== view ===== */
@@ -1905,6 +2137,8 @@ function render(){
   renderDash(p.month);
   renderCal();
   renderModal();
+  renderTimeline();
+  renderGModal();
 
   if(focusKey){
     const el = document.querySelector(`[data-ch="${focusKey.ch}"][data-r="${focusKey.r}"][data-f="${focusKey.f}"]`);
@@ -1935,6 +2169,13 @@ document.addEventListener('input', e=>{
     if(t.id==='cfName') cDraft.name = t.value;
     if(t.id==='cfTime') cDraft.time = t.value;
     if(t.id==='cfLink') cDraft.link = t.value;
+    return;
+  }
+  if(gDraft && (t.id==='gfName' || t.id==='gfStart' || t.id==='gfEnd' || t.id==='gfRev')){
+    if(t.id==='gfName')  gDraft.name   = t.value;
+    if(t.id==='gfStart') gDraft.start  = t.value;
+    if(t.id==='gfEnd')   gDraft.end    = t.value;
+    if(t.id==='gfRev')   gDraft.review = t.value;
     return;
   }
   if(t.dataset && t.dataset.f && t.dataset.ch!==undefined){
@@ -1992,6 +2233,22 @@ document.addEventListener('click', e=>{
   const cday = e.target.closest('[data-cday]');
   if(cday){ openDay(cday.dataset.cday); return; }
 
+  /* ---- project timeline ---- */
+  if(e.target.id==='gmClose' || e.target.id==='gModal' || e.target.id==='gfCancel'){
+    gDraft=null; renderGModal(true); return;
+  }
+  if(e.target.id==='gtNew'){ newTask(); return; }
+  if(e.target.id==='gfSave'){ saveTask(); return; }
+  if(e.target.id==='gfDel'){ delTask(); return; }
+  const gst = e.target.closest('[data-gst]');
+  if(gst && gDraft){
+    gDraft.status = gst.dataset.gst;
+    Array.prototype.forEach.call(gst.parentNode.children, b=>{ b.classList.toggle('on', b===gst); });
+    return;
+  }
+  const gtk = e.target.closest('[data-gtask]');
+  if(gtk){ editTask(gtk.dataset.gtask); return; }
+
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
   const lf = e.target.closest('[data-lf]');
@@ -2034,6 +2291,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('keydown', e=>{
   if(e.key!=='Escape') return;
   if(!$('lbox').hidden){ $('lbox').hidden = true; return; }
+  if(gDraft){ gDraft=null; renderGModal(true); return; }
   if(state.cDay){ if(cDraft){ cDraft=null; renderModal(true); } else { closeDay(); } }
 });
 document.addEventListener('paste', e=>{
