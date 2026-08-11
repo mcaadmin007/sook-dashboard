@@ -430,6 +430,105 @@
   }
   .fn .f-act b{font-size:14px;letter-spacing:-.02em}
 
+  /* ===== content plan ===== */
+  .calnav{display:flex;align-items:center;gap:4px}
+  .calbtn{font:inherit;font-size:16px;line-height:1;cursor:pointer;width:28px;height:28px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink-2);
+    transition:.18s var(--ease)}
+  .calbtn:hover{border-color:#c7cedb;color:var(--ink);background:#fbfcfe}
+  .calmon{font-size:13px;font-weight:600;min-width:92px;text-align:center}
+  .callegend{display:flex;align-items:center;gap:13px;font-size:11.5px;color:var(--ink-3);font-weight:600}
+  .callegend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+  .d-plan{background:var(--ink-4)}
+  .d-post{background:var(--blue)}
+  .d-ads {background:var(--green)}
+
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+  .cal-dow div{font-size:11px;font-weight:700;color:var(--ink-3);text-align:center;letter-spacing:.03em}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cal-cell{min-height:98px;border:1px solid var(--line);border-radius:11px;background:#fff;
+    padding:7px;cursor:pointer;transition:.16s var(--ease);overflow:hidden;
+    display:flex;flex-direction:column;gap:5px}
+  .cal-cell:hover{border-color:var(--blue-line);background:var(--bg-2);box-shadow:var(--sh-1)}
+  .cal-cell.out{background:var(--line-3);border-color:var(--line-2)}
+  .cal-cell.out .cal-d{color:var(--ink-4)}
+  .cal-d{font-size:12px;font-weight:700;color:var(--ink-2);line-height:1.25;flex:none}
+  .cal-cell.today .cal-d{background:var(--black);color:#fff;border-radius:99px;
+    width:21px;height:21px;display:inline-flex;align-items:center;justify-content:center;font-size:11.5px}
+  .cal-chips{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .cchip{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ink-2);
+    background:var(--bg-2);border:1px solid var(--line-2);border-radius:7px;padding:3px 6px;
+    white-space:nowrap;overflow:hidden;min-width:0}
+  .cchip b{font-weight:700;color:var(--ink-3);font-size:10px;flex:none}
+  .cchip span{overflow:hidden;text-overflow:ellipsis}
+  .cmore{font-size:10.5px;font-weight:700;color:var(--ink-3);padding-left:3px}
+
+  /* ===== modal ===== */
+  .modal{position:fixed;inset:0;z-index:70;background:rgba(15,17,21,.44);
+    display:flex;align-items:flex-end;justify-content:center}
+  .modal[hidden],.lbox[hidden]{display:none}
+  .sheet{background:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;
+    border-radius:18px 18px 0 0;box-shadow:var(--sh-3);display:flex;flex-direction:column}
+  .sheet-head{padding:15px 18px;border-bottom:1px solid var(--line-2);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    position:sticky;top:0;background:#fff;z-index:2}
+  .sheet-head h3{margin:0;font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+  .xbtn{font:inherit;font-size:20px;line-height:1;cursor:pointer;width:30px;height:30px;flex:none;
+    border:none;background:transparent;color:var(--ink-3);border-radius:8px;transition:.16s var(--ease)}
+  .xbtn:hover{background:var(--line-3);color:var(--ink)}
+  .sheet-body{padding:16px 18px 20px;display:flex;flex-direction:column;gap:12px}
+  @media (min-width:641px){
+    .modal{align-items:center;padding:24px}
+    .sheet{border-radius:var(--radius)}
+  }
+
+  .citem{display:flex;align-items:center;gap:11px;border:1px solid var(--line);border-radius:12px;
+    padding:9px 11px;cursor:pointer;transition:.16s var(--ease);background:#fff}
+  .citem:hover{border-color:var(--blue-line);background:var(--bg-2)}
+  .citem .th{width:44px;height:44px;border-radius:9px;object-fit:cover;flex:none;
+    border:1px solid var(--line-2);background:var(--line-3);cursor:zoom-in}
+  .citem .ci-x{min-width:0;flex:1}
+  .citem .ci-n{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .citem .ci-t{font-size:11.5px;color:var(--ink-3);font-weight:600}
+
+  .cf{display:flex;flex-direction:column;gap:6px}
+  .cf label{font-size:11.5px;font-weight:600;color:var(--ink-3);letter-spacing:.02em}
+  .cf input{width:100%;font:inherit;font-size:15px;font-weight:500;padding:9px 12px;
+    border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--bg-2);color:var(--ink);transition:.18s var(--ease)}
+  .cf input:hover{border-color:#d3d9e2;background:#fff}
+  .cf input:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:var(--ring)}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .seg button{font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:9px 6px;
+    border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink-2);
+    transition:.16s var(--ease)}
+  .seg button:hover{border-color:#c7cedb;background:var(--bg-2)}
+  .seg button.on{background:linear-gradient(180deg,var(--black-2),var(--black));
+    border-color:var(--black);color:#fff}
+  .drop{border:1.5px dashed var(--line);border-radius:12px;background:var(--bg-2);
+    padding:20px 12px;text-align:center;cursor:pointer;color:var(--ink-3);
+    font-size:12.5px;font-weight:600;transition:.16s var(--ease)}
+  .drop:hover{border-color:var(--blue-line);background:var(--blue-soft);color:var(--blue)}
+  .prev{position:relative}
+  .prev img{width:100%;max-height:230px;object-fit:cover;border-radius:12px;
+    border:1px solid var(--line);display:block;cursor:zoom-in}
+  .prev .rm{position:absolute;top:9px;right:9px;font:inherit;font-size:16px;line-height:1;cursor:pointer;
+    width:28px;height:28px;border:none;border-radius:50%;background:rgba(15,17,21,.62);color:#fff}
+  .cbtns{display:flex;gap:8px;margin-top:2px}
+  .cbtns .btn-add{flex:1}
+  .btn-ghost{font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--line);
+    background:#fff;color:var(--ink-2);transition:.18s var(--ease)}
+  .btn-ghost:hover{border-color:#c7cedb;background:var(--bg-2);color:var(--ink)}
+  .btn-danger{border-color:var(--red-line);background:var(--red-soft);color:var(--red)}
+  .btn-danger:hover{border-color:var(--red);background:#fbdedb;color:var(--red)}
+
+  .lbox{position:fixed;inset:0;z-index:90;background:rgba(9,10,13,.9);
+    display:flex;align-items:center;justify-content:center;padding:22px;cursor:zoom-out}
+  .lbox img{max-width:100%;max-height:100%;border-radius:10px;display:block}
+
   /* ===== responsive ===== */
   @media (max-width:1100px){
     .kpis{grid-template-columns:repeat(3,1fr)}
@@ -459,6 +558,13 @@
     .fn .f-plan{font-size:17px}
     .addwrap input{flex:1}
     .btn-add{padding:9px 16px}
+    .cal,.cal-dow{gap:4px}
+    .cal-cell{min-height:62px;padding:5px 4px;gap:4px}
+    .cal-chips{flex-direction:row;flex-wrap:wrap;gap:3px}
+    .cchip{padding:0;border:none;background:transparent;gap:0}
+    .cchip b,.cchip span{display:none}
+    .cmore{display:none}
+    .sheet{max-height:88vh}
   }
   .fb-err{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;
     background:#d93a30;color:#fff;font-size:12px;font-weight:600;letter-spacing:.01em;
@@ -504,7 +610,7 @@
       <div class="grid">
         <div class="field">
           <label>Budget รวม (บาท/เดือน)</label>
-          <input type="number" id="inBudget" value="721000" step="1000">
+          <input type="number" id="inBudget" value="0" step="1000">
         </div>
         <div class="field">
           <label>เป้า Lead รวม (Qualified)</label>
@@ -629,8 +735,36 @@
     <div class="sec-body" style="padding-top:0"><div class="legend" id="rubLegend"></div></div>
   </section>
 
+  <section id="secContent" data-page="content">
+    <div class="sec-head">
+      <div class="head-left">
+        <h2>Content Plan</h2>
+        <div class="calnav">
+          <button class="calbtn" id="calPrev" type="button">&#8249;</button>
+          <span class="calmon" id="calMon"></span>
+          <button class="calbtn" id="calNext" type="button">&#8250;</button>
+        </div>
+      </div>
+      <div class="callegend" id="calLegend"></div>
+    </div>
+    <div class="sec-body">
+      <div class="cal-dow"><div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div></div>
+      <div class="cal" id="cal"></div>
+    </div>
+  </section>
+
 </div>
 
+<div class="modal" id="cModal" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3 id="cmTitle"></h3>
+      <button class="xbtn" id="cmClose" type="button">&times;</button>
+    </div>
+    <div class="sheet-body" id="cmBody"></div>
+  </div>
+</div>
+<div class="lbox" id="lbox" hidden><img id="lboxImg" alt=""></div>
 <div id="fbErr" class="fb-err" hidden>เชื่อมต่อคลาวด์ไม่ได้</div>
 
 <script>
@@ -661,23 +795,7 @@ const TEMPLATE = [
      updateActual({ "2026-08|Facebook Ads|Message": { spend: 34000, result: 95 } })
      fetchActual('https://api.example.com/ads/actual')
    ========================================================= */
-let ACTUAL = {
-  '2026-07|Facebook Ads|Post Engage'   : { spend:37500,  result:41000 },
-  '2026-07|Facebook Ads|Message'       : { spend:106000, result:310   },
-  '2026-07|Facebook Ads|Click'         : { spend:107000, result:8900  },
-  '2026-07|Instagram|Post Engage'      : { spend:36000,  result:25000 },
-  '2026-07|Instagram|Message'          : { spend:105000, result:150   },
-  '2026-07|Instagram|Click'            : { spend:108000, result:7200  },
-  '2026-07|Google Ads|Maximize Clicks' : { spend:214000, result:17500 },
-
-  '2026-08|Facebook Ads|Post Engage'   : { spend:12000, result:15000 },
-  '2026-08|Facebook Ads|Message'       : { spend:34000, result:95    },
-  '2026-08|Facebook Ads|Click'         : { spend:33500, result:2900  },
-  '2026-08|Instagram|Post Engage'      : { spend:11500, result:9800  },
-  '2026-08|Instagram|Message'          : { spend:32000, result:42    },
-  '2026-08|Instagram|Click'            : { spend:34000, result:2600  },
-  '2026-08|Google Ads|Maximize Clicks' : { spend:68000, result:5600  },
-};
+let ACTUAL = {};
 
 /* =========================================================
    LEAD FEED — read-only ดึงจากแพลตฟอร์มจริง
@@ -741,26 +859,13 @@ const LEAD_COLS = {
 };
 const LEAD_SRC = [ {id:'meta', name:'Meta Lead Form'}, {id:'google', name:'Google Lead Form'} ];
 
-let LEADS = {
-  meta: [
-    { created_time:'2026-08-09T10:41:00', id:'l_10098431', platform:'fb', campaign_name:'SooK | Lead Gen',  adset_name:'LAL 1% Purchaser',    ad_name:'VDO Testimonial A', form_name:'SooK Register Form', full_name:'ณัฐพล สุวรรณโชติ',   email:'nattapon.s@gmail.com',  phone_number:'0812345671', is_organic:false },
-    { created_time:'2026-08-08T19:05:00', id:'l_10098407', platform:'ig', campaign_name:'SooK | Lead Gen',  adset_name:'Interest Health 25-44', ad_name:'Carousel Promo',   form_name:'SooK Register Form', full_name:'ปวีณา ทองใบ',        email:'paveena.t@hotmail.com', phone_number:'0812345672', is_organic:false },
-    { created_time:'2026-08-07T13:52:00', id:'l_10098366', platform:'fb', campaign_name:'SooK | Lead Gen',  adset_name:'Retarget 30D',        ad_name:'Static Offer B',    form_name:'SooK Register Form', full_name:'กิตติศักดิ์ ใจดี',   email:'kittisak.j@gmail.com',  phone_number:'0812345673', is_organic:false },
-    { created_time:'2026-08-05T09:18:00', id:'l_10098291', platform:'ig', campaign_name:'SooK | Lead Gen',  adset_name:'LAL 1% Purchaser',    ad_name:'Reels Hook 03',     form_name:'SooK Register Form', full_name:'สุภาพร มณีรัตน์',    email:'supaporn.m@gmail.com',  phone_number:'0812345674', is_organic:false },
-    { created_time:'2026-08-02T21:36:00', id:'l_10098155', platform:'fb', campaign_name:'SooK | Lead Gen',  adset_name:'Broad TH 25-54',      ad_name:'VDO Testimonial A', form_name:'SooK Register Form', full_name:'ธนกฤต พงษ์ไพบูลย์',  email:'thanakrit.p@gmail.com', phone_number:'0812345675', is_organic:true  },
-    { created_time:'2026-07-27T16:12:00', id:'l_10097842', platform:'fb', campaign_name:'SooK | Lead Gen',  adset_name:'Retarget 30D',        ad_name:'Static Offer B',    form_name:'SooK Register Form', full_name:'อรพรรณ ศรีสมบัติ',   email:'orapan.s@gmail.com',    phone_number:'0812345676', is_organic:false },
-    { created_time:'2026-07-19T11:04:00', id:'l_10097511', platform:'ig', campaign_name:'SooK | Lead Gen',  adset_name:'Interest Health 25-44', ad_name:'Carousel Promo',   form_name:'SooK Register Form', full_name:'วิชญ์พล เจริญสุข',   email:'wichyapol.c@gmail.com', phone_number:'0812345677', is_organic:false },
-  ],
-  google: [
-    { submission_time:'2026-08-09T15:27:00', lead_id:'g_774102', campaign_name:'SooK | Search Brand', ad_group_name:'Brand Exact', form_name:'SooK Lead Form', full_name:'ชลธิชา ภูวเดช',  email:'chonthicha.p@gmail.com', phone_number:'0898765431', postal_code:'10110', gclid:'Cj0KCQjw_a1', is_test:false },
-    { submission_time:'2026-08-06T12:09:00', lead_id:'g_773845', campaign_name:'SooK | Search Generic', ad_group_name:'Health Program', form_name:'SooK Lead Form', full_name:'ภาณุวัฒน์ ตั้งจิต', email:'panuwat.t@gmail.com',   phone_number:'0898765432', postal_code:'50200', gclid:'Cj0KCQjw_b7', is_test:false },
-    { submission_time:'2026-07-24T18:44:00', lead_id:'g_772630', campaign_name:'SooK | Search Brand', ad_group_name:'Brand Phrase', form_name:'SooK Lead Form', full_name:'ศิริพร วัฒนกิจ',  email:'siriporn.w@gmail.com',   phone_number:'0898765433', postal_code:'20150', gclid:'Cj0KCQjw_c2', is_test:false },
-  ],
-};
+let LEADS = { meta: [], google: [] };
 
 /* ===== state ===== */
-const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'leads',h:'Lead Generation'}, {id:'dash',h:'Dashboard'} ];
-const state = { plans:[], active:null, adding:false, src:'meta', leadScore:{}, page:'plan', leadFilter:'' };
+const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'leads',h:'Lead Generation'}, {id:'content',h:'Content Plan'}, {id:'dash',h:'Dashboard'} ];
+const state = { plans:[], active:null, adding:false, src:'meta', leadScore:{}, page:'plan', leadFilter:'',
+  content:{}, cimg:{}, cMonth:'', cDay:null };
+let cDraft = null, cView = '';
 
 /* ===== helper ===== */
 const $ = id => document.getElementById(id);
@@ -874,14 +979,13 @@ window.fetchActual  = fetchActual;
 /* =========================================================
    AUTO SAVE — เก็บลงเครื่องผู้ใช้ บันทึกเองทุกครั้งที่แก้
    ========================================================= */
-const SKEY = 'sook-leadgen-v1';
+const SKEY = 'sook-leadgen-v2';
 const store = (()=>{ try{ const s=window.localStorage; s.setItem('__t','1'); s.removeItem('__t'); return s; }catch(e){ return null; } })();
 let saveTimer=null;
 
 function saveNow(){
   if(!store) return;
-  try{
-    store.setItem(SKEY, JSON.stringify({
+  const snap = ({
       v:1,
       plans: state.plans.map(p=>({
         month:p.month,
@@ -895,9 +999,12 @@ function saveNow(){
       leadScore: state.leadScore,
       target: num($('inTarget').value),
       months: num($('inMonths').value),
+      content: state.content,
+      cMonth: state.cMonth,
       at: Date.now()
-    }));
-  }catch(e){}
+    });
+  try{ store.setItem(SKEY, JSON.stringify(Object.assign({}, snap, { cimg: state.cimg }))); }
+  catch(e){ try{ store.setItem(SKEY, JSON.stringify(snap)); }catch(e2){} }
 }
 function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ saveNow(); cloudPush(); }, 400); }
 
@@ -938,6 +1045,13 @@ function loadSaved(){
         if(clean) state.leadScore[k] = clean;
       });
     }
+    if(d.content && typeof d.content==='object'){
+      Object.keys(d.content).forEach(k=>{ const c = cleanContent(d.content[k]); if(c) state.content[k] = c; });
+    }
+    if(d.cimg && typeof d.cimg==='object'){
+      Object.keys(d.cimg).forEach(k=>{ if(state.content[k] && typeof d.cimg[k]==='string') state.cimg[k] = d.cimg[k]; });
+    }
+    if(/^\d{4}-\d{2}$/.test(String(d.cMonth||''))) state.cMonth = d.cMonth;
     if(PAGES.some(p=>p.id===d.page)) state.page = d.page;
     if(d.leadFilter==='none' || LEAD_STATUS.some(s=>s.v===d.leadFilter)) state.leadFilter = d.leadFilter;
     if(d.target>0) $('inTarget').value = d.target;
@@ -955,6 +1069,8 @@ function loadSaved(){
      plans/{YYYY-MM}                        ← หน้าเว็บเขียน
      settings/app                           ← หน้าเว็บเขียน
      leadScores/{src|leadId}                ← หน้าเว็บเขียน
+     content/{contentId}                    ← หน้าเว็บเขียน
+     contentImages/{contentId}              ← หน้าเว็บเขียน
      leads/{src|leadId}                     ← ระบบภายนอกเขียน
      actuals/{YYYY-MM|Channel|Objective}    ← ระบบภายนอกเขียน
    ========================================================= */
@@ -970,7 +1086,7 @@ const FB_BOARD = 'sook';
 const FB_VER   = '10.12.2';
 
 let fb = null, fbReady = false, fbApplying = false;
-const fbLast = { plans:{}, scores:{}, settings:'' };
+const fbLast = { plans:{}, scores:{}, settings:'', content:{}, cimg:{} };
 
 function fbErr(on){ const el = document.getElementById('fbErr'); if(el) el.hidden = !on; }
 
@@ -982,6 +1098,7 @@ const planDoc = p => ({
   })),
   lastTotal: p.lastTotal,
 });
+const imgSig = u => String(u||'').length + ':' + String(u||'').slice(-48);
 const settingsDoc = () => ({ target: num($('inTarget').value), months: num($('inMonths').value) });
 
 function fbStamp(which){
@@ -993,6 +1110,8 @@ function fbStamp(which){
     fbLast.scores = {};
     Object.keys(state.leadScore).forEach(k=>{ fbLast.scores[k] = JSON.stringify(state.leadScore[k]); });
   }
+  if(which==='content'){ fbLast.content = {}; Object.keys(state.content).forEach(k=>{ fbLast.content[k] = JSON.stringify(state.content[k]); }); }
+  if(which==='cimg'){ fbLast.cimg = {}; Object.keys(state.cimg).forEach(k=>{ fbLast.cimg[k] = imgSig(state.cimg[k]); }); }
   if(which==='settings') fbLast.settings = JSON.stringify(settingsDoc());
 }
 function fbApply(which, fn){
@@ -1022,11 +1141,18 @@ async function fbInit(){
 
 function fbWatch(){
   const { db, fs } = fb;
-  const sub = (name, fn) => fs.onSnapshot(
-    fs.collection(db, 'boards', FB_BOARD, name),
-    snap => { if(!snap.metadata.hasPendingWrites){ try{ fn(snap); }catch(e){} } },
-    () => fbErr(true)
-  );
+  const sub = (name, fn) => {
+    let first = true;
+    return fs.onSnapshot(
+      fs.collection(db, 'boards', FB_BOARD, name),
+      snap => {
+        if(snap.metadata.hasPendingWrites) return;
+        try{ fn(snap, first); }catch(e){}
+        first = false;
+      },
+      () => fbErr(true)
+    );
+  };
 
   sub('plans', snap=>{
     if(snap.empty){ fbSeed(); return; }
@@ -1057,6 +1183,20 @@ function fbWatch(){
     fbApply('scores', ()=>{ state.leadScore = next; });
   });
 
+  sub('content', (snap, first)=>{
+    if(first && snap.empty && Object.keys(state.content).length){ fbStamp('content'); fbLast.content={}; cloudPush(); return; }
+    const next = {};
+    snap.forEach(doc=>{ const c = cleanContent(doc.data()); if(c) next[doc.id] = c; });
+    fbApply('content', ()=>{ state.content = next; });
+  });
+
+  sub('contentImages', (snap, first)=>{
+    if(first && snap.empty && Object.keys(state.cimg).length){ fbLast.cimg={}; cloudPush(); return; }
+    const next = {};
+    snap.forEach(doc=>{ const d = doc.data()||{}; if(typeof d.data === 'string') next[doc.id] = d.data; });
+    fbApply('cimg', ()=>{ state.cimg = next; });
+  });
+
   sub('leads', snap=>{
     if(snap.empty) return;
     const next = {};
@@ -1081,7 +1221,7 @@ function fbWatch(){
   });
 }
 
-function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; cloudPush(); }
+function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; cloudPush(); }
 
 async function cloudPush(){
   if(!fbReady || fbApplying) return;
@@ -1109,11 +1249,201 @@ async function cloudPush(){
     if(!seenS[k]){ delete fbLast.scores[k]; jobs.push(fs.deleteDoc(ref('leadScores', k))); }
   });
 
+  const seenC = {};
+  Object.keys(state.content).forEach(k=>{
+    const j = JSON.stringify(state.content[k]);
+    seenC[k] = 1;
+    if(fbLast.content[k] !== j){ fbLast.content[k] = j; jobs.push(fs.setDoc(ref('content', k), state.content[k])); }
+  });
+  Object.keys(fbLast.content).forEach(k=>{
+    if(!seenC[k]){ delete fbLast.content[k]; jobs.push(fs.deleteDoc(ref('content', k))); }
+  });
+
+  const seenI = {};
+  Object.keys(state.cimg).forEach(k=>{
+    const j = imgSig(state.cimg[k]);
+    seenI[k] = 1;
+    if(fbLast.cimg[k] !== j){ fbLast.cimg[k] = j; jobs.push(fs.setDoc(ref('contentImages', k), { data: state.cimg[k] })); }
+  });
+  Object.keys(fbLast.cimg).forEach(k=>{
+    if(!seenI[k]){ delete fbLast.cimg[k]; jobs.push(fs.deleteDoc(ref('contentImages', k))); }
+  });
+
   const st = settingsDoc(), sj = JSON.stringify(st);
   if(fbLast.settings !== sj){ fbLast.settings = sj; jobs.push(fs.setDoc(ref('settings', 'app'), st)); }
 
   if(!jobs.length) return;
   try{ await Promise.all(jobs); fbErr(false); }catch(e){ fbErr(true); }
+}
+
+/* ===== content plan ===== */
+const C_STATUS = [
+  { v:'plan',   h:'วางแผน',    d:'d-plan', p:'p-grey'  },
+  { v:'posted', h:'โพสต์แล้ว',  d:'d-post', p:'p-blue'  },
+  { v:'ads',    h:'ยิงแอดแล้ว', d:'d-ads',  p:'p-green' },
+];
+const dayKey = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const dayLabel = k => { const [y,m,d] = k.split('-'); return +d + ' ' + MN[+m-1] + ' ' + y; };
+const cStat = v => C_STATUS.find(s=>s.v===v) || C_STATUS[0];
+const newCid = () => 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+function contentOf(day){
+  return Object.keys(state.content)
+    .filter(k => state.content[k].date === day)
+    .map(k => Object.assign({ id:k }, state.content[k]))
+    .sort((a,b) => (a.time||'~').localeCompare(b.time||'~') || (a.name||'').localeCompare(b.name||''));
+}
+function cleanContent(raw){
+  if(!raw || typeof raw !== 'object') return null;
+  const date = String(raw.date||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  return {
+    date,
+    time:   /^\d{2}:\d{2}$/.test(String(raw.time||'')) ? String(raw.time) : '',
+    name:   String(raw.name||'').slice(0,180),
+    link:   String(raw.link||'').slice(0,700),
+    status: C_STATUS.some(s=>s.v===raw.status) ? String(raw.status) : 'plan',
+  };
+}
+function shiftMonth(m, by){ const [y,mo] = m.split('-').map(Number); return monthKey(new Date(y, mo-1+by, 1)); }
+
+function renderCal(){
+  if(!/^\d{4}-\d{2}$/.test(state.cMonth)) state.cMonth = monthKey(new Date());
+  const [y,mo] = state.cMonth.split('-').map(Number);
+  $('calMon').textContent  = label(state.cMonth);
+  $('calLegend').innerHTML = C_STATUS.map(s=>`<span><i class="dot ${s.d}"></i>${s.h}</span>`).join('');
+  const first = new Date(y, mo-1, 1);
+  const start = new Date(y, mo-1, 1-first.getDay());
+  const today = dayKey(new Date());
+  let html = '';
+  for(let i=0;i<42;i++){
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
+    const k = dayKey(d);
+    const out = (d.getMonth()+1)!==mo || d.getFullYear()!==y;
+    const items = contentOf(k);
+    html += `<div class="cal-cell${out?' out':''}${k===today?' today':''}" data-cday="${k}">`
+      + `<div class="cal-d">${d.getDate()}</div>`
+      + `<div class="cal-chips">`
+      + items.slice(0,3).map(it =>
+          `<div class="cchip"><i class="dot ${cStat(it.status).d}"></i>`
+          + (it.time?`<b>${esc(it.time)}</b>`:'')
+          + `<span>${esc(it.name)}</span></div>`).join('')
+      + (items.length>3 ? `<div class="cmore">+${items.length-3}</div>` : '')
+      + `</div></div>`;
+  }
+  $('cal').innerHTML = html;
+}
+
+function cListHtml(){
+  const items = contentOf(state.cDay);
+  return items.map(it=>{
+    const s = cStat(it.status), img = state.cimg[it.id];
+    return `<div class="citem" data-citem="${it.id}">`
+      + (img ? `<img class="th" src="${img}" alt="" data-cimg="${it.id}">` : `<div class="th"></div>`)
+      + `<div class="ci-x"><div class="ci-n">${esc(it.name) || '—'}</div>`
+      + `<div class="ci-t">${esc(it.time) || '—'}</div></div>`
+      + pill(s.p, s.h) + `</div>`;
+  }).join('') + `<button class="btn-add" id="cmNew" type="button">+ เพิ่มคอนเทนต์</button>`;
+}
+function cFormHtml(){
+  const d = cDraft;
+  return `<div class="cf"><label>ชื่อคอนเทนต์</label>`
+    + `<input type="text" id="cfName" value="${esc(d.name)}"></div>`
+    + `<div class="cf"><label>เวลาที่จะลง</label>`
+    + `<input type="time" id="cfTime" value="${esc(d.time)}"></div>`
+    + `<div class="cf"><label>ลิงก์คอนเทนต์</label>`
+    + `<input type="url" id="cfLink" value="${esc(d.link)}"></div>`
+    + `<div class="cf"><label>รูปภาพคอนเทนต์</label>`
+    + (d.img
+        ? `<div class="prev"><img id="cfPrev" src="${d.img}" alt=""><button class="rm" id="cfRm" type="button">&times;</button></div>`
+        : `<div class="drop" id="cfDrop">+ เพิ่มรูป</div>`)
+    + `<input type="file" id="cfFile" accept="image/*" hidden></div>`
+    + `<div class="cf"><label>สถานะ</label><div class="seg" id="cfSeg">`
+    + C_STATUS.map(s=>`<button type="button" data-cst="${s.v}" class="${d.status===s.v?'on':''}">${s.h}</button>`).join('')
+    + `</div></div>`
+    + `<div class="cbtns">`
+    + (d.id ? `<button class="btn-ghost btn-danger" id="cfDel" type="button">ลบ</button>` : '')
+    + `<button class="btn-ghost" id="cfCancel" type="button">ยกเลิก</button>`
+    + `<button class="btn-add" id="cfSave" type="button">บันทึก</button></div>`;
+}
+function renderModal(force){
+  const m = $('cModal');
+  if(!state.cDay){ m.hidden = true; cView = ''; return; }
+  m.hidden = false;
+  $('cmTitle').textContent = dayLabel(state.cDay);
+  const sig = state.cDay + '|' + (cDraft ? 'f:'+(cDraft.id||'new') : 'list');
+  if(sig === cView && !force){
+    if(!cDraft) $('cmBody').innerHTML = cListHtml();
+    return;
+  }
+  cView = sig;
+  $('cmBody').innerHTML = cDraft ? cFormHtml() : cListHtml();
+}
+function openDay(day){ state.cDay = day; cDraft = null; renderModal(true); }
+function closeDay(){ state.cDay = null; cDraft = null; renderModal(true); }
+function editDraft(id){
+  const c = state.content[id];
+  if(!c) return;
+  cDraft = { id, date:c.date, time:c.time, name:c.name, link:c.link, status:c.status, img: state.cimg[id] || '' };
+  renderModal(true);
+}
+function newDraft(){
+  cDraft = { id:null, date:state.cDay, time:'', name:'', link:'', status:'plan', img:'' };
+  renderModal(true);
+}
+function saveDraft(){
+  if(!cDraft) return;
+  const id = cDraft.id || newCid();
+  const c  = cleanContent(cDraft);
+  if(!c){ cDraft = null; renderModal(true); return; }
+  state.content[id] = c;
+  if(cDraft.img) state.cimg[id] = cDraft.img; else delete state.cimg[id];
+  cDraft = null;
+  renderModal(true);
+  render();
+}
+function delDraft(){
+  if(cDraft && cDraft.id){ delete state.content[cDraft.id]; delete state.cimg[cDraft.id]; }
+  cDraft = null;
+  renderModal(true);
+  render();
+}
+function openLbox(src){
+  if(!src) return;
+  $('lboxImg').src = src;
+  $('lbox').hidden = false;
+}
+function shrinkImg(file, cb){
+  try{
+    const fr = new FileReader();
+    fr.onerror = () => cb(null);
+    fr.onload = () => {
+      const raw = String(fr.result||'');
+      try{
+        const img = new Image();
+        img.onerror = () => cb(raw);
+        img.onload = () => {
+          try{
+            const max = 1000;
+            let w = img.width || 0, h = img.height || 0;
+            if(!(w>0 && h>0)) return cb(raw);
+            if(w>max || h>max){ const k = max/Math.max(w,h); w = Math.round(w*k); h = Math.round(h*k); }
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            cv.getContext('2d').drawImage(img, 0, 0, w, h);
+            let q = 0.72, out = cv.toDataURL('image/jpeg', q);
+            while(out.length > 680000 && q > 0.34){ q -= 0.12; out = cv.toDataURL('image/jpeg', q); }
+            cb(out.length < raw.length ? out : raw);
+          }catch(e){ cb(raw); }
+        };
+        img.src = raw;
+      }catch(e){ cb(raw); }
+    };
+    fr.readAsDataURL(file);
+  }catch(e){ cb(null); }
+}
+function takeImg(file){
+  if(!file || !/^image\//.test(file.type||'')) return;
+  shrinkImg(file, url => { if(url && cDraft){ cDraft.img = url; renderModal(true); } });
 }
 
 /* ===== view ===== */
@@ -1573,6 +1903,8 @@ function render(){
   renderLeadStat(p.month);
   renderLeads(p.month);
   renderDash(p.month);
+  renderCal();
+  renderModal();
 
   if(focusKey){
     const el = document.querySelector(`[data-ch="${focusKey.ch}"][data-r="${focusKey.r}"][data-f="${focusKey.f}"]`);
@@ -1599,6 +1931,12 @@ function setAdding(on){
 /* ===== events ===== */
 document.addEventListener('input', e=>{
   const t=e.target;
+  if(cDraft && (t.id==='cfName' || t.id==='cfTime' || t.id==='cfLink')){
+    if(t.id==='cfName') cDraft.name = t.value;
+    if(t.id==='cfTime') cDraft.time = t.value;
+    if(t.id==='cfLink') cDraft.link = t.value;
+    return;
+  }
   if(t.dataset && t.dataset.f && t.dataset.ch!==undefined){
     const ci=+t.dataset.ch, ri=+t.dataset.r, f=t.dataset.f;
     activePlan().channels[ci].rows[ri][f] = num(t.value);
@@ -1626,6 +1964,34 @@ document.addEventListener('input', e=>{
 });
 
 document.addEventListener('click', e=>{
+  if(!$('lbox').hidden){ $('lbox').hidden = true; return; }
+
+  /* ---- content plan ---- */
+  if(e.target.id==='calPrev' || e.target.id==='calNext'){
+    state.cMonth = shiftMonth(state.cMonth, e.target.id==='calNext' ? 1 : -1);
+    focusKey=null; render(); return;
+  }
+  if(e.target.id==='cmClose' || e.target.id==='cModal'){ closeDay(); return; }
+  if(e.target.id==='cmNew'){ newDraft(); return; }
+  if(e.target.id==='cfSave'){ saveDraft(); return; }
+  if(e.target.id==='cfDel'){ delDraft(); return; }
+  if(e.target.id==='cfCancel'){ cDraft=null; renderModal(true); return; }
+  if(e.target.id==='cfDrop'){ const f=$('cfFile'); if(f) f.click(); return; }
+  if(e.target.id==='cfRm'){ if(cDraft){ cDraft.img=''; renderModal(true); } return; }
+  if(e.target.id==='cfPrev'){ openLbox(cDraft && cDraft.img); return; }
+  const cst = e.target.closest('[data-cst]');
+  if(cst && cDraft){
+    cDraft.status = cst.dataset.cst;
+    Array.prototype.forEach.call(cst.parentNode.children, b=>{ b.classList.toggle('on', b===cst); });
+    return;
+  }
+  const cimg = e.target.closest('[data-cimg]');
+  if(cimg){ openLbox(state.cimg[cimg.dataset.cimg]); return; }
+  const cit = e.target.closest('[data-citem]');
+  if(cit){ editDraft(cit.dataset.citem); return; }
+  const cday = e.target.closest('[data-cday]');
+  if(cday){ openDay(cday.dataset.cday); return; }
+
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
   const lf = e.target.closest('[data-lf]');
@@ -1647,6 +2013,11 @@ document.addEventListener('click', e=>{
   }
 });
 document.addEventListener('change', e=>{
+  if(e.target.id==='cfFile'){
+    const f = e.target.files && e.target.files[0];
+    if(f) takeImg(f);
+    return;
+  }
   const s = e.target.closest ? e.target.closest('select[data-crit]') : null;
   if(s){
     focusKey = null;
@@ -1660,13 +2031,35 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){ setAdding(false); }
 });
 
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Escape') return;
+  if(!$('lbox').hidden){ $('lbox').hidden = true; return; }
+  if(state.cDay){ if(cDraft){ cDraft=null; renderModal(true); } else { closeDay(); } }
+});
+document.addEventListener('paste', e=>{
+  if(!cDraft) return;
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  for(let i=0;i<items.length;i++){
+    if(items[i].type && items[i].type.indexOf('image')===0){
+      const f = items[i].getAsFile();
+      if(f){ e.preventDefault(); takeImg(f); }
+      return;
+    }
+  }
+});
+document.addEventListener('dragover', e=>{ if(cDraft) e.preventDefault(); });
+document.addEventListener('drop', e=>{
+  if(!cDraft) return;
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f && /^image\//.test(f.type||'')){ e.preventDefault(); takeImg(f); }
+});
+
 /* ===== init ===== */
 (function init(){
+  state.cMonth = monthKey(new Date());
   if(!loadSaved()){
     const cur = monthKey(new Date());
-    const prev = (()=>{ const [y,m]=cur.split('-').map(Number); return monthKey(new Date(y,m-2,1)); })();
-    const base = num($('inBudget').value);
-    state.plans = [ makePlan(prev, base), makePlan(cur, base) ];
+    state.plans = [ makePlan(cur, 0) ];
     state.active = cur;
   }
   applyActual();
