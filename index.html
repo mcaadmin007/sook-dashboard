@@ -509,33 +509,6 @@
     .gt-n span{font-size:11.5px}
   }
 
-  /* ===== log feed ===== */
-  .lgfeed{display:flex;flex-direction:column;gap:0}
-  .lg-day{display:flex;align-items:center;gap:10px;padding:15px 0 9px}
-  .lg-day:first-child{padding-top:2px}
-  .lg-day b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap}
-  .lg-day i{flex:1;height:1px;background:var(--line-2)}
-  .lgi{display:flex;gap:12px;padding:12px 13px;border:1px solid var(--line-2);
-    border-radius:12px;background:#fff;cursor:pointer;margin-bottom:8px;
-    transition:.16s var(--ease)}
-  .lgi:hover{border-color:#d3d9e2;background:var(--bg-2);box-shadow:var(--sh-1)}
-  .lgi-r{width:3px;border-radius:2px;background:var(--line);flex:none}
-  .lgi:hover .lgi-r{background:var(--blue)}
-  .lgi-x{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
-  .lgi-h{font-size:13.5px;font-weight:700;color:var(--ink);
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .lgi-b{font-size:12.5px;font-weight:500;color:var(--ink-2);line-height:1.55;
-    white-space:pre-wrap;overflow-wrap:anywhere;
-    display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-  .lg-empty{padding:30px 12px;text-align:center;font-size:12px;color:var(--ink-4);font-weight:600}
-  .lg-foot{padding-top:6px;display:flex;justify-content:flex-start}
-  .cf textarea{width:100%;font:inherit;font-size:14px;font-weight:500;padding:10px 12px;
-    min-height:150px;resize:vertical;line-height:1.6;
-    border:1px solid var(--line);border-radius:var(--radius-sm);
-    background:var(--bg-2);color:var(--ink);transition:.18s var(--ease)}
-  .cf textarea:hover{border-color:#d3d9e2;background:#fff}
-  .cf textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:var(--ring)}
-
   /* ===== modal ===== */
   .modal{position:fixed;inset:0;z-index:70;background:rgba(15,17,21,.44);
     display:flex;align-items:flex-end;justify-content:center}
@@ -637,6 +610,45 @@
     .cmore{display:none}
     .sheet{max-height:88vh}
   }
+  /* ===== log ===== */
+  .log-dates{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .log-dates span{font-size:12px;font-weight:600;color:var(--ink-3);white-space:nowrap}
+  .log-dates input[type=date]{font:inherit;font-size:13px;font-weight:600;padding:5px 10px;
+    border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);
+    transition:.16s var(--ease)}
+  .log-dates input[type=date]:focus{outline:none;border-color:var(--blue);box-shadow:var(--ring)}
+  .log-list{display:flex;flex-direction:column;gap:10px}
+  .log-item{
+    border:1px solid var(--line);border-radius:12px;padding:13px 16px;
+    background:linear-gradient(180deg,#fff,#fcfdff);transition:.18s var(--ease);cursor:pointer;
+  }
+  .log-item:hover{border-color:#d5dce8;box-shadow:var(--sh-2);transform:translateY(-1px)}
+  .log-item-head{display:flex;align-items:center;gap:9px;margin-bottom:5px;flex-wrap:wrap}
+  .log-dt{font-size:11.5px;font-weight:700;color:var(--ink-3);white-space:nowrap}
+  .log-title{font-size:13.5px;font-weight:700;color:var(--ink);flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .log-note{font-size:12.5px;color:var(--ink-2);line-height:1.55;margin-top:3px;
+    white-space:pre-wrap;word-break:break-word}
+  .log-empty{text-align:center;color:var(--ink-4);font-size:18px;letter-spacing:.1em;
+    padding:52px 12px;border:1px dashed var(--line);border-radius:12px;background:var(--bg-2)}
+  .lp-meta   {background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+  .lp-google {background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+  .lp-content{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe}
+  .lp-other  {background:#f3f4f6;color:#6b7280;border-color:#e5e7eb}
+  .log-tf{width:100%;font:inherit;font-size:14px;font-weight:500;padding:9px 12px;
+    border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-2);
+    color:var(--ink);resize:vertical;min-height:80px;box-sizing:border-box;
+    transition:.18s var(--ease)}
+  .log-tf:hover{border-color:#d3d9e2;background:#fff}
+  .log-tf:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:var(--ring)}
+  .cf select{width:100%;font:inherit;font-size:14px;font-weight:500;padding:9px 30px 9px 12px;
+    border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;color:var(--ink);
+    cursor:pointer;-webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a94a6' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;background-size:9px 6px;
+    transition:.16s var(--ease)}
+  .cf select:focus{outline:none;border-color:var(--blue);box-shadow:var(--ring)}
+
   .fb-err{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;
     background:#d93a30;color:#fff;font-size:12px;font-weight:600;letter-spacing:.01em;
     padding:8px 15px;border-radius:999px;box-shadow:0 8px 22px rgba(217,58,48,.34)}
@@ -791,20 +803,6 @@
     </div>
   </section>
 
-  <section id="secLog" data-page="log">
-    <div class="sec-head">
-      <div class="head-left">
-        <h2>Log บันทึกผล</h2>
-        <span id="lgTag"></span>
-      </div>
-      <div class="addwrap"><button class="btn-add" id="lgNew" type="button">+ เพิ่ม Log</button></div>
-    </div>
-    <div class="sec-body">
-      <div class="lgfeed" id="lgFeed"></div>
-      <div class="lg-foot"><button class="btn-add" id="lgNew2" type="button">+ เพิ่ม Log</button></div>
-    </div>
-  </section>
-
   <section id="secDash" data-page="dash">
     <div class="sec-head">
       <div class="head-left">
@@ -842,6 +840,28 @@
     <div class="sec-body" style="padding-top:0"><div class="legend" id="rubLegend"></div></div>
   </section>
 
+  <section id="secLog" data-page="log">
+    <div class="sec-head">
+      <div class="head-left">
+        <h2>Log บันทึกกิจกรรม</h2>
+        <div class="tabs" id="logTabs"></div>
+      </div>
+      <div class="log-dates">
+        <span>ตั้งแต่</span>
+        <input type="date" id="logFrom">
+        <span>ถึง</span>
+        <input type="date" id="logTo">
+        <button class="btn-ghost" id="logClear" type="button" style="padding:5px 12px;font-size:12px">ล้าง</button>
+      </div>
+    </div>
+    <div class="sec-body">
+      <div class="log-list" id="logList"></div>
+      <div style="padding-top:14px">
+        <button class="btn-add" id="logNew" type="button">+ เพิ่ม Log</button>
+      </div>
+    </div>
+  </section>
+
   <section id="secContent" data-page="content">
     <div class="sec-head">
       <div class="head-left">
@@ -862,16 +882,6 @@
 
 </div>
 
-<div class="modal" id="lModal" hidden>
-  <div class="sheet">
-    <div class="sheet-head">
-      <h3 id="lmTitle"></h3>
-      <button class="xbtn" id="lmClose" type="button">&times;</button>
-    </div>
-    <div class="sheet-body" id="lmBody"></div>
-  </div>
-</div>
-
 <div class="modal" id="gModal" hidden>
   <div class="sheet">
     <div class="sheet-head">
@@ -889,6 +899,15 @@
       <button class="xbtn" id="cmClose" type="button">&times;</button>
     </div>
     <div class="sheet-body" id="cmBody"></div>
+  </div>
+</div>
+<div class="modal" id="logModal" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3 id="lmTitle">เพิ่ม Log</h3>
+      <button class="xbtn" id="lmClose" type="button">&times;</button>
+    </div>
+    <div class="sheet-body" id="lmBody"></div>
   </div>
 </div>
 <div class="lbox" id="lbox" hidden><img id="lboxImg" alt=""></div>
@@ -989,12 +1008,11 @@ const LEAD_SRC = [ {id:'meta', name:'Meta Lead Form'}, {id:'google', name:'Googl
 let LEADS = { meta: [], google: [] };
 
 /* ===== state ===== */
-const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'content',h:'Content Plan'}, {id:'leads',h:'Lead Generation'}, {id:'log',h:'Log'}, {id:'dash',h:'Dashboard'} ];
+const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'content',h:'Content Plan'}, {id:'leads',h:'Lead Generation'}, {id:'dash',h:'Dashboard'}, {id:'log',h:'Log'} ];
 const state = { plans:[], active:null, adding:false, src:'meta', leadScore:{}, page:'plan', leadFilter:'',
-  content:{}, cimg:{}, cMonth:'', cDay:null, timeline:{}, logs:{} };
+  content:{}, cimg:{}, cMonth:'', cDay:null, timeline:{}, logs:{}, logFilter:{ platform:'', dateFrom:'', dateTo:'' } };
 let cDraft = null, cView = '';
 let gDraft = null, gView = '';
-let lDraft = null, lView = '';
 
 /* ===== helper ===== */
 const $ = id => document.getElementById(id);
@@ -1125,6 +1143,7 @@ function saveNow(){
       cMonth: state.cMonth,
       timeline: state.timeline,
       logs: state.logs,
+      logFilter: state.logFilter,
       at: Date.now()
     });
   try{ store.setItem(SKEY, JSON.stringify(Object.assign({}, snap, { cimg: state.cimg }))); }
@@ -1181,6 +1200,11 @@ function loadSaved(){
     if(d.logs && typeof d.logs==='object'){
       Object.keys(d.logs).forEach(k=>{ const l = cleanLog(d.logs[k]); if(l) state.logs[k] = l; });
     }
+    if(d.logFilter && typeof d.logFilter==='object'){
+      if(LOG_PLAT.some(p=>p.id===d.logFilter.platform)||d.logFilter.platform==='') state.logFilter.platform = d.logFilter.platform||'';
+      if(/^\d{4}-\d{2}-\d{2}$/.test(String(d.logFilter.dateFrom||''))) state.logFilter.dateFrom = d.logFilter.dateFrom;
+      if(/^\d{4}-\d{2}-\d{2}$/.test(String(d.logFilter.dateTo||''))) state.logFilter.dateTo = d.logFilter.dateTo;
+    }
     if(/^\d{4}-\d{2}$/.test(String(d.cMonth||''))) state.cMonth = d.cMonth;
     if(PAGES.some(p=>p.id===d.page)) state.page = d.page;
     if(d.leadFilter==='none' || LEAD_STATUS.some(s=>s.v===d.leadFilter)) state.leadFilter = d.leadFilter;
@@ -1202,7 +1226,6 @@ function loadSaved(){
      leadScores/{src|leadId}                ← หน้าเว็บเขียน
      content/{contentId}                    ← หน้าเว็บเขียน
      timeline/{taskId}                      ← หน้าเว็บเขียน
-     logs/{logId}                           ← หน้าเว็บเขียน
      contentImages/{contentId}              ← หน้าเว็บเขียน
      leads/{src|leadId}                     ← ระบบภายนอกเขียน
      actuals/{YYYY-MM|Channel|Objective}    ← ระบบภายนอกเขียน
@@ -1340,13 +1363,6 @@ function fbWatch(){
     fbApply('timeline', ()=>{ state.timeline = next; });
   });
 
-  sub('logs', (snap, first)=>{
-    if(first && snap.empty && Object.keys(state.logs).length){ fbStamp('logs'); fbLast.logs={}; cloudPush(); return; }
-    const next = {};
-    snap.forEach(doc=>{ const l = cleanLog(doc.data()); if(l) next[doc.id] = l; });
-    fbApply('logs', ()=>{ state.logs = next; });
-  });
-
   sub('leads', snap=>{
     if(snap.empty) return;
     const next = {};
@@ -1369,9 +1385,16 @@ function fbWatch(){
     snap.forEach(doc=>{ const d = doc.data()||{}; next[doc.id] = { spend:num(d.spend), result:num(d.result) }; });
     fbApply(null, ()=>{ ACTUAL = next; applyActual(); });
   });
+
+  sub('logs', (snap, first)=>{
+    if(first && snap.empty && Object.keys(state.logs).length){ fbStamp('logs'); fbLast.logs={}; cloudPush(); return; }
+    const next = {};
+    snap.forEach(doc=>{ const l = cleanLog(doc.data()); if(l) next[doc.id] = l; });
+    fbApply(null, ()=>{ state.logs = next; renderLog(); });
+  });
 }
 
-function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; fbLast.timeline = {}; fbLast.logs = {}; cloudPush(); }
+function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; fbLast.timeline = {}; cloudPush(); }
 
 async function cloudPush(){
   if(!fbReady || fbApplying) return;
@@ -1409,16 +1432,6 @@ async function cloudPush(){
     if(!seenT[k]){ delete fbLast.timeline[k]; jobs.push(fs.deleteDoc(ref('timeline', k))); }
   });
 
-  const seenL = {};
-  Object.keys(state.logs).forEach(k=>{
-    const j = JSON.stringify(state.logs[k]);
-    seenL[k] = 1;
-    if(fbLast.logs[k] !== j){ fbLast.logs[k] = j; jobs.push(fs.setDoc(ref('logs', k), state.logs[k])); }
-  });
-  Object.keys(fbLast.logs).forEach(k=>{
-    if(!seenL[k]){ delete fbLast.logs[k]; jobs.push(fs.deleteDoc(ref('logs', k))); }
-  });
-
   const seenC = {};
   Object.keys(state.content).forEach(k=>{
     const j = JSON.stringify(state.content[k]);
@@ -1437,6 +1450,16 @@ async function cloudPush(){
   });
   Object.keys(fbLast.cimg).forEach(k=>{
     if(!seenI[k]){ delete fbLast.cimg[k]; jobs.push(fs.deleteDoc(ref('contentImages', k))); }
+  });
+
+  const seenL = {};
+  Object.keys(state.logs).forEach(k=>{
+    const j = JSON.stringify(state.logs[k]);
+    seenL[k] = 1;
+    if(fbLast.logs[k] !== j){ fbLast.logs[k] = j; jobs.push(fs.setDoc(ref('logs', k), state.logs[k])); }
+  });
+  Object.keys(fbLast.logs).forEach(k=>{
+    if(!seenL[k]){ delete fbLast.logs[k]; jobs.push(fs.deleteDoc(ref('logs', k))); }
   });
 
   const st = settingsDoc(), sj = JSON.stringify(st);
@@ -1748,85 +1771,139 @@ function delTask(){
   render();
 }
 
-/* ===== log บันทึกผล ===== */
+/* ===== log ===== */
+const LOG_PLAT = [
+  { id:'meta',    name:'Meta Ads',    cls:'lp-meta'    },
+  { id:'google',  name:'Google Ads',  cls:'lp-google'  },
+  { id:'content', name:'Content',     cls:'lp-content' },
+  { id:'other',   name:'อื่นๆ',       cls:'lp-other'   },
+];
+const lpOf   = id => LOG_PLAT.find(p=>p.id===id) || LOG_PLAT[LOG_PLAT.length-1];
 const newLid = () => 'l_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
 function cleanLog(raw){
   if(!raw || typeof raw !== 'object') return null;
   const date = String(raw.date||'');
-  if(!isDay(date)) return null;
-  const title = String(raw.title||'').slice(0,180);
-  const body  = String(raw.body||'').slice(0,6000);
-  if(!title && !body) return null;
-  return { date, title, body };
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  return {
+    date,
+    time:     /^\d{2}:\d{2}$/.test(String(raw.time||'')) ? String(raw.time) : '',
+    platform: LOG_PLAT.some(p=>p.id===raw.platform) ? String(raw.platform) : 'other',
+    title:    String(raw.title||'').slice(0,200),
+    note:     String(raw.note||'').slice(0,2000),
+  };
 }
-function logList(){
-  return Object.keys(state.logs)
-    .map(k => Object.assign({ id:k }, state.logs[k]))
-    .sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
-}
+
+let lDraft = null;
+
 function renderLog(){
-  const list = logList();
-  $('lgTag').innerHTML = pill('p-grey', list.length ? list.length + ' รายการ' : '—');
-  if(!list.length){ $('lgFeed').innerHTML = `<div class="lg-empty">—</div>`; return; }
-  let html = '', day = '';
-  list.forEach(l=>{
-    if(l.date !== day){
-      day = l.date;
-      html += `<div class="lg-day"><b>${dayLabel(day)}</b><i></i></div>`;
-    }
-    html += `<div class="lgi" data-log="${l.id}"><div class="lgi-r"></div><div class="lgi-x">`
-      + `<div class="lgi-h">${esc(l.title) || '—'}</div>`
-      + (l.body ? `<div class="lgi-b">${esc(l.body)}</div>` : '')
-      + `</div></div>`;
-  });
-  $('lgFeed').innerHTML = html;
+  const pf   = state.logFilter.platform;
+  const from = state.logFilter.dateFrom;
+  const to   = state.logFilter.dateTo;
+
+  /* ---- platform tabs ---- */
+  const tabsEl = $('logTabs');
+  if(tabsEl){
+    tabsEl.innerHTML = [{ id:'', name:'ทั้งหมด' }, ...LOG_PLAT].map(p=>
+      `<button class="tab ${pf===p.id?'on':''}" data-logp="${p.id}">${p.name}</button>`
+    ).join('');
+  }
+  /* ---- date inputs ---- */
+  const fEl=$('logFrom'), tEl=$('logTo');
+  if(fEl && !fEl.dataset.bound){ fEl.value=from||''; }
+  if(tEl && !tEl.dataset.bound){ tEl.value=to||''; }
+
+  /* ---- filter & sort ---- */
+  let items = Object.keys(state.logs)
+    .map(k => Object.assign({ id:k }, state.logs[k]))
+    .filter(l => {
+      if(pf && l.platform!==pf) return false;
+      if(from && l.date<from)   return false;
+      if(to   && l.date>to)     return false;
+      return true;
+    })
+    .sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+
+  const listEl = $('logList');
+  if(!listEl) return;
+
+  if(!items.length){
+    listEl.innerHTML = `<div class="log-empty">— ยังไม่มีบันทึก —</div>`;
+    return;
+  }
+  listEl.innerHTML = items.map(l=>{
+    const lp = lpOf(l.platform);
+    const dt = dayLabel(l.date) + (l.time ? ' · ' + l.time : '');
+    return `<div class="log-item" data-logitem="${l.id}">`
+      + `<div class="log-item-head">`
+      + `<span class="log-dt">${esc(dt)}</span>`
+      + `<span class="pill ${lp.cls}">${esc(lp.name)}</span>`
+      + `<span class="log-title">${esc(l.title)||'—'}</span>`
+      + `</div>`
+      + (l.note ? `<div class="log-note">${esc(l.note)}</div>` : '')
+      + `</div>`;
+  }).join('');
 }
-function lFormHtml(){
-  const l = lDraft;
-  return `<div class="cf"><label>วันที่</label><input type="date" id="lfDate" value="${esc(l.date)}"></div>`
-    + `<div class="cf"><label>หัวข้อ</label><input type="text" id="lfTitle" value="${esc(l.title)}"></div>`
-    + `<div class="cf"><label>สรุปผล</label><textarea id="lfBody">${esc(l.body)}</textarea></div>`
+
+function logFormHtml(){
+  const d = lDraft;
+  const platOpts = LOG_PLAT.map(p=>
+    `<option value="${p.id}"${d.platform===p.id?' selected':''}>${p.name}</option>`
+  ).join('');
+  return `<div class="cf"><label>แพลตฟอร์ม</label>`
+    + `<select id="lfPlat"><option value="" disabled>เลือก...</option>${platOpts}</select></div>`
+    + `<div class="cf"><label>วันที่</label><input type="date" id="lfDate" value="${esc(d.date)}"></div>`
+    + `<div class="cf"><label>เวลา (ไม่บังคับ)</label><input type="time" id="lfTime" value="${esc(d.time)}"></div>`
+    + `<div class="cf"><label>หัวข้อ</label><input type="text" id="lfTitle" value="${esc(d.title)}" placeholder="สรุปสั้นๆ..."></div>`
+    + `<div class="cf"><label>รายละเอียด</label><textarea id="lfNote" class="log-tf" placeholder="บันทึกเพิ่มเติม...">${esc(d.note)}</textarea></div>`
     + `<div class="cbtns">`
-    + (l.id ? `<button class="btn-ghost btn-danger" id="lfDel" type="button">ลบ</button>` : '')
+    + (d.id ? `<button class="btn-ghost btn-danger" id="lfDel" type="button">ลบ</button>` : '')
     + `<button class="btn-ghost" id="lfCancel" type="button">ยกเลิก</button>`
     + `<button class="btn-add" id="lfSave" type="button">บันทึก</button></div>`;
 }
-function renderLModal(force){
-  const m = $('lModal');
-  if(!lDraft){ m.hidden = true; lView = ''; return; }
+
+function renderLogModal(){
+  const m = $('logModal');
+  if(!m) return;
+  if(!lDraft){ m.hidden = true; return; }
   m.hidden = false;
   $('lmTitle').textContent = lDraft.id ? 'แก้ไข Log' : 'เพิ่ม Log';
-  const sig = 'l:' + (lDraft.id || 'new');
-  if(sig === lView && !force) return;
-  lView = sig;
-  $('lmBody').innerHTML = lFormHtml();
+  $('lmBody').innerHTML = logFormHtml();
 }
+
 function newLog(){
-  lDraft = { id:'', date:dayKey(new Date()), title:'', body:'' };
-  renderLModal(true);
+  lDraft = {
+    id:'', date:dayKey(new Date()), time:'',
+    platform: state.logFilter.platform || LOG_PLAT[0].id,
+    title:'', note:''
+  };
+  renderLogModal();
 }
 function editLog(id){
-  const l = state.logs[id];
-  if(!l) return;
+  const l = state.logs[id]; if(!l) return;
   lDraft = Object.assign({ id }, l);
-  renderLModal(true);
+  renderLogModal();
 }
 function saveLog(){
   if(!lDraft) return;
   const id = lDraft.id || newLid();
-  const l  = cleanLog(lDraft);
-  if(!l){ lDraft = null; renderLModal(true); return; }
+  lDraft.date     = ($('lfDate')||{}).value  || lDraft.date;
+  lDraft.time     = ($('lfTime')||{}).value  || '';
+  lDraft.platform = ($('lfPlat')||{}).value  || lDraft.platform;
+  lDraft.title    = ($('lfTitle')||{}).value || '';
+  lDraft.note     = ($('lfNote')||{}).value  || '';
+  const l = cleanLog(lDraft);
+  if(!l){ lDraft=null; renderLogModal(); return; }
   state.logs[id] = l;
   lDraft = null;
-  renderLModal(true);
-  render();
+  const m = $('logModal'); if(m) m.hidden = true;
+  save(); renderLog();
 }
 function delLog(){
   if(lDraft && lDraft.id) delete state.logs[lDraft.id];
   lDraft = null;
-  renderLModal(true);
-  render();
+  const m = $('logModal'); if(m) m.hidden = true;
+  save(); renderLog();
 }
 
 /* ===== view ===== */
@@ -2289,7 +2366,6 @@ function render(){
   renderTimeline();
   renderGModal();
   renderLog();
-  renderLModal();
 
   if(focusKey){
     const el = document.querySelector(`[data-ch="${focusKey.ch}"][data-r="${focusKey.r}"][data-f="${focusKey.f}"]`);
@@ -2320,12 +2396,6 @@ document.addEventListener('input', e=>{
     if(t.id==='cfName') cDraft.name = t.value;
     if(t.id==='cfTime') cDraft.time = t.value;
     if(t.id==='cfLink') cDraft.link = t.value;
-    return;
-  }
-  if(lDraft && (t.id==='lfDate' || t.id==='lfTitle' || t.id==='lfBody')){
-    if(t.id==='lfDate')  lDraft.date  = t.value;
-    if(t.id==='lfTitle') lDraft.title = t.value;
-    if(t.id==='lfBody')  lDraft.body  = t.value;
     return;
   }
   if(gDraft && (t.id==='gfName' || t.id==='gfStart' || t.id==='gfEnd' || t.id==='gfRev')){
@@ -2374,16 +2444,28 @@ document.addEventListener('click', e=>{
   const cday = e.target.closest('[data-cday]');
   if(cday){ openDay(cday.dataset.cday); return; }
 
+  /* ---- log ---- */
+  if(e.target.id==='lmClose' || e.target.id==='logModal' || e.target.id==='lfCancel'){
+    lDraft=null; renderLogModal(); return;
+  }
+  if(e.target.id==='logNew'){ newLog(); return; }
+  if(e.target.id==='lfSave'){ saveLog(); return; }
+  if(e.target.id==='lfDel'){ delLog(); return; }
+  if(e.target.id==='logClear'){
+    state.logFilter.platform=''; state.logFilter.dateFrom=''; state.logFilter.dateTo='';
+    const fEl=$('logFrom'), tEl=$('logTo');
+    if(fEl) fEl.value=''; if(tEl) tEl.value='';
+    renderLog(); return;
+  }
+  const logp = e.target.closest('[data-logp]');
+  if(logp){ state.logFilter.platform = logp.dataset.logp; renderLog(); return; }
+  const logi = e.target.closest('[data-logitem]');
+  if(logi){ editLog(logi.dataset.logitem); return; }
+
   /* ---- project timeline ---- */
   if(e.target.id==='gmClose' || e.target.id==='gModal' || e.target.id==='gfCancel'){
     gDraft=null; renderGModal(true); return;
   }
-  if(e.target.id==='lmClose' || e.target.id==='lModal' || e.target.id==='lfCancel'){ lDraft=null; renderLModal(true); return; }
-  if(e.target.id==='lgNew' || e.target.id==='lgNew2'){ newLog(); return; }
-  if(e.target.id==='lfSave'){ saveLog(); return; }
-  if(e.target.id==='lfDel'){ delLog(); return; }
-  const lgi = e.target.closest('[data-log]');
-  if(lgi){ editLog(lgi.dataset.log); return; }
   if(e.target.id==='gtNew'){ newTask(); return; }
   if(e.target.id==='gfSave'){ saveTask(); return; }
   if(e.target.id==='gfDel'){ delTask(); return; }
@@ -2417,6 +2499,8 @@ document.addEventListener('click', e=>{
   }
 });
 document.addEventListener('change', e=>{
+  if(e.target.id==='logFrom'){ state.logFilter.dateFrom = e.target.value||''; renderLog(); return; }
+  if(e.target.id==='logTo')  { state.logFilter.dateTo   = e.target.value||''; renderLog(); return; }
   if(e.target.id==='cfFile'){
     const f = e.target.files && e.target.files[0];
     if(f) takeImg(f);
@@ -2438,7 +2522,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('keydown', e=>{
   if(e.key!=='Escape') return;
   if(!$('lbox').hidden){ $('lbox').hidden = true; return; }
-  if(lDraft){ lDraft=null; renderLModal(true); return; }
+  if(lDraft){ lDraft=null; renderLogModal(); return; }
   if(gDraft){ gDraft=null; renderGModal(true); return; }
   if(state.cDay){ if(cDraft){ cDraft=null; renderModal(true); } else { closeDay(); } }
 });
