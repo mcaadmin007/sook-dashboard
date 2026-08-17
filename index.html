@@ -421,14 +421,15 @@
     content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:99px;
     background:linear-gradient(180deg,var(--blue-2),var(--blue));
   }
-  .fn .f-lab{font-size:11.5px;color:var(--ink-3);font-weight:600;margin-bottom:7px;letter-spacing:.015em}
-  .fn .f-plan{font-size:20px;font-weight:700;letter-spacing:-.03em}
-  .fn .f-plan small{font-size:11.5px;font-weight:500;color:var(--ink-4);letter-spacing:0}
-  .fn .f-act{
-    font-size:12px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);
-    display:flex;justify-content:space-between;align-items:center;gap:8px;
-  }
-  .fn .f-act b{font-size:14px;letter-spacing:-.02em}
+  .fn .f-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px}
+  .fn .f-lab{font-size:11px;color:var(--ink-3);font-weight:600;letter-spacing:.015em;line-height:1.35}
+  .fn .f-main{font-size:24px;font-weight:700;letter-spacing:-.04em;line-height:1.1}
+  .fn .f-main small{font-size:12px;font-weight:500;color:var(--ink-4);letter-spacing:0;margin-left:2px}
+  .fn .f-main.no-act{font-size:17px;color:var(--ink-3)}
+  .fn .f-est{font-size:11px;color:var(--ink-3);font-weight:600;margin-top:5px}
+  .fn .f-est b{color:var(--ink-2);font-weight:700}
+  .fn .f-prog{height:5px;border-radius:99px;background:var(--line-2);margin-top:9px;overflow:hidden}
+  .fn .f-prog i{display:block;height:100%;border-radius:99px;transition:width .5s var(--ease)}
 
   /* ===== content plan ===== */
   .calnav{display:flex;align-items:center;gap:4px}
@@ -2187,31 +2188,49 @@ function renderKPI(c, target){
     <div class="kpi">
       <div class="k-label"><span>Total Leadform</span>${c.msgAct>0?pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber', c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
       <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
-      <div class="bar"><i style="width:${c.msgMax>0?Math.min(100,c.msgAct/c.msgMax*100):0}%;background:#7c3aed"></i></div>
+      <div class="bar"><i style="width:${(c.msgMin+c.msgMax)>0?Math.min(100,c.msgAct/((c.msgMin+c.msgMax)/2)*100):0}%;background:#7c3aed"></i></div>
       <div class="k-sub">Lead ${fmt(c.leadMsgAct)} / ${fmt(c.leadMsgMin)}–${fmt(c.leadMsgMax)}</div>
     </div>
     <div class="kpi">
       <div class="k-label"><span>Total Click</span>${c.clkAct>0?pill(c.clkAct>=c.clkMin*c.pacing?'p-green':'p-amber', c.clkAct>=c.clkMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
       <div class="k-val">${fmt(c.clkAct)}<small> / ${fmt(c.clkMin)}–${fmt(c.clkMax)}</small></div>
-      <div class="bar"><i style="width:${c.clkMax>0?Math.min(100,c.clkAct/c.clkMax*100):0}%;background:#0891b2"></i></div>
+      <div class="bar"><i style="width:${(c.clkMin+c.clkMax)>0?Math.min(100,c.clkAct/((c.clkMin+c.clkMax)/2)*100):0}%;background:#0891b2"></i></div>
       <div class="k-sub">Lead ${fmt(c.leadClkAct)} / ${fmt(c.leadClkMin)}–${fmt(c.leadClkMax)}</div>
     </div>`;
 }
 
 /* ===== funnel ===== */
 function renderFunnel(c){
-  const cell=(lab,pMin,pMax,act,unit,hi)=>`
-    <div class="fn ${hi?'hi':''}">
-      <div class="f-lab">${lab}</div>
-      <div class="f-plan">${fmt(pMin)} – ${fmt(pMax)} <small>${unit}</small></div>
-      <div class="f-act"><span class="muted">Actual</span><b>${act>0?fmt(act):'—'}</b></div>
+  const cell=(lab, pMin, pMax, act, unit, hi)=>{
+    const hasAct = act > 0;
+    const mid    = (pMin + pMax) / 2;
+    const pct    = (hasAct && mid > 0) ? Math.min(200, act / mid * 100) : 0;
+    const disp   = Math.min(100, pct);
+    const barClr = pct >= 100 ? 'var(--green)' : pct >= 75 ? 'var(--blue-2)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
+    const badge  = hasAct
+      ? (pct >= 100 ? pill('p-green','✓ On Track')
+       : pct >= 75  ? pill('p-blue', Math.round(pct)+'%')
+       : pct >= 50  ? pill('p-amber', Math.round(pct)+'%')
+       :              pill('p-red',   Math.round(pct)+'%'))
+      : '';
+    const mainHtml = hasAct
+      ? `<div class="f-main">${fmt(act)}<small>${unit}</small></div>`
+      : `<div class="f-main no-act">${pMin>0?fmt(pMin)+' – '+fmt(pMax):'—'}<small> ${unit}</small></div>`;
+    const estLine = hasAct && pMin > 0
+      ? `<div class="f-est">Estimate <b>${fmt(pMin)} – ${fmt(pMax)}</b> ${unit}</div>
+         <div class="f-prog"><i style="width:${disp}%;background:${barClr}"></i></div>`
+      : '';
+    return `<div class="fn ${hi?'hi':''}">
+      <div class="f-head"><div class="f-lab">${lab}</div>${badge}</div>
+      ${mainHtml}${estLine}
     </div>`;
+  };
   $('funnelRow').innerHTML =
-    cell('Total Leadform', c.msgMin, c.msgMax, c.msgAct, 'ฟอร์ม') +
-    cell('Leads from Leadform', c.leadMsgMin, c.leadMsgMax, c.leadMsgAct, 'ราย', true) +
-    cell('Total Click', c.clkMin, c.clkMax, c.clkAct, 'คลิก') +
+    cell('Total Leadform',   c.msgMin,     c.msgMax,     c.msgAct,     'ฟอร์ม')  +
+    cell('Leads from Form',  c.leadMsgMin, c.leadMsgMax, c.leadMsgAct, 'ราย', true) +
+    cell('Total Click',      c.clkMin,     c.clkMax,     c.clkAct,     'คลิก')   +
     cell('Leads from Click', c.leadClkMin, c.leadClkMax, c.leadClkAct, 'ราย', true) +
-    cell('Total Leads', c.leadMin, c.leadMax, c.leadProj, 'ราย', true);
+    cell('Total Leads',      c.leadMin,    c.leadMax,    c.leadProj,   'ราย', true);
 }
 
 /* ===== รายชื่อ Lead ===== */
