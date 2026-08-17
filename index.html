@@ -463,6 +463,14 @@
     white-space:nowrap;overflow:hidden;min-width:0}
   .cchip b{font-weight:700;color:var(--ink-3);font-size:10px;flex:none}
   .cchip span{overflow:hidden;text-overflow:ellipsis}
+  .cchip.st-posted{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8;font-weight:700}
+  .cchip.st-posted b{color:#3b82f6}
+  .cchip.st-ads{background:#dcfce7;border-color:#86efac;color:#15803d;font-weight:700}
+  .cchip.st-ads b{color:#22c55e}
+  .cal-cell.has-post{border-color:#93c5fd;background:linear-gradient(180deg,#eff6ff,#fff)}
+  .cal-cell.has-ads{border-color:#86efac;background:linear-gradient(180deg,#f0fdf4,#fff)}
+  .cal-cell.has-post:hover{background:linear-gradient(180deg,#dbeafe,#eff6ff)}
+  .cal-cell.has-ads:hover{background:linear-gradient(180deg,#dcfce7,#f0fdf4)}
   .cmore{font-size:10.5px;font-weight:700;color:var(--ink-3);padding-left:3px}
 
   /* ===== project timeline ===== */
@@ -491,7 +499,8 @@
   .gt-grid i.wk{background:#fafbfd}
   .gt-grid i.now{border-left:1.5px solid var(--blue-line);background:var(--blue-soft)}
   .gt-bar{position:relative;height:19px;border-radius:6px;display:flex;align-items:center;
-    padding:0 7px;overflow:hidden;min-width:0}
+    padding:0 7px;overflow:hidden;min-width:0;cursor:grab;user-select:none}
+  .gt-bar:active,.gt-bar.dragging{cursor:grabbing}
   .gt-bar b{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .b-test{background:var(--amber-soft);border:1px solid var(--amber-line);color:var(--amber)}
   .b-run {background:var(--green-soft);border:1px solid var(--green-line);color:var(--green)}
@@ -759,6 +768,7 @@
       <div class="head-left">
         <h2>Project Timeline</h2>
         <span id="gtTag"></span>
+        <div class="tabs" id="gtPlatTabs" style="margin-left:4px"></div>
       </div>
       <div class="callegend" id="gtLegend"></div>
     </div>
@@ -1010,7 +1020,8 @@ let LEADS = { meta: [], google: [] };
 /* ===== state ===== */
 const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'content',h:'Content Plan'}, {id:'leads',h:'Lead Generation'}, {id:'dash',h:'Dashboard'}, {id:'log',h:'Log'} ];
 const state = { plans:[], active:null, adding:false, src:'meta', leadScore:{}, page:'plan', leadFilter:'',
-  content:{}, cimg:{}, cMonth:'', cDay:null, timeline:{}, logs:{}, logFilter:{ platform:'', dateFrom:'', dateTo:'' } };
+  content:{}, cimg:{}, cMonth:'', cDay:null, timeline:{}, logs:{}, logFilter:{ platform:'', dateFrom:'', dateTo:'' },
+  gtPlatFilter:'' };
 let cDraft = null, cView = '';
 let gDraft = null, gView = '';
 
@@ -1513,13 +1524,15 @@ function renderCal(){
     const k = dayKey(d);
     const out = (d.getMonth()+1)!==mo || d.getFullYear()!==y;
     const items = contentOf(k);
-    html += `<div class="cal-cell${out?' out':''}${k===today?' today':''}" data-cday="${k}">`
+    const topSt = items.some(i=>i.status==='ads') ? 'has-ads'
+      : items.some(i=>i.status==='posted') ? 'has-post' : '';
+    html += `<div class="cal-cell${out?' out':''}${k===today?' today':''}${topSt?' '+topSt:''}" data-cday="${k}">`
       + `<div class="cal-d">${d.getDate()}</div>`
       + `<div class="cal-chips">`
       + items.slice(0,3).map(it =>
-          `<div class="cchip"><i class="dot ${cStat(it.status).d}"></i>`
+          `<div class="cchip st-${it.status}">`
           + (it.time?`<b>${esc(it.time)}</b>`:'')
-          + `<span>${esc(it.name)}</span></div>`).join('')
+          + `<span>${esc(it.name)||'—'}</span></div>`).join('')
       + (items.length>3 ? `<div class="cmore">+${items.length-3}</div>` : '')
       + `</div></div>`;
   }
@@ -1659,8 +1672,9 @@ function cleanTask(raw){
   const review = isDay(raw.review) ? String(raw.review) : '';
   return {
     start, end, review,
-    name:   String(raw.name||'').slice(0,180),
-    status: G_STATUS.some(s=>s.v===raw.status) ? String(raw.status) : 'test',
+    name:     String(raw.name||'').slice(0,180),
+    status:   G_STATUS.some(s=>s.v===raw.status) ? String(raw.status) : 'test',
+    platform: LOG_PLAT.some(p=>p.id===raw.platform) ? String(raw.platform) : '',
   };
 }
 function tasksIn(month){
@@ -1677,9 +1691,18 @@ function renderTimeline(){
   const n = daysOf(month).dayTot;
   const today = dayKey(new Date());
   const cols = `grid-template-columns:repeat(${n},1fr)`;
+  const pf = state.gtPlatFilter;
 
   $('gtTag').innerHTML = pill('p-grey', label(month));
   $('gtLegend').innerHTML = G_STATUS.map(s=>`<span><i class="dot ${s.d}"></i>${s.h}</span>`).join('');
+
+  /* ---- platform filter tabs ---- */
+  const platTabsEl = $('gtPlatTabs');
+  if(platTabsEl){
+    platTabsEl.innerHTML = [{ id:'', name:'ทั้งหมด' }, ...LOG_PLAT].map(p=>
+      `<button class="tab ${pf===p.id?'on':''}" data-gtplat="${p.id}" style="font-size:11.5px;padding:5px 11px">${p.name}</button>`
+    ).join('');
+  }
 
   let head = '';
   for(let i=1;i<=n;i++){
@@ -1697,7 +1720,8 @@ function renderTimeline(){
     grid += `<i class="${k===today?'now':(wd===0||wd===6?'wk':'')}"></i>`;
   }
 
-  const list = tasksIn(month);
+  let list = tasksIn(month);
+  if(pf) list = list.filter(t => (t.platform||'') === pf);
   if(!list.length){ $('gtRows').innerHTML = `<div class="gt-empty">—</div>`; return; }
 
   $('gtRows').innerHTML = list.map(t=>{
@@ -1705,21 +1729,98 @@ function renderTimeline(){
     const a = t.start.slice(0,7) < month ? 1 : +t.start.slice(8);
     const b = t.end.slice(0,7)   > month ? n : +t.end.slice(8);
     const cut = (t.start.slice(0,7) < month ? ' gt-cut-l' : '') + (t.end.slice(0,7) > month ? ' gt-cut-r' : '');
+    const lp = lpOf(t.platform);
+    const platBadge = t.platform ? `<span class="pill ${lp.cls}" style="font-size:9.5px;padding:1px 6px">${lp.name}</span>` : '';
     const rev = t.review && t.review.slice(0,7) === month
       ? `<i class="gt-rev" style="left:${((+t.review.slice(8) - 0.5) / n * 100).toFixed(3)}%" title="สรุปผล ${dayLabel(t.review)}"></i>` : '';
     return `<div class="gt-row" data-gtask="${t.id}">`
-      + `<div class="gt-n"><i class="dot ${s.d}"></i><span>${esc(t.name) || '—'}</span></div>`
-      + `<div class="gt-lane" style="${cols}">`
+      + `<div class="gt-n"><i class="dot ${s.d}"></i><span>${esc(t.name) || '—'}</span>${platBadge}</div>`
+      + `<div class="gt-lane" style="${cols}" data-gtlane="${t.id}">`
       + `<div class="gt-grid" style="${cols}">${grid}</div>`
-      + `<div class="gt-bar ${s.b}${cut}" style="grid-column:${a} / ${b+1}"><b>${esc(t.name)}</b></div>`
+      + `<div class="gt-bar ${s.b}${cut}" data-tid="${t.id}" style="grid-column:${a} / ${b+1}"><b>${esc(t.name)}</b></div>`
       + rev + `</div></div>`;
   }).join('');
 }
 
+/* ===== timeline drag ===== */
+let gtDrag = null;
+
+function onGtDragStart(e){
+  const bar = e.target.closest('.gt-bar[data-tid]');
+  if(!bar) return;
+  const taskId = bar.dataset.tid;
+  const task   = state.timeline[taskId];
+  if(!task) return;
+
+  const lane = bar.closest('[data-gtlane]');
+  if(!lane) return;
+  const month = activePlan().month;
+  const [y,mo] = month.split('-').map(Number);
+  const n = daysOf(month).dayTot;
+  const laneRect = lane.getBoundingClientRect();
+
+  const startDay = task.start.slice(0,7) < month ? 1 : +task.start.slice(8);
+  const endDay   = task.end.slice(0,7)   > month ? n : +task.end.slice(8);
+
+  e.preventDefault();
+  bar.classList.add('dragging');
+  document.body.style.userSelect = 'none';
+
+  gtDrag = {
+    bar, taskId, month, n, y, mo,
+    origStartFull: task.start, origEndFull: task.end,
+    startDay, endDay,
+    span: endDay - startDay,
+    initMouseX: e.clientX,
+    dayWidth: laneRect.width / n,
+    curStart: startDay, curEnd: endDay,
+  };
+}
+
+function onGtDragMove(e){
+  if(!gtDrag) return;
+  const dx = e.clientX - gtDrag.initMouseX;
+  const delta = Math.round(dx / gtDrag.dayWidth);
+
+  let ns = gtDrag.startDay + delta;
+  let ne = gtDrag.endDay   + delta;
+  if(ns < 1){ ne = 1 + gtDrag.span; ns = 1; }
+  if(ne > gtDrag.n){ ns = gtDrag.n - gtDrag.span; ne = gtDrag.n; }
+  ns = Math.max(1, ns); ne = Math.min(gtDrag.n, ne);
+
+  gtDrag.curStart = ns; gtDrag.curEnd = ne;
+  gtDrag.bar.style.gridColumn = `${ns} / ${ne + 1}`;
+}
+
+function onGtDragEnd(){
+  if(!gtDrag) return;
+  const { taskId, y, mo, curStart, curEnd, origStartFull, origEndFull, month } = gtDrag;
+  gtDrag.bar.classList.remove('dragging');
+  document.body.style.userSelect = '';
+
+  if(curStart !== undefined && state.timeline[taskId]){
+    const pad = d => String(d).padStart(2,'0');
+    const mk  = d => `${y}-${String(mo).padStart(2,'0')}-${pad(d)}`;
+    const t   = state.timeline[taskId];
+    /* ถ้า task ขยายเลยขอบเดือน ให้คงวันที่อยู่นอกเดือนไว้ แค่เลื่อนส่วนที่อยู่ในเดือน */
+    state.timeline[taskId] = Object.assign({}, t, {
+      start: t.start.slice(0,7) < month ? origStartFull : mk(curStart),
+      end:   t.end.slice(0,7)   > month ? origEndFull   : mk(curEnd),
+    });
+    save();
+    renderTimeline();
+  }
+  gtDrag = null;
+}
+
 function gFormHtml(){
   const t = gDraft;
+  const platOpts = [{ id:'', name:'ทุกแพลตฟอร์ม' }, ...LOG_PLAT].map(p=>
+    `<option value="${p.id}"${(t.platform||'')===p.id?' selected':''}>${p.name}</option>`
+  ).join('');
   return `<div class="cf"><label>ชื่องาน / แอดที่ทดสอบ</label>`
     + `<input type="text" id="gfName" value="${esc(t.name)}"></div>`
+    + `<div class="cf"><label>แพลตฟอร์ม</label><select id="gfPlat">${platOpts}</select></div>`
     + `<div class="cf"><label>วันเริ่ม</label><input type="date" id="gfStart" value="${esc(t.start)}"></div>`
     + `<div class="cf"><label>วันจบ</label><input type="date" id="gfEnd" value="${esc(t.end)}"></div>`
     + `<div class="cf"><label>วันสรุปผล</label><input type="date" id="gfRev" value="${esc(t.review)}"></div>`
@@ -2398,11 +2499,12 @@ document.addEventListener('input', e=>{
     if(t.id==='cfLink') cDraft.link = t.value;
     return;
   }
-  if(gDraft && (t.id==='gfName' || t.id==='gfStart' || t.id==='gfEnd' || t.id==='gfRev')){
-    if(t.id==='gfName')  gDraft.name   = t.value;
-    if(t.id==='gfStart') gDraft.start  = t.value;
-    if(t.id==='gfEnd')   gDraft.end    = t.value;
-    if(t.id==='gfRev')   gDraft.review = t.value;
+  if(gDraft && (t.id==='gfName' || t.id==='gfStart' || t.id==='gfEnd' || t.id==='gfRev' || t.id==='gfPlat')){
+    if(t.id==='gfName')  gDraft.name     = t.value;
+    if(t.id==='gfStart') gDraft.start    = t.value;
+    if(t.id==='gfEnd')   gDraft.end      = t.value;
+    if(t.id==='gfRev')   gDraft.review   = t.value;
+    if(t.id==='gfPlat')  gDraft.platform = t.value;
     return;
   }
   if(t.dataset && t.dataset.f && t.dataset.ch!==undefined){
@@ -2475,8 +2577,10 @@ document.addEventListener('click', e=>{
     Array.prototype.forEach.call(gst.parentNode.children, b=>{ b.classList.toggle('on', b===gst); });
     return;
   }
+  const gtplat = e.target.closest('[data-gtplat]');
+  if(gtplat){ state.gtPlatFilter = gtplat.dataset.gtplat; renderTimeline(); return; }
   const gtk = e.target.closest('[data-gtask]');
-  if(gtk){ editTask(gtk.dataset.gtask); return; }
+  if(gtk && !gtDrag){ editTask(gtk.dataset.gtask); return; }
 
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
@@ -2526,6 +2630,10 @@ document.addEventListener('keydown', e=>{
   if(gDraft){ gDraft=null; renderGModal(true); return; }
   if(state.cDay){ if(cDraft){ cDraft=null; renderModal(true); } else { closeDay(); } }
 });
+document.addEventListener('mousedown', e=>{ onGtDragStart(e); });
+document.addEventListener('mousemove', e=>{ onGtDragMove(e); });
+document.addEventListener('mouseup',   ()=>{ onGtDragEnd(); });
+
 document.addEventListener('paste', e=>{
   if(!cDraft) return;
   const items = (e.clipboardData && e.clipboardData.items) || [];
