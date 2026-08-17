@@ -491,6 +491,13 @@
   .gt-row{border-bottom:1px solid var(--line-2);cursor:pointer;transition:.14s var(--ease)}
   .gt-row:last-child{border-bottom:none}
   .gt-row:hover{background:var(--bg-2)}
+  .gt-row.row-dragging{opacity:.35;background:var(--bg-2)!important}
+  .gt-row.row-over-top{box-shadow:inset 0 2.5px 0 var(--blue)}
+  .gt-row.row-over-bot{box-shadow:inset 0 -2.5px 0 var(--blue)}
+  .gt-handle{font-size:14px;color:var(--ink-4);cursor:grab;padding:0 6px 0 0;flex:none;
+    opacity:.25;transition:.15s var(--ease);line-height:1;user-select:none}
+  .gt-row:hover .gt-handle{opacity:.6}
+  .gt-handle:active{cursor:grabbing}
   .gt-n{padding:11px 12px;display:flex;align-items:center;gap:7px;min-width:0}
   .gt-n span{font-size:12.5px;font-weight:600;color:var(--ink);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1676,6 +1683,7 @@ function cleanTask(raw){
     name:     String(raw.name||'').slice(0,180),
     status:   G_STATUS.some(s=>s.v===raw.status) ? String(raw.status) : 'test',
     platform: LOG_PLAT.some(p=>p.id===raw.platform) ? String(raw.platform) : '',
+    order:    Number.isFinite(+raw.order) ? +raw.order : 9999,
   };
 }
 function tasksIn(month){
@@ -1683,7 +1691,11 @@ function tasksIn(month){
   return Object.keys(state.timeline)
     .map(k => Object.assign({ id:k }, state.timeline[k]))
     .filter(t => t.start <= to && t.end >= from)
-    .sort((a,b) => a.start.localeCompare(b.start) || (a.name||'').localeCompare(b.name||''));
+    .sort((a,b) => {
+      const ao = Number.isFinite(a.order) ? a.order : 9999;
+      const bo = Number.isFinite(b.order) ? b.order : 9999;
+      return ao - bo || a.start.localeCompare(b.start) || (a.name||'').localeCompare(b.name||'');
+    });
 }
 
 function renderTimeline(){
@@ -1736,7 +1748,7 @@ function renderTimeline(){
     const rev = t.review && t.review.slice(0,7) === month
       ? `<i class="gt-rev" style="left:${((+t.review.slice(8) - 0.5) / n * 100).toFixed(3)}%" title="สรุปผล ${dayLabel(t.review)}"></i>` : '';
     return `<div class="gt-row" data-gtask="${t.id}">`
-      + `<div class="gt-n"><i class="dot ${s.d}"></i>${platBadge}<span>${esc(t.name) || '—'}</span></div>`
+      + `<div class="gt-n"><span class="gt-handle" data-rowhandle="${t.id}">⠿</span><i class="dot ${s.d}"></i>${platBadge}<span>${esc(t.name) || '—'}</span></div>`
       + `<div class="gt-lane" style="${cols}" data-gtlane="${t.id}">`
       + `<div class="gt-grid" style="${cols}">${grid}</div>`
       + `<div class="gt-bar ${s.b}${cut}" data-tid="${t.id}" style="grid-column:${a} / ${b+1}"><b>${esc(t.name)}</b></div>`
@@ -1804,7 +1816,6 @@ function onGtDragEnd(){
     const pad = d => String(d).padStart(2,'0');
     const mk  = d => `${y}-${String(mo).padStart(2,'0')}-${pad(d)}`;
     const t   = state.timeline[taskId];
-    /* ถ้า task ขยายเลยขอบเดือน ให้คงวันที่อยู่นอกเดือนไว้ แค่เลื่อนส่วนที่อยู่ในเดือน */
     state.timeline[taskId] = Object.assign({}, t, {
       start: t.start.slice(0,7) < month ? origStartFull : mk(curStart),
       end:   t.end.slice(0,7)   > month ? origEndFull   : mk(curEnd),
@@ -1813,6 +1824,72 @@ function onGtDragEnd(){
     renderTimeline();
   }
   gtDrag = null;
+}
+
+/* ===== row reorder drag ===== */
+let rowDrag = null;
+let rowDragMoved = false;
+
+function clearRowIndicators(){
+  document.querySelectorAll('.gt-row.row-over-top,.gt-row.row-over-bot').forEach(r=>{
+    r.classList.remove('row-over-top','row-over-bot');
+  });
+}
+
+function onRowDragStart(e){
+  const handle = e.target.closest('[data-rowhandle]');
+  if(!handle) return;
+  const row = handle.closest('.gt-row');
+  if(!row) return;
+  e.preventDefault();
+  e.stopPropagation();
+  rowDragMoved = false;
+  row.classList.add('row-dragging');
+  document.body.style.userSelect = 'none';
+  rowDrag = { taskId: row.dataset.gtask, rowEl: row, targetIndex: null };
+}
+
+function onRowDragMove(e){
+  if(!rowDrag) return;
+  const rows = [...document.querySelectorAll('#gtRows .gt-row')];
+  const mouseY = e.clientY;
+  let targetIdx = rows.length;
+  for(let i=0;i<rows.length;i++){
+    if(rows[i]===rowDrag.rowEl) continue;
+    const rect = rows[i].getBoundingClientRect();
+    if(mouseY < rect.top + rect.height/2){ targetIdx = i; break; }
+  }
+  rowDrag.targetIndex = targetIdx;
+  rowDragMoved = true;
+  clearRowIndicators();
+  if(targetIdx < rows.length && rows[targetIdx]!==rowDrag.rowEl)
+    rows[targetIdx].classList.add('row-over-top');
+  else if(rows.length)
+    rows[rows.length-1].classList.add('row-over-bot');
+}
+
+function onRowDragEnd(){
+  if(!rowDrag) return;
+  rowDrag.rowEl.classList.remove('row-dragging');
+  document.body.style.userSelect = '';
+  clearRowIndicators();
+
+  if(rowDragMoved && rowDrag.targetIndex !== null){
+    const month = activePlan().month;
+    const pf = state.gtPlatFilter;
+    let tasks = tasksIn(month);
+    if(pf) tasks = tasks.filter(t=>(t.platform||'')===pf);
+    const fromIdx = tasks.findIndex(t=>t.id===rowDrag.taskId);
+    if(fromIdx !== -1){
+      const [moved] = tasks.splice(fromIdx, 1);
+      let ins = rowDrag.targetIndex > fromIdx ? rowDrag.targetIndex - 1 : rowDrag.targetIndex;
+      ins = Math.max(0, Math.min(tasks.length, ins));
+      tasks.splice(ins, 0, moved);
+      tasks.forEach((t,i)=>{ state.timeline[t.id] = Object.assign({}, state.timeline[t.id], { order: i }); });
+      save(); renderTimeline();
+    }
+  }
+  rowDrag = null;
 }
 
 function gFormHtml(){
@@ -2599,8 +2676,10 @@ document.addEventListener('click', e=>{
   }
   const gtplat = e.target.closest('[data-gtplat]');
   if(gtplat){ state.gtPlatFilter = gtplat.dataset.gtplat; renderTimeline(); return; }
+  if(e.target.closest('[data-rowhandle]')){ return; }
   const gtk = e.target.closest('[data-gtask]');
-  if(gtk && !gtDrag){ editTask(gtk.dataset.gtask); return; }
+  if(gtk && !gtDrag && !rowDragMoved){ editTask(gtk.dataset.gtask); rowDragMoved=false; return; }
+  rowDragMoved = false;
 
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
@@ -2650,9 +2729,9 @@ document.addEventListener('keydown', e=>{
   if(gDraft){ gDraft=null; renderGModal(true); return; }
   if(state.cDay){ if(cDraft){ cDraft=null; renderModal(true); } else { closeDay(); } }
 });
-document.addEventListener('mousedown', e=>{ onGtDragStart(e); });
-document.addEventListener('mousemove', e=>{ onGtDragMove(e); });
-document.addEventListener('mouseup',   ()=>{ onGtDragEnd(); });
+document.addEventListener('mousedown', e=>{ onRowDragStart(e); onGtDragStart(e); });
+document.addEventListener('mousemove', e=>{ onRowDragMove(e); onGtDragMove(e); });
+document.addEventListener('mouseup',   ()=>{ onRowDragEnd(); onGtDragEnd(); });
 
 document.addEventListener('paste', e=>{
   if(!cDraft) return;
