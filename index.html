@@ -1736,7 +1736,7 @@ function renderTimeline(){
     const rev = t.review && t.review.slice(0,7) === month
       ? `<i class="gt-rev" style="left:${((+t.review.slice(8) - 0.5) / n * 100).toFixed(3)}%" title="สรุปผล ${dayLabel(t.review)}"></i>` : '';
     return `<div class="gt-row" data-gtask="${t.id}">`
-      + `<div class="gt-n"><i class="dot ${s.d}"></i><span>${esc(t.name) || '—'}</span>${platBadge}</div>`
+      + `<div class="gt-n"><i class="dot ${s.d}"></i>${platBadge}<span>${esc(t.name) || '—'}</span></div>`
       + `<div class="gt-lane" style="${cols}" data-gtlane="${t.id}">`
       + `<div class="gt-grid" style="${cols}">${grid}</div>`
       + `<div class="gt-bar ${s.b}${cut}" data-tid="${t.id}" style="grid-column:${a} / ${b+1}"><b>${esc(t.name)}</b></div>`
