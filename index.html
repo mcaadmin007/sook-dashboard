@@ -1700,7 +1700,8 @@ function renderTimeline(){
   /* ---- platform filter tabs ---- */
   const platTabsEl = $('gtPlatTabs');
   if(platTabsEl){
-    platTabsEl.innerHTML = [{ id:'', name:'ทั้งหมด' }, ...LOG_PLAT].map(p=>
+    const GT_PLAT = LOG_PLAT.filter(p=>p.id!=='content');
+    platTabsEl.innerHTML = [{ id:'', name:'ทั้งหมด' }, ...GT_PLAT].map(p=>
       `<button class="tab ${pf===p.id?'on':''}" data-gtplat="${p.id}" style="font-size:11.5px;padding:5px 11px">${p.name}</button>`
     ).join('');
   }
@@ -1816,7 +1817,7 @@ function onGtDragEnd(){
 
 function gFormHtml(){
   const t = gDraft;
-  const platOpts = [{ id:'', name:'ทุกแพลตฟอร์ม' }, ...LOG_PLAT].map(p=>
+  const platOpts = [{ id:'', name:'ทุกแพลตฟอร์ม' }, ...LOG_PLAT.filter(p=>p.id!=='content')].map(p=>
     `<option value="${p.id}"${(t.platform||'')===p.id?' selected':''}>${p.name}</option>`
   ).join('');
   return `<div class="cf"><label>ชื่องาน / แอดที่ทดสอบ</label>`
