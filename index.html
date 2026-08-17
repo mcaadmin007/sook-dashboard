@@ -446,6 +446,7 @@
   .d-post{background:var(--blue)}
   .d-ads {background:var(--green)}
 
+  .cal-wrap{max-width:1260px}
   .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
   .cal-dow div{font-size:11px;font-weight:700;color:var(--ink-3);text-align:center;letter-spacing:.03em}
   .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
@@ -619,6 +620,7 @@
     .fn .f-plan{font-size:17px}
     .addwrap input{flex:1}
     .btn-add{padding:9px 16px}
+    .cal-wrap{max-width:100%}
     .cal,.cal-dow{gap:4px}
     .cal-cell{min-height:62px;padding:5px 4px;gap:4px}
     .cal-chips{flex-direction:row;flex-wrap:wrap;gap:3px}
@@ -893,8 +895,10 @@
       <div class="callegend" id="calLegend"></div>
     </div>
     <div class="sec-body">
-      <div class="cal-dow"><div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div></div>
-      <div class="cal" id="cal"></div>
+      <div class="cal-wrap">
+        <div class="cal-dow"><div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div></div>
+        <div class="cal" id="cal"></div>
+      </div>
     </div>
   </section>
 
