@@ -779,7 +779,7 @@
   </section>
 
   <section id="secFunnel" data-page="plan">
-    <div class="sec-head"><h2>Funnel</h2><span id="funnelTag"></span></div>
+    <div class="sec-head"><h2>สถานะ</h2><span id="funnelTag"></span></div>
     <div class="sec-body"><div class="funnel" id="funnelRow"></div></div>
   </section>
 
@@ -1073,7 +1073,7 @@ function costStatus(actual,cMin,cMax){
   if(actual<=cMin) return {cls:'p-green',key:'good',label:'ดีกว่าแผน'};
   if(actual<=cMax) return {cls:'p-blue',key:'ok',label:'ตามแผน'};
   if(actual<=cMax*1.25) return {cls:'p-amber',key:'warn',label:'เริ่มแพง'};
-  return {cls:'p-red',key:'bad',label:'แพงเกิน'};
+  return {cls:'p-red',key:'bad',label:'สูงกว่า Est.'};
 }
 
 function pacingFor(m){
@@ -2159,7 +2159,9 @@ function compute(chans, pacing, dm){
       r.aCost = r.aRes>0 ? r.aSpend/r.aRes : 0;
       r.paceTarget = r.rMid*pacing;
       r.achieve = r.paceTarget>0 ? r.aRes/r.paceTarget : 0;
-      r.status = costStatus(r.aCost, r.cMin, r.cMax);
+      r.status = r.budget <= 0
+        ? {cls:'p-grey', key:'non', label:'non'}
+        : costStatus(r.aCost, r.cMin, r.cMax);
       sumSpend += r.aSpend;
       if(r.kind==='message'){ msgMin+=r.rMin; msgMax+=r.rMax; msgAct+=r.aRes; }
       if(r.kind==='click'){   clkMin+=r.rMin; clkMax+=r.rMax; clkAct+=r.aRes; }
@@ -2559,7 +2561,8 @@ window.fetchLeads  = fetchLeads;
    เขียนผลลัพธ์ลง Firestore boards/{FB_BOARD}/actuals & leads
    ========================================================= */
 
-let metaSyncing = false;
+let metaSyncing   = false;
+let metaAutoTimer = null;
 
 /* --- Graph API helper — direct fetch, ไม่ต้องใช้ JS SDK --- */
 async function metaFetch(path, params){
@@ -2596,8 +2599,20 @@ function renderMetaBtn(){
   btn.className   = metaSyncing ? 'navbtn' : 'navbtn meta-on';
 }
 
-/* --- click handler (ไม่ต้อง login แล้ว — ใช้ System User Token) --- */
+/* --- click handler (ไม่ต้อง login — ใช้ System User Token) --- */
 function metaLoginAndSync(){ metaSyncAll(); }
+
+/* --- โหลด cache จาก localStorage แสดงข้อมูลทันที ก่อน API ตอบ --- */
+function loadMetaCache(){
+  try{
+    const ac = localStorage.getItem('meta_actuals_cache');
+    if(ac){ const d = JSON.parse(ac); if(d && d.data) updateActual(d.data); }
+  }catch(e){}
+  try{
+    const lc = localStorage.getItem('meta_leads_cache');
+    if(lc){ const d = JSON.parse(lc); if(d && d.data) updateLeads({ meta: d.data }); }
+  }catch(e){}
+}
 
 /* --- sync ทั้งสอง feed พร้อมกัน --- */
 async function metaSyncAll(){
@@ -2611,9 +2626,28 @@ async function metaSyncAll(){
   renderMetaBtn();
 }
 
-/* --- Sync Actual Spend + Result → Firestore actuals --- */
+/* --- Sync Actual Spend + Result → Firestore actuals ---
+   Step 1: ดึง optimization_goal ของทุก adset ก่อน (แก้ Post Engage ไม่แสดง)
+   Step 2: ดึง insights + publisher_platform breakdown โดยใช้ adset_id → goal
+   ----------------------------------------------------------------- */
 async function metaSyncActuals(){
-  const actuals = {};
+  const actuals   = {};
+  const adsetGoals = {};
+
+  // Step 1 — adset goals
+  try{
+    let acursor = null, aHasNext = true;
+    while(aHasNext){
+      const ap = { fields:'id,optimization_goal', limit:500 };
+      if(acursor) ap.after = acursor;
+      const ar = await metaFetch(`/${META_ACCOUNT_ID}/adsets`, ap);
+      (ar.data||[]).forEach(a => { adsetGoals[a.id] = a.optimization_goal||''; });
+      acursor  = ar.paging && ar.paging.cursors && ar.paging.cursors.after;
+      aHasNext = !!(acursor && ar.data && ar.data.length === 500);
+    }
+  }catch(e){ console.warn('Meta adsets:', e); }
+
+  // Step 2 — insights by publisher_platform
   for(const plan of state.plans){
     const [y, mo] = plan.month.split('-');
     const since   = `${plan.month}-01`;
@@ -2622,7 +2656,7 @@ async function metaSyncActuals(){
       let cursor = null, hasNext = true;
       while(hasNext){
         const params = {
-          fields:     'spend,actions,optimization_goal',
+          fields:     'spend,actions,adset_id',
           time_range: JSON.stringify({ since, until }),
           level:      'adset',
           breakdowns: 'publisher_platform',
@@ -2632,7 +2666,7 @@ async function metaSyncActuals(){
         const resp = await metaFetch(`/${META_ACCOUNT_ID}/insights`, params);
         for(const row of (resp.data||[])){
           const ch  = metaChannel(row.publisher_platform);
-          const obj = metaObj(row.optimization_goal);
+          const obj = metaObj(adsetGoals[row.adset_id]);
           const key = `${plan.month}|${ch}|${obj}`;
           if(!actuals[key]) actuals[key] = { spend:0, result:0 };
           actuals[key].spend += parseFloat(row.spend||0);
@@ -2647,7 +2681,12 @@ async function metaSyncActuals(){
       }
     }catch(e){ console.warn('Meta Insights', plan.month, e); }
   }
+
   if(!Object.keys(actuals).length) return;
+
+  // บันทึก cache (กัน API ล่มรอบหน้า)
+  try{ localStorage.setItem('meta_actuals_cache', JSON.stringify({ ts:Date.now(), data:actuals })); }catch(e){}
+
   if(fb && fbReady){
     const { db, fs } = fb;
     await Promise.all(Object.entries(actuals).map(([k,v]) =>
@@ -2702,7 +2741,12 @@ async function metaSyncLeads(){
       }
     }catch(e){ console.warn('Meta Lead page', pg.id, e); }
   }
+
   if(!docs.length) return;
+
+  // บันทึก cache
+  try{ localStorage.setItem('meta_leads_cache', JSON.stringify({ ts:Date.now(), data:docs })); }catch(e){}
+
   if(fb && fbReady){
     const { db, fs } = fb;
     await Promise.all(docs.map(d => {
@@ -2714,8 +2758,23 @@ async function metaSyncLeads(){
   }
 }
 
-/* --- ไม่ต้องโหลด FB JS SDK — ใช้ System User Token จาก Business Manager --- */
-function initMetaSDK(){ renderMetaBtn(); }
+/* --- init: แสดงปุ่ม + โหลด cache ทันที + auto-sync + ตั้ง interval 30 นาที --- */
+function initMetaSDK(){
+  renderMetaBtn();
+  loadMetaCache(); // แสดงข้อมูลจาก cache ก่อน API ตอบ
+
+  // รอ Firebase พร้อมก่อน sync (max 5 วิ)
+  const waitAndSync = (tries) => {
+    if(fb && fbReady){ metaSyncAll(); return; }
+    if(tries > 0) setTimeout(()=>waitAndSync(tries-1), 1000);
+    else metaSyncAll();
+  };
+  setTimeout(()=>waitAndSync(5), 2000);
+
+  // Auto-refresh ทุก 30 นาที
+  if(metaAutoTimer) clearInterval(metaAutoTimer);
+  metaAutoTimer = setInterval(metaSyncAll, 30 * 60 * 1000);
+}
 
 window.metaSyncAll     = metaSyncAll;
 window.metaSyncActuals = metaSyncActuals;
