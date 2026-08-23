@@ -2595,11 +2595,35 @@ function metaChannel(pub){
   return pub === 'instagram' ? 'Instagram' : 'Facebook Ads';
 }
 
-/* --- map optimization_goal → Objective ใน Dashboard --- */
-function metaObj(goal){
-  const g = (goal||'').toUpperCase();
-  if(g.includes('LEAD'))                       return 'Leadform';
-  if(g.includes('ENGAGE')||g.includes('POST')) return 'Post Engage';
+/* --- map campaign_name → Objective ใน Dashboard ---
+   รองรับ naming convention: _Platform_Objective_Content
+   เช่น _FB_Engage_Content1, _IG_Leadform_Content2, _FB_Awarness_...
+   ----------------------------------------------------------------- */
+function metaObj(info){
+  const name = (typeof info==='object' ? info.campaign_name||'' : '').toLowerCase();
+  const g    = (typeof info==='object' ? info.goal||'' : String(info||'')).toUpperCase();
+
+  // 1. จับ _Platform_Objective_ pattern ตรงๆ (แม่นที่สุด)
+  //    split('_') → ['', 'FB', 'Engage', 'Content1'] → index 2 = Objective
+  const parts = name.split('_').filter(Boolean);
+  if(parts.length >= 2){
+    const ob = parts[1]; // index 1 = Objective (FB=0, Objective=1)
+    if(ob === 'engage' || ob === 'awarness' || ob === 'awareness')
+                                    return 'Post Engage';
+    if(ob === 'leadform')           return 'Leadform';
+    if(ob === 'click' || ob === 'traffic' || ob === 'search')
+                                    return 'Click';
+  }
+
+  // 2. Fallback keyword match (กรณีชื่อไม่ได้ตาม pattern)
+  if(/engage|awarness|awareness|โพสต์|boost/i.test(name)) return 'Post Engage';
+  if(/leadform|lead.*form|ฟอร์ม/i.test(name))             return 'Leadform';
+
+  // 3. Fallback optimization_goal
+  if(g.includes('LEAD'))                                             return 'Leadform';
+  if(g.includes('ENGAGE')||g.includes('POST')||g.includes('REACH')||
+     g.includes('IMPRESSION')||g.includes('VIDEO')||g.includes('PAGE_LIKE'))
+                                                                     return 'Post Engage';
   return 'Click';
 }
 
@@ -2669,10 +2693,15 @@ async function metaSyncActuals(){
   try{
     let acursor = null, aHasNext = true;
     while(aHasNext){
-      const ap = { fields:'id,optimization_goal', limit:500 };
+      const ap = { fields:'id,optimization_goal,campaign{name}', limit:500 };
       if(acursor) ap.after = acursor;
       const ar = await metaFetch(`/${META_ACCOUNT_ID}/adsets`, ap);
-      (ar.data||[]).forEach(a => { adsetGoals[a.id] = a.optimization_goal||''; });
+      (ar.data||[]).forEach(a => {
+        adsetGoals[a.id] = {
+          goal:          a.optimization_goal||'',
+          campaign_name: (a.campaign && a.campaign.name) || '',
+        };
+      });
       acursor  = ar.paging && ar.paging.cursors && ar.paging.cursors.after;
       aHasNext = !!(acursor && ar.data && ar.data.length === 500);
     }
