@@ -2564,10 +2564,11 @@ window.fetchLeads  = fetchLeads;
 let metaSyncing   = false;
 let metaAutoTimer = null;
 
-/* --- Graph API helper — direct fetch, ไม่ต้องใช้ JS SDK --- */
-async function metaFetch(path, params){
+/* --- Graph API helper — direct fetch, ไม่ต้องใช้ JS SDK ---
+   token param ไม่บังคับ ถ้าไม่ส่งใช้ META_TOKEN (System User)       --- */
+async function metaFetch(path, params, token){
   const url = new URL(`https://graph.facebook.com/${META_GRAPH_VER}${path}`);
-  url.searchParams.set('access_token', META_TOKEN);
+  url.searchParams.set('access_token', token || META_TOKEN);
   Object.entries(params||{}).forEach(([k,v]) =>
     url.searchParams.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
   );
@@ -2575,6 +2576,18 @@ async function metaFetch(path, params){
   const data = await res.json();
   if(data.error) throw data.error;
   return data;
+}
+
+/* --- ดึง Page Access Token สำหรับ page ที่ระบุ ---
+   /leadgen_forms ต้องใช้ Page Token ไม่รับ System User Token โดยตรง --- */
+async function getPageToken(pageId){
+  try{
+    const r = await metaFetch(`/${pageId}`, { fields:'access_token' });
+    return r.access_token || META_TOKEN;
+  }catch(e){
+    console.warn('getPageToken failed, fallback to META_TOKEN', e);
+    return META_TOKEN;
+  }
 }
 
 /* --- map publisher_platform → Channel ใน Dashboard --- */
@@ -2588,6 +2601,24 @@ function metaObj(goal){
   if(g.includes('LEAD'))                       return 'Leadform';
   if(g.includes('ENGAGE')||g.includes('POST')) return 'Post Engage';
   return 'Click';
+}
+
+/* --- แสดง error toast สีแดง (มองเห็น 8 วิ) เมื่อ Meta API มีปัญหา --- */
+function showMetaErr(msg){
+  let el = document.getElementById('metaErrToast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'metaErrToast';
+    el.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;' +
+      'background:#b3261e;color:#fff;font-size:13px;font-weight:600;' +
+      'padding:10px 16px;border-radius:10px;max-width:320px;' +
+      'box-shadow:0 4px 16px rgba(0,0,0,.3);line-height:1.4';
+    document.body.appendChild(el);
+  }
+  el.textContent = '⚠ Meta: ' + msg;
+  el.hidden = false;
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.hidden = true; }, 8000);
 }
 
 /* --- อัปเดตปุ่ม header --- */
@@ -2701,12 +2732,17 @@ async function metaSyncActuals(){
   }
 }
 
-/* --- Sync Lead Form Submissions → Firestore leads --- */
+/* --- Sync Lead Form Submissions → Firestore leads ---
+   ขั้นตอน: ดึง Page Access Token ก่อน → เรียก leadgen_forms → ดึง leads  --- */
 async function metaSyncLeads(){
   const docs = [];
   for(const pg of META_PAGE_IDS){
+    // Step 1: ดึง Page Access Token (จำเป็นสำหรับ leadgen_forms endpoint)
+    const pageToken = await getPageToken(pg.id);
+    console.log(`[Meta Leads] Page ${pg.id} — using ${pageToken===META_TOKEN?'System User Token (fallback)':'Page Token'}`);
     try{
-      const forms = await metaFetch(`/${pg.id}/leadgen_forms`,{ fields:'id,name', limit:50 });
+      const forms = await metaFetch(`/${pg.id}/leadgen_forms`,{ fields:'id,name', limit:50 }, pageToken);
+      console.log(`[Meta Leads] Found ${(forms.data||[]).length} forms`);
       for(const form of (forms.data||[])){
         let cursor2 = null, hasNext2 = true;
         while(hasNext2){
@@ -2715,7 +2751,8 @@ async function metaSyncLeads(){
             limit: 200,
           };
           if(cursor2) p2.after = cursor2;
-          const lr = await metaFetch(`/${form.id}/leads`, p2);
+          const lr = await metaFetch(`/${form.id}/leads`, p2, pageToken);
+          console.log(`[Meta Leads] Form "${form.name}" — ${(lr.data||[]).length} leads`);
           for(const lead of (lr.data||[])){
             const fd = {};
             (lead.field_data||[]).forEach(f=>{
@@ -2739,7 +2776,10 @@ async function metaSyncLeads(){
           hasNext2 = !!(cursor2 && lr.data && lr.data.length === 200);
         }
       }
-    }catch(e){ console.warn('Meta Lead page', pg.id, e); }
+    }catch(e){
+      console.error('[Meta Leads] ERROR page', pg.id, e);
+      showMetaErr(`Lead sync error: ${e.message||e.type||JSON.stringify(e)}`);
+    }
   }
 
   if(!docs.length) return;
