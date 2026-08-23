@@ -692,6 +692,11 @@
       -webkit-print-color-adjust:exact;print-color-adjust:exact}
     .crit,.legend{break-inside:avoid}
   }
+  /* ===== Meta connect button ===== */
+  .meta-wrap{position:relative;display:inline-block}
+  .navbtn.meta-on{color:#4ade80!important}
+  .navbtn.meta-warn{color:#facc15!important}
+  .navbtn:disabled{opacity:.55;cursor:default}
 </style>
 </head>
 <body>
@@ -699,7 +704,12 @@
 
   <header class="top">
     <h1>SooK Lead Generation</h1>
-    <nav class="nav" id="nav"></nav>
+    <div style="display:flex;align-items:center;gap:8px;position:relative">
+      <nav class="nav" id="nav"></nav>
+      <div class="meta-wrap">
+        <button class="navbtn" id="metaBtn" onclick="metaLoginAndSync()" title="เชื่อมต่อ Meta Ads API">⊕ Connect Meta</button>
+      </div>
+    </div>
   </header>
 
   <section id="secKPI" data-page="plan">
@@ -938,6 +948,15 @@
 <script>
 /* ===== ค่าคงที่ ===== */
 const CONV = { message: 0.10, click: 0.005 };
+
+/* =========================================================
+   META CONFIG — System User Token (Business Manager)
+   ⚠  ถ้า repo เป็น Public ให้ย้าย token ไปเก็บใน env/secret
+   ========================================================= */
+const META_TOKEN      = 'EAARuqHyZBjLsBSarigMoKNEJy1abz4ABUKxznEKdwYUgwJFLBbcbboOMWODBtdWJi7TujlVV2mHQBnWIuZBRRBTWZCnajedqDBTOww7ZASDMjsBzTJZBDh9r8wiGVj8JdxA8dbhNBav2GV9RryZCprHWVNJH5dcS6Lp7ijWrEZCEvdkdZBbMzeRotpiuYOc2rwZDZD';
+const META_ACCOUNT_ID = 'act_2293937604431894';
+const META_PAGE_IDS   = [{ id:'1060650783807210', name:'SooK Page' }];
+const META_GRAPH_VER  = 'v20.0';
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 /* ===== โครงแผนตั้งต้น ===== */
@@ -2533,6 +2552,175 @@ async function fetchLeads(url, options){
 window.updateLeads = updateLeads;
 window.fetchLeads  = fetchLeads;
 
+/* =========================================================
+   META ADS INTEGRATION
+   ดึง Actual Spend/Result จาก Meta Ads Insights API
+   ดึง Lead Form Submissions จาก Meta Lead Gen API
+   เขียนผลลัพธ์ลง Firestore boards/{FB_BOARD}/actuals & leads
+   ========================================================= */
+
+let metaSyncing = false;
+
+/* --- Graph API helper — direct fetch, ไม่ต้องใช้ JS SDK --- */
+async function metaFetch(path, params){
+  const url = new URL(`https://graph.facebook.com/${META_GRAPH_VER}${path}`);
+  url.searchParams.set('access_token', META_TOKEN);
+  Object.entries(params||{}).forEach(([k,v]) =>
+    url.searchParams.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
+  );
+  const res  = await fetch(url.toString());
+  const data = await res.json();
+  if(data.error) throw data.error;
+  return data;
+}
+
+/* --- map publisher_platform → Channel ใน Dashboard --- */
+function metaChannel(pub){
+  return pub === 'instagram' ? 'Instagram' : 'Facebook Ads';
+}
+
+/* --- map optimization_goal → Objective ใน Dashboard --- */
+function metaObj(goal){
+  const g = (goal||'').toUpperCase();
+  if(g.includes('LEAD'))                       return 'Leadform';
+  if(g.includes('ENGAGE')||g.includes('POST')) return 'Post Engage';
+  return 'Click';
+}
+
+/* --- อัปเดตปุ่ม header --- */
+function renderMetaBtn(){
+  const btn = document.getElementById('metaBtn');
+  if(!btn) return;
+  btn.disabled    = metaSyncing;
+  btn.textContent = metaSyncing ? '⟳ Syncing…' : '⟳ Sync Meta';
+  btn.className   = metaSyncing ? 'navbtn' : 'navbtn meta-on';
+}
+
+/* --- click handler (ไม่ต้อง login แล้ว — ใช้ System User Token) --- */
+function metaLoginAndSync(){ metaSyncAll(); }
+
+/* --- sync ทั้งสอง feed พร้อมกัน --- */
+async function metaSyncAll(){
+  if(metaSyncing) return;
+  metaSyncing = true;
+  renderMetaBtn();
+  try{
+    await Promise.all([metaSyncActuals(), metaSyncLeads()]);
+  }catch(e){ console.error('Meta sync error:', e); }
+  metaSyncing = false;
+  renderMetaBtn();
+}
+
+/* --- Sync Actual Spend + Result → Firestore actuals --- */
+async function metaSyncActuals(){
+  const actuals = {};
+  for(const plan of state.plans){
+    const [y, mo] = plan.month.split('-');
+    const since   = `${plan.month}-01`;
+    const until   = `${plan.month}-${new Date(+y,+mo,0).getDate().toString().padStart(2,'0')}`;
+    try{
+      let cursor = null, hasNext = true;
+      while(hasNext){
+        const params = {
+          fields:     'spend,actions,optimization_goal',
+          time_range: JSON.stringify({ since, until }),
+          level:      'adset',
+          breakdowns: 'publisher_platform',
+          limit:      500,
+        };
+        if(cursor) params.after = cursor;
+        const resp = await metaFetch(`/${META_ACCOUNT_ID}/insights`, params);
+        for(const row of (resp.data||[])){
+          const ch  = metaChannel(row.publisher_platform);
+          const obj = metaObj(row.optimization_goal);
+          const key = `${plan.month}|${ch}|${obj}`;
+          if(!actuals[key]) actuals[key] = { spend:0, result:0 };
+          actuals[key].spend += parseFloat(row.spend||0);
+          const acts   = row.actions||[];
+          const lead   = +(acts.find(a=>a.action_type==='lead')||{}).value            || 0;
+          const click  = +(acts.find(a=>a.action_type==='link_click')||{}).value      || 0;
+          const engage = +(acts.find(a=>a.action_type==='post_engagement')||{}).value || 0;
+          actuals[key].result += obj==='Leadform' ? lead : obj==='Click' ? click : engage;
+        }
+        cursor  = resp.paging && resp.paging.cursors && resp.paging.cursors.after;
+        hasNext = !!(cursor && resp.data && resp.data.length === 500);
+      }
+    }catch(e){ console.warn('Meta Insights', plan.month, e); }
+  }
+  if(!Object.keys(actuals).length) return;
+  if(fb && fbReady){
+    const { db, fs } = fb;
+    await Promise.all(Object.entries(actuals).map(([k,v]) =>
+      fs.setDoc(fs.doc(db,'boards',FB_BOARD,'actuals',k),{
+        spend:Math.round(v.spend), result:Math.round(v.result)
+      })
+    ));
+  } else {
+    updateActual(Object.fromEntries(
+      Object.entries(actuals).map(([k,v])=>[k,{spend:Math.round(v.spend),result:Math.round(v.result)}])
+    ));
+  }
+}
+
+/* --- Sync Lead Form Submissions → Firestore leads --- */
+async function metaSyncLeads(){
+  const docs = [];
+  for(const pg of META_PAGE_IDS){
+    try{
+      const forms = await metaFetch(`/${pg.id}/leadgen_forms`,{ fields:'id,name', limit:50 });
+      for(const form of (forms.data||[])){
+        let cursor2 = null, hasNext2 = true;
+        while(hasNext2){
+          const p2 = {
+            fields:'id,created_time,field_data,ad_name,adset_name,campaign_name',
+            limit: 200,
+          };
+          if(cursor2) p2.after = cursor2;
+          const lr = await metaFetch(`/${form.id}/leads`, p2);
+          for(const lead of (lr.data||[])){
+            const fd = {};
+            (lead.field_data||[]).forEach(f=>{
+              fd[f.name] = Array.isArray(f.values) ? f.values[0] : f.values;
+            });
+            docs.push({
+              id:            lead.id,
+              src:           'meta',
+              created_time:  lead.created_time||'',
+              full_name:     fd.full_name||fd.name||'',
+              email:         fd.email||'',
+              phone_number:  fd.phone_number||fd.phone||'',
+              campaign_name: lead.campaign_name||'',
+              adset_name:    lead.adset_name||'',
+              ad_name:       lead.ad_name||'',
+              form_name:     form.name||'',
+              platform:      'Facebook',
+            });
+          }
+          cursor2  = lr.paging && lr.paging.cursors && lr.paging.cursors.after;
+          hasNext2 = !!(cursor2 && lr.data && lr.data.length === 200);
+        }
+      }
+    }catch(e){ console.warn('Meta Lead page', pg.id, e); }
+  }
+  if(!docs.length) return;
+  if(fb && fbReady){
+    const { db, fs } = fb;
+    await Promise.all(docs.map(d => {
+      const { id, ...rest } = d;
+      return fs.setDoc(fs.doc(db,'boards',FB_BOARD,'leads',`meta|${id}`), rest);
+    }));
+  } else {
+    updateLeads({ meta: docs });
+  }
+}
+
+/* --- ไม่ต้องโหลด FB JS SDK — ใช้ System User Token จาก Business Manager --- */
+function initMetaSDK(){ renderMetaBtn(); }
+
+window.metaSyncAll     = metaSyncAll;
+window.metaSyncActuals = metaSyncActuals;
+window.metaSyncLeads   = metaSyncLeads;
+
 /* ===== render ===== */
 let focusKey=null, critKey=null;
 function render(){
@@ -2766,6 +2954,7 @@ document.addEventListener('drop', e=>{
   applyActual();
   render();
   fbInit();
+  initMetaSDK();
 })();
 window.addEventListener('beforeunload', saveNow);
 </script>
