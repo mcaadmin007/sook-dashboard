@@ -164,7 +164,7 @@
   .field input:disabled{background:#f4f5f8;color:var(--ink-3)}
 
   /* ===== KPI ===== */
-  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
   .kpi{
     position:relative;border:1px solid var(--line);border-radius:14px;padding:15px 16px;
     background:linear-gradient(180deg,#fff,#fcfdff);
@@ -2265,16 +2265,10 @@ function renderKPI(c, target){
   else if(leadPacePct>=80)  leadTag = pill('p-amber','ต่ำกว่าเป้าเล็กน้อย');
   else leadTag = pill('p-red','ต่ำกว่าเป้ามาก');
 
-  // Cost per Lead = งบใช้จริง / จำนวน Leadform จริง (msgAct)
-  const cplAct  = c.msgAct>0 ? spend/c.msgAct : 0;
-  const cplMin  = c.msgMax>0 ? c.total/c.msgMax : 0;
-  const cplMax  = c.msgMin>0 ? c.total/c.msgMin : 0;
+  const cplMin = c.leadMax>0 ? c.total/c.leadMax : 0;
+  const cplMax = c.leadMin>0 ? c.total/c.leadMin : 0;
+  const cplAct = lead>0 ? spend/lead : 0;
   const cplStat = costStatus(cplAct, cplMin, cplMax);
-
-  const msgTag = c.msgAct>0
-    ? pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber',
-           c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ')
-    : pill('p-grey','—');
 
   $('kpiRow').innerHTML = `
     <div class="kpi">
@@ -2284,20 +2278,31 @@ function renderKPI(c, target){
       <div class="k-sub">${fmt(spendPct,1)}% · pacing ${fmt(pacePct,0)}% (${fmt(expected)})</div>
     </div>
     <div class="kpi">
-      <div class="k-label"><span>Total Leadform</span>${msgTag}</div>
-      <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
-      <div class="bar"><i style="width:${(c.msgMin+c.msgMax)>0?Math.min(100,c.msgAct/((c.msgMin+c.msgMax)/2)*100):0}%;background:#7c3aed"></i></div>
-      <div class="k-sub">Est. ${fmt(c.msgMin)}–${fmt(c.msgMax)} ฟอร์ม</div>
+      <div class="k-label"><span>Qualified Lead</span>${leadTag}</div>
+      <div class="k-val">${fmt(lead)}<small> / ${fmt(target)}</small></div>
+      <div class="bar"><i style="width:${target>0?Math.min(100,lead/target*100):0}%;background:${leadPacePct>=100?'var(--green)':leadPacePct>=80?'var(--amber)':'var(--red)'}"></i></div>
+      <div class="k-sub">เป้า ณ วันนี้ ${fmt(target*c.pacing)}</div>
     </div>
     <div class="kpi">
       <div class="k-label"><span>Cost per Lead</span>${pill(cplStat.cls,cplStat.label)}</div>
-      <div class="k-val">${cplAct>0?fmt(cplAct,0):'—'}<small> บาท</small></div>
-      <div class="k-sub">แผน ${fmt(cplMin,0)}–${fmt(cplMax,0)} บาท</div>
-    </div>\`;
+      <div class="k-val">${cplAct>0?fmt(cplAct):'—'}<small> บาท</small></div>
+      <div class="k-sub">แผน ${fmt(cplMin)}–${fmt(cplMax)}</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span>Total Leadform</span>${c.msgAct>0?pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber', c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
+      <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
+      <div class="bar"><i style="width:${(c.msgMin+c.msgMax)>0?Math.min(100,c.msgAct/((c.msgMin+c.msgMax)/2)*100):0}%;background:#7c3aed"></i></div>
+      <div class="k-sub">Lead ${fmt(c.leadMsgAct)} / ${fmt(c.leadMsgMin)}–${fmt(c.leadMsgMax)}</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span>Total Click</span>${c.clkAct>0?pill(c.clkAct>=c.clkMin*c.pacing?'p-green':'p-amber', c.clkAct>=c.clkMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
+      <div class="k-val">${fmt(c.clkAct)}<small> / ${fmt(c.clkMin)}–${fmt(c.clkMax)}</small></div>
+      <div class="bar"><i style="width:${(c.clkMin+c.clkMax)>0?Math.min(100,c.clkAct/((c.clkMin+c.clkMax)/2)*100):0}%;background:#0891b2"></i></div>
+      <div class="k-sub">Lead ${fmt(c.leadClkAct)} / ${fmt(c.leadClkMin)}–${fmt(c.leadClkMax)}</div>
+    </div>`;
 }
 
 /* ===== funnel ===== */
-
 function renderFunnel(c){
   const cell=(lab, pMin, pMax, act, unit, hi)=>{
     const hasAct = act > 0;
@@ -2619,11 +2624,7 @@ function metaObj(info){
   if(g.includes('ENGAGE')||g.includes('POST')||g.includes('REACH')||
      g.includes('IMPRESSION')||g.includes('VIDEO')||g.includes('PAGE_LIKE'))
                                                                      return 'Post Engage';
-  if(g.includes('LINK_CLICK')||g.includes('MAXIMIZE_CLICK')||g.includes('LANDING_PAGE'))
-                                                                     return 'Click';
-
-  // ระบุ objective ไม่ได้ → คืน null → ข้ามแถวนี้ (ไม่แสดงในตาราง)
-  return null;
+  return 'Click';
 }
 
 /* --- แสดง error toast สีแดง (มองเห็น 8 วิ) เมื่อ Meta API มีปัญหา --- */
@@ -2726,7 +2727,6 @@ async function metaSyncActuals(){
         for(const row of (resp.data||[])){
           const ch  = metaChannel(row.publisher_platform);
           const obj = metaObj(adsetGoals[row.adset_id]);
-          if(!obj) continue; // ข้ามถ้าระบุ objective ไม่ได้
           const key = `${plan.month}|${ch}|${obj}`;
           if(!actuals[key]) actuals[key] = { spend:0, result:0 };
           actuals[key].spend += parseFloat(row.spend||0);
@@ -2869,12 +2869,12 @@ function render(){
     : label(state.plans[0].month);
 
   $('scopeTag').innerHTML  = pill('p-grey', span);
+  $('funnelTag').innerHTML = pill('p-grey', label(p.month));
 
   renderNav();
   renderTabs();
   renderTable(c, chans);
   renderKPI(agg, monthTarget*state.plans.length);
-  $('funnelTag').innerHTML = pill('p-grey', label(p.month));
   renderFunnel(c);
   renderLeadStat(p.month);
   renderLeads(p.month);
