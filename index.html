@@ -708,8 +708,8 @@
           <input type="number" id="inTarget" value="200">
         </div>
         <div class="field">
-          <label>ระยะเวลา (เดือน)</label>
-          <input type="number" id="inMonths" value="6">
+          <label>ระยะเวลา (เดือน) · ตามแผนที่สร้าง</label>
+          <input type="number" id="inMonths" value="6" readonly title="นับจากจำนวนแผนรายเดือนที่สร้างไว้ — เพิ่ม/ลบแผนเพื่อเปลี่ยนค่านี้" style="background:var(--bg-2);color:var(--ink-2);cursor:not-allowed">
         </div>
       </div>
     </div>
@@ -2219,11 +2219,14 @@ function renderTable(c, chans){
 }
 
 /* ===== KPI ===== */
-function renderKPI(c, target){
-  const spend  = c.sumSpend;
-  const spendPct = c.total>0 ? spend/c.total*100 : 0;
+/* budgetTotal = Budget รวม (บาท/เดือน) × ระยะเวลา (เดือน)
+   targetLeads = เป้า Lead รวม (Qualified) ทั้งช่วง  ·  1 ฟอร์ม = 1 lead
+   CPL         = งบใช้จริง ÷ Total Leadform (จำนวนฟอร์มจริง) */
+function renderKPI(c, targetLeads, budgetTotal){
+  const spend    = c.sumSpend;
+  const spendPct = budgetTotal>0 ? spend/budgetTotal*100 : 0;
   const pacePct  = c.pacing*100;
-  const expected = c.total*c.pacing;
+  const expected = budgetTotal*c.pacing;
 
   let paceTag;
   if(spend<=0) paceTag = pill('p-grey','—');
@@ -2231,30 +2234,38 @@ function renderKPI(c, target){
   else if(spend < expected*0.8) paceTag = pill('p-blue','ใช้ช้ากว่าแผน');
   else paceTag = pill('p-green','ตามแผน');
 
-  const lead = c.leadProj;
+  /* 1 ฟอร์ม = 1 lead */
+  const leadAct    = c.msgAct;
+  const leadPct    = targetLeads>0 ? leadAct/targetLeads*100 : 0;
+  const leadExpect = targetLeads*c.pacing;
 
-  const cplMin = c.leadMax>0 ? c.total/c.leadMax : 0;
-  const cplMax = c.leadMin>0 ? c.total/c.leadMin : 0;
-  const cplAct = lead>0 ? spend/lead : 0;
-  const cplStat = costStatus(cplAct, cplMin, cplMax);
+  let leadTag;
+  if(leadAct<=0) leadTag = pill('p-grey','—');
+  else if(leadAct >= leadExpect) leadTag = pill('p-green','ตามเป้า');
+  else if(leadAct >= leadExpect*0.8) leadTag = pill('p-amber','ต่ำกว่าเป้าเล็กน้อย');
+  else leadTag = pill('p-red','ต่ำกว่าเป้า');
+
+  const cplPlan = targetLeads>0 ? budgetTotal/targetLeads : 0;
+  const cplAct  = leadAct>0 ? spend/leadAct : 0;
+  const cplStat = costStatus(cplAct, cplPlan*0.9, cplPlan*1.1); // ±10% = ตามแผน
 
   $('kpiRow').innerHTML = `
     <div class="kpi">
       <div class="k-label"><span>งบใช้จริง</span>${paceTag}</div>
-      <div class="k-val">${fmt(spend)}<small> / ${fmt(c.total)}</small></div>
+      <div class="k-val">${fmt(spend)}<small> / ${fmt(budgetTotal)}</small></div>
       <div class="bar"><i style="width:${Math.min(100,spendPct)}%"></i></div>
       <div class="k-sub">${fmt(spendPct,1)}% · pacing ${fmt(pacePct,0)}% (${fmt(expected)})</div>
     </div>
     <div class="kpi">
-      <div class="k-label"><span>Total Leadform</span>${c.msgAct>0?pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber', c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
-      <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
-      <div class="bar"><i style="width:${(c.msgMin+c.msgMax)>0?Math.min(100,c.msgAct/((c.msgMin+c.msgMax)/2)*100):0}%;background:#7c3aed"></i></div>
-      <div class="k-sub">Lead ${fmt(c.leadMsgAct)} / ${fmt(c.leadMsgMin)}–${fmt(c.leadMsgMax)}</div>
+      <div class="k-label"><span>Total Leadform</span>${leadTag}</div>
+      <div class="k-val">${fmt(leadAct)}<small> / ${fmt(targetLeads)}</small></div>
+      <div class="bar"><i style="width:${Math.min(100,leadPct)}%;background:#7c3aed"></i></div>
+      <div class="k-sub">${fmt(leadPct,1)}% ของเป้า · เหลืออีก ${fmt(Math.max(0,targetLeads-leadAct))} ฟอร์ม</div>
     </div>
     <div class="kpi">
       <div class="k-label"><span>Cost per Lead</span>${pill(cplStat.cls,cplStat.label)}</div>
       <div class="k-val">${cplAct>0?fmt(cplAct):'—'}<small> บาท</small></div>
-      <div class="k-sub">แผน ${fmt(cplMin)}–${fmt(cplMax)}</div>
+      <div class="k-sub">แผน ${fmt(cplPlan)} บาท (${fmt(budgetTotal)} ÷ ${fmt(targetLeads)})</div>
     </div>`;
 }
 
@@ -2777,7 +2788,12 @@ function render(){
   if(!state.plans.length) return;
   const p = activePlan();
   state.active = p.month;
-  const monthTarget = num($('inTarget').value);
+  /* ---- ระยะเวลา (เดือน) = จำนวนแผนที่ถูกสร้าง : ใช้ร่วมกันทั้ง label + งบ ---- */
+  const months = state.plans.length;
+  if(num($('inMonths').value) !== months) $('inMonths').value = months;
+
+  const targetLeads = num($('inTarget').value);          // เป้ารวมทั้งช่วง
+  const budgetTotal = num($('inBudget').value) * months; // บาท/เดือน × เดือน
 
   /* ---- เดือนที่เลือก : ตาราง / optimize ---- */
   const chans = p.channels;
@@ -2786,8 +2802,8 @@ function render(){
 
   /* ---- Overall : สรุปภาพรวมทุกเดือน ---- */
   const agg = compute(aggregateChannels(), aggregatePacing(), daysOf(monthKey(new Date())));
-  const span = state.plans.length>1
-    ? `${label(state.plans[0].month)} – ${label(state.plans[state.plans.length-1].month)} · ${state.plans.length} เดือน`
+  const span = months>1
+    ? `${label(state.plans[0].month)} – ${label(state.plans[months-1].month)} · ${months} เดือน`
     : label(state.plans[0].month);
 
   $('scopeTag').innerHTML  = pill('p-grey', span);
@@ -2795,7 +2811,7 @@ function render(){
   renderNav();
   renderTabs();
   renderTable(c, chans);
-  renderKPI(agg, monthTarget*state.plans.length);
+  renderKPI(agg, targetLeads, budgetTotal);
   renderLeadStat(p.month);
   renderLeads(p.month);
   renderDash(p.month);
