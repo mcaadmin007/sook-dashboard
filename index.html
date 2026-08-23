@@ -165,6 +165,7 @@
 
   /* ===== KPI ===== */
   .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .kpis.k5{grid-template-columns:repeat(5,1fr)}
   .kpi{
     position:relative;border:1px solid var(--line);border-radius:14px;padding:15px 16px;
     background:linear-gradient(180deg,#fff,#fcfdff);
@@ -424,7 +425,7 @@
   .d-post{background:var(--blue)}
   .d-ads {background:var(--green)}
 
-  .cal-wrap{max-width:1260px;margin:0 auto}
+  .cal-wrap{max-width:100%;margin:0 auto}
   .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
   .cal-dow div{font-size:11px;font-weight:700;color:var(--ink-3);text-align:center;letter-spacing:.03em}
   .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
@@ -452,6 +453,7 @@
   .cal-cell.has-post:hover{background:linear-gradient(180deg,#dbeafe,#eff6ff)}
   .cal-cell.has-ads:hover{background:linear-gradient(180deg,#dcfce7,#f0fdf4)}
   .cmore{font-size:10.5px;font-weight:700;color:var(--ink-3);padding-left:3px}
+  @media (min-width:1400px){ .cal-cell{min-height:124px} }
 
   /* ===== project timeline ===== */
   .d-test{background:var(--amber)}
@@ -572,11 +574,13 @@
   /* ===== responsive ===== */
   @media (max-width:1100px){
     .kpis{grid-template-columns:repeat(3,1fr)}
+    .kpis.k5{grid-template-columns:repeat(3,1fr)}
   }
   @media (max-width:640px){
     body{font-size:14.5px;background-attachment:scroll}
     .wrap{padding:14px 12px 64px}
     .kpis{grid-template-columns:repeat(2,1fr);gap:10px}
+    .kpis.k5{grid-template-columns:repeat(2,1fr)}
     .grid{grid-template-columns:1fr 1fr;gap:12px}
     header.top{padding:16px 17px;border-radius:14px}
     header.top h1{font-size:18px}
@@ -784,7 +788,7 @@
       </div>
       <span id="statTag"></span>
     </div>
-    <div class="sec-body"><div class="kpis" id="statRow"></div></div>
+    <div class="sec-body"><div class="kpis k5" id="statRow"></div></div>
   </section>
 
   <section id="secLeads" data-page="leads">
@@ -811,7 +815,7 @@
       </div>
       <span id="dashTag"></span>
     </div>
-    <div class="sec-body"><div class="kpis" id="dashKPI"></div></div>
+    <div class="sec-body"><div class="kpis k5" id="dashKPI"></div></div>
   </section>
 
   <section id="secDashCrit" data-page="dash">
