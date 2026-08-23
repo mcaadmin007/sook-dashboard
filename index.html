@@ -164,7 +164,7 @@
   .field input:disabled{background:#f4f5f8;color:var(--ink-3)}
 
   /* ===== KPI ===== */
-  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .kpi{
     position:relative;border:1px solid var(--line);border-radius:14px;padding:15px 16px;
     background:linear-gradient(180deg,#fff,#fcfdff);
@@ -410,7 +410,7 @@
   .legend .lg b{font-weight:700;color:var(--ink)}
 
   /* ===== funnel ===== */
-  .funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .funnel{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   .fn{
     position:relative;border:1px solid var(--line);border-radius:14px;padding:14px 15px;
     background:linear-gradient(180deg,#fff,#fcfdff);transition:.2s var(--ease);
@@ -778,7 +778,7 @@
     </div>
   </section>
 
-  <section id="secFunnel" data-page="plan">
+  <section id="secFunnel" data-page="plan" hidden>
     <div class="sec-head"><h2>สถานะ</h2><span id="funnelTag"></span></div>
     <div class="sec-body"><div class="funnel" id="funnelRow"></div></div>
   </section>
@@ -2265,10 +2265,15 @@ function renderKPI(c, target){
   else if(leadPacePct>=80)  leadTag = pill('p-amber','ต่ำกว่าเป้าเล็กน้อย');
   else leadTag = pill('p-red','ต่ำกว่าเป้ามาก');
 
-  const cplMin = c.leadMax>0 ? c.total/c.leadMax : 0;
-  const cplMax = c.leadMin>0 ? c.total/c.leadMin : 0;
-  const cplAct = lead>0 ? spend/lead : 0;
+  // CPL = งบจริง / Leadform จริง (msgAct)
+  const cplAct  = c.msgAct>0 ? spend/c.msgAct : 0;
+  const cplMin  = c.msgMax>0 ? c.total/c.msgMax : 0;
+  const cplMax  = c.msgMin>0 ? c.total/c.msgMin : 0;
   const cplStat = costStatus(cplAct, cplMin, cplMax);
+  const msgTag  = c.msgAct>0
+    ? pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber',
+           c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ')
+    : pill('p-grey','—');
 
   $('kpiRow').innerHTML = `
     <div class="kpi">
@@ -2278,23 +2283,23 @@ function renderKPI(c, target){
       <div class="k-sub">${fmt(spendPct,1)}% · pacing ${fmt(pacePct,0)}% (${fmt(expected)})</div>
     </div>
     <div class="kpi">
+      <div class="k-label"><span>Total Leadform</span>${msgTag}</div>
+      <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
+      <div class="bar"><i style="width:${(c.msgMin+c.msgMax)>0?Math.min(100,c.msgAct/((c.msgMin+c.msgMax)/2)*100):0}%;background:#7c3aed"></i></div>
+      <div class="k-sub">Est. ${fmt(c.msgMin)}–${fmt(c.msgMax)} ฟอร์ม</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span>Cost per Lead</span>${pill(cplStat.cls,cplStat.label)}</div>
+      <div class="k-val">${cplAct>0?fmt(cplAct,0):'—'}<small> บาท</small></div>
+      <div class="k-sub">แผน ${fmt(cplMin,0)}–${fmt(cplMax,0)} บาท</div>
+    </div>
+    <div class="kpi" style="display:none">
       <div class="k-label"><span>Qualified Lead</span>${leadTag}</div>
       <div class="k-val">${fmt(lead)}<small> / ${fmt(target)}</small></div>
       <div class="bar"><i style="width:${target>0?Math.min(100,lead/target*100):0}%;background:${leadPacePct>=100?'var(--green)':leadPacePct>=80?'var(--amber)':'var(--red)'}"></i></div>
       <div class="k-sub">เป้า ณ วันนี้ ${fmt(target*c.pacing)}</div>
     </div>
-    <div class="kpi">
-      <div class="k-label"><span>Cost per Lead</span>${pill(cplStat.cls,cplStat.label)}</div>
-      <div class="k-val">${cplAct>0?fmt(cplAct):'—'}<small> บาท</small></div>
-      <div class="k-sub">แผน ${fmt(cplMin)}–${fmt(cplMax)}</div>
-    </div>
-    <div class="kpi">
-      <div class="k-label"><span>Total Leadform</span>${c.msgAct>0?pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber', c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
-      <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
-      <div class="bar"><i style="width:${(c.msgMin+c.msgMax)>0?Math.min(100,c.msgAct/((c.msgMin+c.msgMax)/2)*100):0}%;background:#7c3aed"></i></div>
-      <div class="k-sub">Lead ${fmt(c.leadMsgAct)} / ${fmt(c.leadMsgMin)}–${fmt(c.leadMsgMax)}</div>
-    </div>
-    <div class="kpi">
+    <div class="kpi" style="display:none">
       <div class="k-label"><span>Total Click</span>${c.clkAct>0?pill(c.clkAct>=c.clkMin*c.pacing?'p-green':'p-amber', c.clkAct>=c.clkMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
       <div class="k-val">${fmt(c.clkAct)}<small> / ${fmt(c.clkMin)}–${fmt(c.clkMax)}</small></div>
       <div class="bar"><i style="width:${(c.clkMin+c.clkMax)>0?Math.min(100,c.clkAct/((c.clkMin+c.clkMax)/2)*100):0}%;background:#0891b2"></i></div>
@@ -3066,25 +3071,4 @@ document.addEventListener('paste', e=>{
 });
 document.addEventListener('dragover', e=>{ if(cDraft) e.preventDefault(); });
 document.addEventListener('drop', e=>{
-  if(!cDraft) return;
-  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-  if(f && /^image\//.test(f.type||'')){ e.preventDefault(); takeImg(f); }
-});
-
-/* ===== init ===== */
-(function init(){
-  state.cMonth = monthKey(new Date());
-  if(!loadSaved()){
-    const cur = monthKey(new Date());
-    state.plans = [ makePlan(cur, 0) ];
-    state.active = cur;
-  }
-  applyActual();
-  render();
-  fbInit();
-  initMetaSDK();
-})();
-window.addEventListener('beforeunload', saveNow);
-</script>
-</body>
-</html>
+  i
