@@ -778,6 +778,11 @@
     </div>
   </section>
 
+  <section id="secFunnel" data-page="plan">
+    <div class="sec-head"><h2>สถานะ</h2><span id="funnelTag"></span></div>
+    <div class="sec-body"><div class="funnel" id="funnelRow"></div></div>
+  </section>
+
   <section id="secTime" data-page="plan">
     <div class="sec-head">
       <div class="head-left">
@@ -2293,6 +2298,39 @@ function renderKPI(c, target){
 
 /* ===== funnel ===== */
 
+function renderFunnel(c){
+  const cell=(lab, pMin, pMax, act, unit, hi)=>{
+    const hasAct = act > 0;
+    const mid    = (pMin + pMax) / 2;
+    const pct    = (hasAct && mid > 0) ? Math.min(200, act / mid * 100) : 0;
+    const disp   = Math.min(100, pct);
+    const barClr = pct >= 100 ? 'var(--green)' : pct >= 75 ? 'var(--blue-2)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
+    const badge  = hasAct
+      ? (pct >= 100 ? pill('p-green','✓ On Track')
+       : pct >= 75  ? pill('p-blue', Math.round(pct)+'%')
+       : pct >= 50  ? pill('p-amber', Math.round(pct)+'%')
+       :              pill('p-red',   Math.round(pct)+'%'))
+      : '';
+    const mainHtml = hasAct
+      ? `<div class="f-main">${fmt(act)}<small>${unit}</small></div>`
+      : `<div class="f-main no-act">${pMin>0?fmt(pMin)+' – '+fmt(pMax):'—'}<small> ${unit}</small></div>`;
+    const estLine = hasAct && pMin > 0
+      ? `<div class="f-est">Estimate <b>${fmt(pMin)} – ${fmt(pMax)}</b> ${unit}</div>
+         <div class="f-prog"><i style="width:${disp}%;background:${barClr}"></i></div>`
+      : '';
+    return `<div class="fn ${hi?'hi':''}">
+      <div class="f-head"><div class="f-lab">${lab}</div>${badge}</div>
+      ${mainHtml}${estLine}
+    </div>`;
+  };
+  $('funnelRow').innerHTML =
+    cell('Total Leadform',   c.msgMin,     c.msgMax,     c.msgAct,     'ฟอร์ม')  +
+    cell('Leads from Form',  c.leadMsgMin, c.leadMsgMax, c.leadMsgAct, 'ราย', true) +
+    cell('Total Click',      c.clkMin,     c.clkMax,     c.clkAct,     'คลิก')   +
+    cell('Leads from Click', c.leadClkMin, c.leadClkMax, c.leadClkAct, 'ราย', true) +
+    cell('Total Leads',      c.leadMin,    c.leadMax,    c.leadProj,   'ราย', true);
+}
+
 /* ===== รายชื่อ Lead ===== */
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const leadTime = r => r.created_time || r.submission_time || '';
@@ -2836,6 +2874,8 @@ function render(){
   renderTabs();
   renderTable(c, chans);
   renderKPI(agg, monthTarget*state.plans.length);
+  $('funnelTag').innerHTML = pill('p-grey', label(p.month));
+  renderFunnel(c);
   renderLeadStat(p.month);
   renderLeads(p.month);
   renderDash(p.month);
