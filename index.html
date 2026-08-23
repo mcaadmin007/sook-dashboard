@@ -164,7 +164,7 @@
   .field input:disabled{background:#f4f5f8;color:var(--ink-3)}
 
   /* ===== KPI ===== */
-  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .kpi{
     position:relative;border:1px solid var(--line);border-radius:14px;padding:15px 16px;
     background:linear-gradient(180deg,#fff,#fcfdff);
@@ -409,28 +409,6 @@
   .legend .lg{display:flex;align-items:center;gap:8px;font-weight:600}
   .legend .lg b{font-weight:700;color:var(--ink)}
 
-  /* ===== funnel ===== */
-  .funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-  .fn{
-    position:relative;border:1px solid var(--line);border-radius:14px;padding:14px 15px;
-    background:linear-gradient(180deg,#fff,#fcfdff);transition:.2s var(--ease);
-  }
-  .fn:hover{border-color:#d5dce8;box-shadow:var(--sh-2);transform:translateY(-2px)}
-  .fn.hi{border-color:var(--blue-line);background:linear-gradient(180deg,#f5f9ff,#fff)}
-  .fn.hi::after{
-    content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:99px;
-    background:linear-gradient(180deg,var(--blue-2),var(--blue));
-  }
-  .fn .f-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px}
-  .fn .f-lab{font-size:11px;color:var(--ink-3);font-weight:600;letter-spacing:.015em;line-height:1.35}
-  .fn .f-main{font-size:24px;font-weight:700;letter-spacing:-.04em;line-height:1.1}
-  .fn .f-main small{font-size:12px;font-weight:500;color:var(--ink-4);letter-spacing:0;margin-left:2px}
-  .fn .f-main.no-act{font-size:17px;color:var(--ink-3)}
-  .fn .f-est{font-size:11px;color:var(--ink-3);font-weight:600;margin-top:5px}
-  .fn .f-est b{color:var(--ink-2);font-weight:700}
-  .fn .f-prog{height:5px;border-radius:99px;background:var(--line-2);margin-top:9px;overflow:hidden}
-  .fn .f-prog i{display:block;height:100%;border-radius:99px;transition:width .5s var(--ease)}
-
   /* ===== content plan ===== */
   .calnav{display:flex;align-items:center;gap:4px}
   .calbtn{font:inherit;font-size:16px;line-height:1;cursor:pointer;width:28px;height:28px;
@@ -594,12 +572,11 @@
   /* ===== responsive ===== */
   @media (max-width:1100px){
     .kpis{grid-template-columns:repeat(3,1fr)}
-    .funnel{grid-template-columns:repeat(3,1fr)}
   }
   @media (max-width:640px){
     body{font-size:14.5px;background-attachment:scroll}
     .wrap{padding:14px 12px 64px}
-    .kpis,.funnel{grid-template-columns:repeat(2,1fr);gap:10px}
+    .kpis{grid-template-columns:repeat(2,1fr);gap:10px}
     .grid{grid-template-columns:1fr 1fr;gap:12px}
     header.top{padding:16px 17px;border-radius:14px}
     header.top h1{font-size:18px}
@@ -616,8 +593,6 @@
     .sec-head{padding:13px 15px;align-items:stretch;flex-direction:column}
     .kpi{padding:13px}
     .kpi .k-val{font-size:21px}
-    .fn{padding:12px 13px}
-    .fn .f-plan{font-size:17px}
     .addwrap input{flex:1}
     .btn-add{padding:9px 16px}
     .cal-wrap{max-width:100%}
@@ -673,7 +648,7 @@
     padding:8px 15px;border-radius:999px;box-shadow:0 8px 22px rgba(217,58,48,.34)}
   @media (prefers-reduced-motion:reduce){
     *{animation:none !important;transition:none !important}
-    .tab:hover,.kpi:hover,.fn:hover,.btn-add:hover{transform:none}
+    .tab:hover,.kpi:hover,.btn-add:hover{transform:none}
   }
   @media print{
     body{background:#fff;background-image:none}
@@ -776,11 +751,6 @@
         <tfoot id="tfoot"></tfoot>
       </table>
     </div>
-  </section>
-
-  <section id="secFunnel" data-page="plan">
-    <div class="sec-head"><h2>สถานะ</h2><span id="funnelTag"></span></div>
-    <div class="sec-body"><div class="funnel" id="funnelRow"></div></div>
   </section>
 
   <section id="secTime" data-page="plan">
@@ -2258,12 +2228,6 @@ function renderKPI(c, target){
   else paceTag = pill('p-green','ตามแผน');
 
   const lead = c.leadProj;
-  const leadPacePct = target>0 && c.pacing>0 ? lead/(target*c.pacing)*100 : 0;
-  let leadTag;
-  if(lead<=0) leadTag = pill('p-grey','—');
-  else if(leadPacePct>=100) leadTag = pill('p-green','ทันเป้า');
-  else if(leadPacePct>=80)  leadTag = pill('p-amber','ต่ำกว่าเป้าเล็กน้อย');
-  else leadTag = pill('p-red','ต่ำกว่าเป้ามาก');
 
   const cplMin = c.leadMax>0 ? c.total/c.leadMax : 0;
   const cplMax = c.leadMin>0 ? c.total/c.leadMin : 0;
@@ -2278,62 +2242,16 @@ function renderKPI(c, target){
       <div class="k-sub">${fmt(spendPct,1)}% · pacing ${fmt(pacePct,0)}% (${fmt(expected)})</div>
     </div>
     <div class="kpi">
-      <div class="k-label"><span>Qualified Lead</span>${leadTag}</div>
-      <div class="k-val">${fmt(lead)}<small> / ${fmt(target)}</small></div>
-      <div class="bar"><i style="width:${target>0?Math.min(100,lead/target*100):0}%;background:${leadPacePct>=100?'var(--green)':leadPacePct>=80?'var(--amber)':'var(--red)'}"></i></div>
-      <div class="k-sub">เป้า ณ วันนี้ ${fmt(target*c.pacing)}</div>
-    </div>
-    <div class="kpi">
-      <div class="k-label"><span>Cost per Lead</span>${pill(cplStat.cls,cplStat.label)}</div>
-      <div class="k-val">${cplAct>0?fmt(cplAct):'—'}<small> บาท</small></div>
-      <div class="k-sub">แผน ${fmt(cplMin)}–${fmt(cplMax)}</div>
-    </div>
-    <div class="kpi">
       <div class="k-label"><span>Total Leadform</span>${c.msgAct>0?pill(c.msgAct>=c.msgMin*c.pacing?'p-green':'p-amber', c.msgAct>=c.msgMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
       <div class="k-val">${fmt(c.msgAct)}<small> / ${fmt(c.msgMin)}–${fmt(c.msgMax)}</small></div>
       <div class="bar"><i style="width:${(c.msgMin+c.msgMax)>0?Math.min(100,c.msgAct/((c.msgMin+c.msgMax)/2)*100):0}%;background:#7c3aed"></i></div>
       <div class="k-sub">Lead ${fmt(c.leadMsgAct)} / ${fmt(c.leadMsgMin)}–${fmt(c.leadMsgMax)}</div>
     </div>
     <div class="kpi">
-      <div class="k-label"><span>Total Click</span>${c.clkAct>0?pill(c.clkAct>=c.clkMin*c.pacing?'p-green':'p-amber', c.clkAct>=c.clkMin*c.pacing?'ผ่านกรอบล่าง':'ต่ำกว่ากรอบ'):pill('p-grey','—')}</div>
-      <div class="k-val">${fmt(c.clkAct)}<small> / ${fmt(c.clkMin)}–${fmt(c.clkMax)}</small></div>
-      <div class="bar"><i style="width:${(c.clkMin+c.clkMax)>0?Math.min(100,c.clkAct/((c.clkMin+c.clkMax)/2)*100):0}%;background:#0891b2"></i></div>
-      <div class="k-sub">Lead ${fmt(c.leadClkAct)} / ${fmt(c.leadClkMin)}–${fmt(c.leadClkMax)}</div>
+      <div class="k-label"><span>Cost per Lead</span>${pill(cplStat.cls,cplStat.label)}</div>
+      <div class="k-val">${cplAct>0?fmt(cplAct):'—'}<small> บาท</small></div>
+      <div class="k-sub">แผน ${fmt(cplMin)}–${fmt(cplMax)}</div>
     </div>`;
-}
-
-/* ===== funnel ===== */
-function renderFunnel(c){
-  const cell=(lab, pMin, pMax, act, unit, hi)=>{
-    const hasAct = act > 0;
-    const mid    = (pMin + pMax) / 2;
-    const pct    = (hasAct && mid > 0) ? Math.min(200, act / mid * 100) : 0;
-    const disp   = Math.min(100, pct);
-    const barClr = pct >= 100 ? 'var(--green)' : pct >= 75 ? 'var(--blue-2)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
-    const badge  = hasAct
-      ? (pct >= 100 ? pill('p-green','✓ On Track')
-       : pct >= 75  ? pill('p-blue', Math.round(pct)+'%')
-       : pct >= 50  ? pill('p-amber', Math.round(pct)+'%')
-       :              pill('p-red',   Math.round(pct)+'%'))
-      : '';
-    const mainHtml = hasAct
-      ? `<div class="f-main">${fmt(act)}<small>${unit}</small></div>`
-      : `<div class="f-main no-act">${pMin>0?fmt(pMin)+' – '+fmt(pMax):'—'}<small> ${unit}</small></div>`;
-    const estLine = hasAct && pMin > 0
-      ? `<div class="f-est">Estimate <b>${fmt(pMin)} – ${fmt(pMax)}</b> ${unit}</div>
-         <div class="f-prog"><i style="width:${disp}%;background:${barClr}"></i></div>`
-      : '';
-    return `<div class="fn ${hi?'hi':''}">
-      <div class="f-head"><div class="f-lab">${lab}</div>${badge}</div>
-      ${mainHtml}${estLine}
-    </div>`;
-  };
-  $('funnelRow').innerHTML =
-    cell('Total Leadform',   c.msgMin,     c.msgMax,     c.msgAct,     'ฟอร์ม')  +
-    cell('Leads from Form',  c.leadMsgMin, c.leadMsgMax, c.leadMsgAct, 'ราย', true) +
-    cell('Total Click',      c.clkMin,     c.clkMax,     c.clkAct,     'คลิก')   +
-    cell('Leads from Click', c.leadClkMin, c.leadClkMax, c.leadClkAct, 'ราย', true) +
-    cell('Total Leads',      c.leadMin,    c.leadMax,    c.leadProj,   'ราย', true);
 }
 
 /* ===== รายชื่อ Lead ===== */
@@ -2857,7 +2775,7 @@ function render(){
   state.active = p.month;
   const monthTarget = num($('inTarget').value);
 
-  /* ---- เดือนที่เลือก : ตาราง / funnel / optimize ---- */
+  /* ---- เดือนที่เลือก : ตาราง / optimize ---- */
   const chans = p.channels;
   const c = compute(chans, pacingFor(p.month), daysOf(p.month));
   p.lastTotal = c.total;
@@ -2869,13 +2787,11 @@ function render(){
     : label(state.plans[0].month);
 
   $('scopeTag').innerHTML  = pill('p-grey', span);
-  $('funnelTag').innerHTML = pill('p-grey', label(p.month));
 
   renderNav();
   renderTabs();
   renderTable(c, chans);
   renderKPI(agg, monthTarget*state.plans.length);
-  renderFunnel(c);
   renderLeadStat(p.month);
   renderLeads(p.month);
   renderDash(p.month);
