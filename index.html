@@ -937,13 +937,11 @@ const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','D
 const TEMPLATE = [
   { name:'Facebook Ads', share:0.35, rows:[
     { obj:'Post Engage', kind:'engage',  unit:'engagement', share:0.15,  cMin:0.5, cMax:1.2 },
-    { obj:'Leadform',    kind:'message', unit:'ฟอร์ม',       share:0.425, cMin:200, cMax:500 },
-    { obj:'Click',       kind:'click',   unit:'คลิก',        share:0.425, cMin:10,  cMax:15  },
+    { obj:'Leadform',    kind:'message', unit:'ฟอร์ม',       share:0.85,  cMin:200, cMax:500 },
   ]},
   { name:'Instagram', share:0.35, rows:[
     { obj:'Post Engage', kind:'engage',  unit:'engagement', share:0.15,  cMin:0.8, cMax:1.5 },
-    { obj:'Leadform',    kind:'message', unit:'ฟอร์ม',       share:0.425, cMin:300, cMax:600 },
-    { obj:'Click',       kind:'click',   unit:'คลิก',        share:0.425, cMin:10,  cMax:15  },
+    { obj:'Leadform',    kind:'message', unit:'ฟอร์ม',       share:0.85,  cMin:300, cMax:600 },
   ]},
   { name:'Google Ads', share:0.30, rows:[
     { obj:'Maximize Clicks', kind:'click', unit:'คลิก', share:1, cMin:13, cMax:42 },
@@ -2557,7 +2555,8 @@ function metaObj(info){
   if(g.includes('ENGAGE')||g.includes('POST')||g.includes('REACH')||
      g.includes('IMPRESSION')||g.includes('VIDEO')||g.includes('PAGE_LIKE'))
                                                                      return 'Post Engage';
-  return 'Click';
+  if(g.includes('LINK_CLICK')||g.includes('LANDING'))                return 'Click';
+  return null;   // ไม่รู้จัก = ไม่ยัดลงแถวไหน (กันสเปนด์หลงไปกอง Click)
 }
 
 /* --- แสดง error toast สีแดง (มองเห็น 8 วิ) เมื่อ Meta API มีปัญหา --- */
@@ -2660,6 +2659,8 @@ async function metaSyncActuals(){
         for(const row of (resp.data||[])){
           const ch  = metaChannel(row.publisher_platform);
           const obj = metaObj(adsetGoals[row.adset_id]);
+          if(!obj) continue;                       // ไม่รู้จัก objective → ข้าม
+          if(obj === 'Click' && ch !== 'Google Ads') continue;  // FB/IG ไม่มีแถว Click แล้ว
           const key = `${plan.month}|${ch}|${obj}`;
           if(!actuals[key]) actuals[key] = { spend:0, result:0 };
           actuals[key].spend += parseFloat(row.spend||0);
