@@ -150,6 +150,18 @@
     box-shadow:0 6px 16px -6px rgba(16,19,25,.55)}
   .btn-add:active{transform:translateY(0)}
 
+  .btn-xls{
+    font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;color:#fff;
+    background:linear-gradient(180deg,#1f8a5c,#15704a);border:none;
+    padding:8px 15px;border-radius:var(--radius-sm);white-space:nowrap;
+    display:inline-flex;align-items:center;gap:6px;
+    box-shadow:0 3px 10px -3px rgba(21,112,74,.5);transition:.18s var(--ease);
+  }
+  .btn-xls:hover:not(:disabled){background:linear-gradient(180deg,#24a06b,#177d52);transform:translateY(-1px)}
+  .btn-xls:active{transform:translateY(0)}
+  .btn-xls:disabled{opacity:.55;cursor:default;transform:none}
+  .head-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
   /* ===== fields ===== */
   .grid{display:grid;gap:16px;grid-template-columns:repeat(3,1fr)}
   .field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-3);
@@ -797,7 +809,15 @@
         <h2>รายชื่อ Lead</h2>
         <div class="tabs" id="srcTabs"></div>
       </div>
-      <span id="leadTag"></span>
+      <div class="head-right">
+        <span id="leadTag"></span>
+        <button class="btn-xls" id="btnLeadXls" title="ดาวน์โหลดรายชื่อที่แสดงอยู่เป็นไฟล์ Excel">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1v9m0 0 3.2-3.2M8 10 4.8 6.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>Excel
+        </button>
+      </div>
     </div>
     <div class="table-scroll">
       <table class="lead">
@@ -2383,6 +2403,120 @@ function renderLeads(month){
   }).join('') + '</tr>').join('');
 }
 
+/* =========================================================
+   EXPORT รายชื่อ Lead → Excel
+   ดึง "เฉพาะที่แสดงอยู่" = src ที่เลือก + เดือนที่เลือก + filter สถานะ
+   ========================================================= */
+function leadExportRows(){
+  const src   = state.src;
+  const month = state.active;
+  const f     = state.leadFilter;
+  const all   = leadsOf(src, month);
+  const rows  = f ? all.filter(r => statOf(src, r) === f) : all;
+
+  const head = [];
+  const push = h => head.push(h);
+  (LEAD_COLS[src]||[]).forEach(c => {
+    if(c.k === '__score'){ push('Lead Score'); push('เต็ม'); push('สถานะ'); push('ประเมินครบ'); }
+    else if(c.t === 'crit'){ const cr = SCORE_CRIT.find(x=>x.k===c.c); push(c.h); push(cr ? cr.s+' (คะแนน)' : c.h+' (คะแนน)'); }
+    else push(c.h);
+  });
+
+  const body = rows.map(r => {
+    const sc = scoreOf(src, r);
+    const s  = scoreSum(sc);
+    const out = [];
+    (LEAD_COLS[src]||[]).forEach(c => {
+      if(c.k === '__score'){
+        out.push(s.filled ? s.total : '');
+        out.push(SCORE_MAX);
+        out.push(s.done ? GNAME[gradeOf(s.total)] : `ยังไม่ประเมิน (${s.filled}/${SCORE_CRIT.length})`);
+        out.push(s.done ? 'ครบ' : 'ไม่ครบ');
+      } else if(c.t === 'crit'){
+        const cr = SCORE_CRIT.find(x=>x.k===c.c);
+        const v  = +sc[c.c] || 0;
+        out.push(cr && cr.opts[v] !== undefined ? cr.opts[v] : '');
+        out.push(v >= 1 && v <= 5 ? v : '');
+      } else if(c.t === 'dt'){
+        out.push(fmtDT(r[c.k]));
+      } else if(c.t === 'bool'){
+        out.push(r[c.k] === true || r[c.k] === 'true' ? 'Yes' : 'No');
+      } else {
+        const v = r[c.k];
+        out.push(v == null || v === '' ? '' : String(v));
+      }
+    });
+    return out;
+  });
+
+  const fName = f ? (STAT_CARD.find(c=>c.v===f)||{}).h : 'ทั้งหมด';
+  const sName = (LEAD_SRC.find(s=>s.id===src)||{}).name || src;
+  return { head, body, month, src, count:rows.length,
+    file: `SooK_Leads_${src}_${month}${f?'_'+f:''}`,
+    sheet: `${label(month)}`.slice(0,31),
+    meta: [['แหล่งที่มา', sName], ['เดือน', label(month)], ['ตัวกรองสถานะ', fName],
+           ['จำนวน', rows.length + ' ราย'], ['ดึงข้อมูลเมื่อ', fmtDT(new Date().toISOString())]] };
+}
+
+const dlBlob = (blob, name) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+};
+
+/* fallback: CSV + BOM (Excel เปิดแล้วภาษาไทยไม่เพี้ยน) */
+function leadExportCSV(d){
+  const q = v => { const s = String(v==null?'':v);
+    return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines = [d.head.map(q).join(','), ...d.body.map(r => r.map(q).join(','))];
+  dlBlob(new Blob(['\uFEFF'+lines.join('\r\n')], {type:'text/csv;charset=utf-8'}), d.file+'.csv');
+}
+
+let _xlsxLoading = null;
+function loadXLSX(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(_xlsxLoading) return _xlsxLoading;
+  _xlsxLoading = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload  = () => window.XLSX ? res(window.XLSX) : rej(new Error('XLSX not found'));
+    s.onerror = () => rej(new Error('load failed'));
+    document.head.appendChild(s);
+    setTimeout(()=>rej(new Error('timeout')), 8000);
+  });
+  _xlsxLoading.catch(()=>{ _xlsxLoading = null; });
+  return _xlsxLoading;
+}
+
+async function exportLeads(){
+  const btn = document.getElementById('btnLeadXls');
+  const d = leadExportRows();
+  if(!d.count){ showToast('⚠ ไม่มีรายชื่อให้ดึงในมุมมองนี้'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'กำลังสร้าง…'; }
+  try{
+    const XLSX = await loadXLSX();
+    const aoa = [...d.meta, [], d.head, ...d.body];
+    const ws  = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = d.head.map(h => ({ wch: Math.min(38, Math.max(11, String(h).length + 4)) }));
+    ws['!freeze'] = { xSplit:0, ySplit:d.meta.length + 2 };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, d.sheet || 'Leads');
+    XLSX.writeFile(wb, d.file + '.xlsx');
+  }catch(e){
+    console.warn('XLSX ไม่พร้อม → ออกเป็น CSV แทน', e);
+    leadExportCSV(d);
+    showToast('⚠ โหลดตัวสร้าง .xlsx ไม่ได้ — ดาวน์โหลดเป็น .csv แทน (เปิดใน Excel ได้)');
+  }finally{
+    if(btn){ btn.disabled = false; btn.innerHTML = XLS_ICON + 'Excel'; }
+  }
+}
+const XLS_ICON = `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <path d="M8 1v9m0 0 3.2-3.2M8 10 4.8 6.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+</svg>`;
+
 /* ===== Dashboard ===== */
 const allLeadsOf = month => LEAD_SRC.flatMap(s =>
   leadsOf(s.id, month).map(r => ({ src:s.id, srcName:s.name, r, s:scoreSum(scoreOf(s.id, r)) })));
@@ -2560,7 +2694,9 @@ function metaObj(info){
 }
 
 /* --- แสดง error toast สีแดง (มองเห็น 8 วิ) เมื่อ Meta API มีปัญหา --- */
-function showMetaErr(msg){
+const showToast = t => _toast(t);
+function showMetaErr(msg){ _toast('⚠ Meta: ' + msg); }
+function _toast(text){
   let el = document.getElementById('metaErrToast');
   if(!el){
     el = document.createElement('div');
@@ -2571,7 +2707,7 @@ function showMetaErr(msg){
       'box-shadow:0 4px 16px rgba(0,0,0,.3);line-height:1.4';
     document.body.appendChild(el);
   }
-  el.textContent = '⚠ Meta: ' + msg;
+  el.textContent = text;
   el.hidden = false;
   clearTimeout(el._t);
   el._t = setTimeout(()=>{ el.hidden = true; }, 8000);
@@ -2937,6 +3073,8 @@ document.addEventListener('click', e=>{
   const gtk = e.target.closest('[data-gtask]');
   if(gtk && !gtDrag && !rowDragMoved){ editTask(gtk.dataset.gtask); rowDragMoved=false; return; }
   rowDragMoved = false;
+
+  if(e.target.closest('#btnLeadXls')){ exportLeads(); return; }
 
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
