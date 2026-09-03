@@ -272,6 +272,68 @@
   tbody td.act-cell{background:#fffcf3}
   tbody tr:hover td.act-cell{background:#fff9e9}
 
+  /* ===== Post Engage : ปุ่มกาง + แถวย่อย breakdown ===== */
+  .engtog{
+    font:inherit;font-weight:500;color:var(--ink-2);background:none;border:0;padding:0;
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;border-radius:6px;
+    transition:color .12s var(--ease);
+  }
+  .engtog:hover{color:var(--blue)}
+  .engtog:focus-visible{outline:none;box-shadow:var(--ring)}
+  .engtog .cv{
+    width:14px;height:14px;flex:0 0 14px;border-radius:4px;background:#eef1f6;
+    position:relative;transition:transform .16s var(--ease),background .12s var(--ease);
+  }
+  .engtog:hover .cv{background:var(--blue-soft)}
+  .engtog .cv::before{
+    content:'';position:absolute;left:4px;top:4.5px;width:5px;height:5px;
+    border-right:1.6px solid var(--ink-3);border-bottom:1.6px solid var(--ink-3);
+    transform:rotate(-45deg);transition:border-color .12s var(--ease);
+  }
+  .engtog:hover .cv::before{border-color:var(--blue)}
+  .engtog.on .cv{transform:rotate(90deg);background:var(--blue-soft)}
+  .engtog.on .cv::before{border-color:var(--blue)}
+  .engtog.on{color:var(--blue);font-weight:600}
+  tbody tr.eng-parent td{background:#f7faff}
+  tbody tr.eng-parent td.act-cell{background:#fdfaf0}
+
+  tbody tr.engrow td{
+    background:#fbfcfe;font-size:12.5px;color:var(--ink-2);
+    border-bottom:1px solid var(--line-3);padding-top:7px;padding-bottom:7px;
+  }
+  tbody tr.engrow:hover td{background:#f5f8fd}
+  tbody tr.engrow td.act-cell{background:#fdfbf4}
+  tbody tr.engrow:hover td.act-cell{background:#fdf8ea}
+  tbody tr.engrow td.engname{
+    padding-left:38px;font-weight:600;color:var(--ink);position:relative;
+  }
+  tbody tr.engrow td.engname::before{
+    content:'';position:absolute;left:24px;top:50%;width:8px;height:1px;background:var(--blue-line);
+  }
+  tbody tr.engrow td.engname.soft{color:var(--ink-3);font-weight:500;font-style:italic}
+  tbody tr.engrow td.engnote{
+    text-align:left;font-size:11.5px;color:var(--ink-3);font-weight:400;
+    white-space:normal;line-height:1.4;
+  }
+  tbody tr.engrow td.engval{font-weight:700;color:var(--ink)}
+  tbody tr.engrow td.engval.neg{color:var(--red)}
+  tbody tr.engrow.engsum td{
+    background:#f2f6fd;border-top:1px solid var(--blue-line);
+    border-bottom:1px solid var(--line);font-weight:700;color:var(--ink);
+  }
+  tbody tr.engrow.engsum:hover td{background:#eaf1fc}
+  tbody tr.engrow.engsum td.engnote{font-weight:400;color:var(--ink-2)}
+  @media (min-width:760px){
+    table:not(.lead) tbody tr.engrow td:nth-child(1),
+    table:not(.lead) tbody tr.engrow td:nth-child(2){background:#fbfcfe}
+    table:not(.lead) tbody tr.engrow:hover td:nth-child(1),
+    table:not(.lead) tbody tr.engrow:hover td:nth-child(2){background:#f5f8fd}
+    table:not(.lead) tbody tr.engrow.engsum td:nth-child(1),
+    table:not(.lead) tbody tr.engrow.engsum td:nth-child(2){background:#f2f6fd}
+    table:not(.lead) tbody tr.eng-parent td:nth-child(1),
+    table:not(.lead) tbody tr.eng-parent td:nth-child(2){background:#f7faff}
+  }
+
   tfoot td{
     padding:12px 10px;text-align:right;font-weight:700;
     background:linear-gradient(180deg,#f4f6fa,#eef1f6);
@@ -1136,6 +1198,7 @@ function applyActual(){
     const a = ACTUAL[p.month+'|'+ch.name+'|'+r.obj] || {};
     r.aSpend = num(a.spend);
     r.aRes   = num(a.result);
+    r.aParts = a.parts || null;   // breakdown ของ Post Engage (ถ้ามี)
   })));
 }
 function updateActual(payload){
@@ -1416,7 +1479,10 @@ function fbWatch(){
   sub('actuals', snap=>{
     if(snap.empty) return;
     const next = {};
-    snap.forEach(doc=>{ const d = doc.data()||{}; next[doc.id] = { spend:num(d.spend), result:num(d.result) }; });
+    snap.forEach(doc=>{
+      const d = doc.data()||{};
+      next[doc.id] = { spend:num(d.spend), result:num(d.result), parts: d.parts || null };
+    });
     fbApply(null, ()=>{ ACTUAL = next; applyActual(); });
   });
 
@@ -2188,6 +2254,56 @@ function renderNav(){
   });
 }
 
+/* ===== Post Engage : แถวย่อยที่บอกว่า "Result จริง" รวม action อะไรบ้าง =====
+   Meta ส่ง post_engagement มาเป็นก้อนเดียว เราจึงดึง action ย่อยมาแสดงคู่กัน
+   และบังคับให้ผลรวมของแถวย่อย = Result จริง เสมอ ด้วยแถวปิดผลต่างท้ายสุด */
+let engOpen = {};
+function engageRows(r){
+  const total = num(r.aRes);
+  const p     = r.aParts || {};
+  let known = 0;
+  const items = [];
+
+  ENGAGE_PARTS.forEach(def=>{
+    const v = num(p[def.id]);
+    known += v;
+    if(v > 0) items.push({ label:def.label, note:def.note, val:v });
+  });
+
+  const diff = total - known;
+  if(diff > 0){
+    items.push({ soft:true, label:'อื่นๆ', val:diff,
+      note:'action อื่นที่ Meta นับรวมใน post_engagement (เช่น กดดูโพสต์เต็ม / กดเข้าโปรไฟล์เพจ)' });
+  } else if(diff < 0){
+    items.push({ soft:true, label:'หักนับซ้อน', val:diff,
+      note:'บาง action ถูกนับได้มากกว่าหนึ่งหมวด — หักออกเพื่อให้ผลรวมตรงกับ Result จริง' });
+  }
+  if(!items.length){
+    items.push({ soft:true, label:'ไม่มีข้อมูลย่อย', val:total,
+      note:'Meta ไม่ได้ส่ง action ย่อยกลับมาในช่วงเวลานี้' });
+  }
+
+  const row = it => `<tr class="engrow">
+    <td class="l"></td>
+    <td class="l engname${it.soft?' soft':''}">${it.label}</td>
+    <td class="muted">${total>0 ? fmt(it.val/total*100,1)+'%' : '—'}</td>
+    <td class="l engnote" colspan="5">${it.note}</td>
+    <td class="sep-l act-cell muted">—</td>
+    <td class="act-cell engval${it.val<0?' neg':''}">${fmt(it.val)}</td>
+    <td></td><td></td><td class="sep-l"></td>
+  </tr>`;
+
+  return items.map(row).join('') + `<tr class="engrow engsum">
+    <td class="l"></td>
+    <td class="l engname">รวม</td>
+    <td>${total>0?'100%':'—'}</td>
+    <td class="l engnote" colspan="5">เท่ากับ Result จริง ของแถว Post Engage</td>
+    <td class="sep-l act-cell muted">—</td>
+    <td class="act-cell engval">${fmt(total)}</td>
+    <td></td><td></td><td class="sep-l"></td>
+  </tr>`;
+}
+
 /* ===== table ===== */
 function renderTable(c, chans){
   let html='';
@@ -2206,9 +2322,20 @@ function renderTable(c, chans){
       const budgetCell = `<input class="num-in w-md" type="number" step="1000" value="${Math.round(r.budget)}" ${d} data-f="budget">`;
       const cMinCell   = `<input class="num-in" type="number" step="any" value="${typing('cMin')?r.cMin:fx2(r.cMin)}" ${d} data-f="cMin">`;
       const cMaxCell   = `<input class="num-in" type="number" step="any" value="${typing('cMax')?r.cMax:fx2(r.cMax)}" ${d} data-f="cMax">`;
-      html += `<tr>
+
+      /* ---- Post Engage : ปุ่มกางดูว่า Result จริง รวมอะไรบ้าง ---- */
+      const engKey  = `${ch.name}|${r.obj}`;
+      const engable = r.obj==='Post Engage' && r.aParts &&
+        (num(r.aRes) > 0 || Object.values(r.aParts).some(v=>num(v) > 0));
+      const engOn   = engable && !!engOpen[engKey];
+      const objCell = engable
+        ? `<td class="l obj"><button type="button" class="engtog${engOn?' on':''}" data-eng="${engKey}"
+             title="ดูว่า Result จริง รวม action อะไรบ้าง"><i class="cv"></i>${r.obj}</button></td>`
+        : `<td class="l obj">${r.obj}</td>`;
+
+      html += `<tr${engOn?' class="eng-parent"':''}>
         <td class="l"></td>
-        <td class="l obj">${r.obj}</td>
+        ${objCell}
         <td class="muted">${c.total>0?fmtPct(r.pct):'—'}</td>
         <td>${budgetCell}</td>
         <td>${fmt(r.rMin)}</td>
@@ -2221,6 +2348,7 @@ function renderTable(c, chans){
         <td ${achStyle}>${(r.aRes>0 && r.paceTarget>0)?fmt(r.achieve*100)+'%':'—'}</td>
         <td class="c sep-l">${pill(r.status.cls, r.status.label)}</td>
       </tr>`;
+      if(engOn) html += engageRows(r);
     });
   });
   $('tbody').innerHTML = html;
@@ -2749,6 +2877,26 @@ async function metaSyncAll(){
   renderMetaBtn();
 }
 
+/* ===== ส่วนประกอบของ Post Engagement =====
+   Meta ส่ง post_engagement มาเป็นตัวเลขก้อนเดียว — ตรงนี้ดึง action ย่อยมาเก็บคู่กัน
+   เพื่อกางให้เห็นว่า "Result จริง" ของแถว Post Engage รวมอะไรบ้าง
+   หมายเหตุ: ผลรวมของรายการย่อยอาจไม่เท่ากับ post_engagement เป๊ะ ๆ
+   จึงปิดผลต่างด้วยแถว 'อื่นๆ' ตอน render เพื่อให้ผลรวม = Result จริง เสมอ */
+const ENGAGE_PARTS = [
+  { id:'reaction',   at:'post_reaction',               label:'Reactions',       note:'ไลก์ / ใจ / ว้าว บนโพสต์' },
+  { id:'comment',    at:'comment',                     label:'Comments',        note:'คอมเมนต์ใต้โพสต์' },
+  { id:'share',      at:'post',                        label:'Shares',          note:'แชร์โพสต์ต่อ' },
+  { id:'save',       at:'onsite_conversion.post_save', label:'Saves',           note:'กดบันทึกโพสต์เก็บไว้' },
+  { id:'link_click', at:'link_click',                  label:'Link Clicks',     note:'คลิกลิงก์ในโพสต์' },
+  { id:'photo_view', at:'photo_view',                  label:'Photo Views',     note:'กดเปิดดูรูปเต็ม' },
+  { id:'video_view', at:'video_view',                  label:'Video Views',     note:'ดูวิดีโอตั้งแต่ 3 วินาทีขึ้นไป' },
+  { id:'page_like',  at:'like',                        label:'Page Likes',      note:'กดถูกใจ/ติดตามเพจ' },
+];
+const ENGAGE_LABEL = Object.fromEntries(ENGAGE_PARTS.map(p=>[p.id,p]));
+const roundParts = o => o
+  ? Object.fromEntries(Object.entries(o).map(([k,v])=>[k, Math.round(num(v))]))
+  : null;
+
 /* --- Sync Actual Spend + Result → Firestore actuals ---
    Step 1: ดึง optimization_goal ของทุก adset ก่อน (แก้ Post Engage ไม่แสดง)
    Step 2: ดึง insights + publisher_platform breakdown โดยใช้ adset_id → goal
@@ -2805,6 +2953,15 @@ async function metaSyncActuals(){
           const click  = +(acts.find(a=>a.action_type==='link_click')||{}).value      || 0;
           const engage = +(acts.find(a=>a.action_type==='post_engagement')||{}).value || 0;
           actuals[key].result += obj==='Leadform' ? lead : obj==='Click' ? click : engage;
+
+          /* --- Post Engage : แตก post_engagement ออกเป็น action ย่อย --- */
+          if(obj === 'Post Engage'){
+            const pt = actuals[key].parts || (actuals[key].parts = {});
+            ENGAGE_PARTS.forEach(p=>{
+              const v = +(acts.find(a=>a.action_type===p.at)||{}).value || 0;
+              pt[p.id] = (pt[p.id]||0) + v;
+            });
+          }
         }
         cursor  = resp.paging && resp.paging.cursors && resp.paging.cursors.after;
         hasNext = !!(cursor && resp.data && resp.data.length === 500);
@@ -2820,13 +2977,17 @@ async function metaSyncActuals(){
   if(fb && fbReady){
     const { db, fs } = fb;
     await Promise.all(Object.entries(actuals).map(([k,v]) =>
-      fs.setDoc(fs.doc(db,'boards',FB_BOARD,'actuals',k),{
-        spend:Math.round(v.spend), result:Math.round(v.result)
-      })
+      fs.setDoc(fs.doc(db,'boards',FB_BOARD,'actuals',k), Object.assign(
+        { spend:Math.round(v.spend), result:Math.round(v.result) },
+        v.parts ? { parts: roundParts(v.parts) } : {}
+      ))
     ));
   } else {
     updateActual(Object.fromEntries(
-      Object.entries(actuals).map(([k,v])=>[k,{spend:Math.round(v.spend),result:Math.round(v.result)}])
+      Object.entries(actuals).map(([k,v])=>[k, Object.assign(
+        { spend:Math.round(v.spend), result:Math.round(v.result) },
+        v.parts ? { parts: roundParts(v.parts) } : {}
+      )])
     ));
   }
 }
@@ -3084,6 +3245,14 @@ document.addEventListener('click', e=>{
     state.leadFilter = (v==='' || state.leadFilter===v) ? '' : v;
     focusKey=null; render(); return;
   }
+  /* ---- กาง/พับ breakdown ของ Post Engage ---- */
+  const eng = e.target.closest('[data-eng]');
+  if(eng){
+    const k = eng.dataset.eng;
+    engOpen[k] = !engOpen[k];
+    focusKey = null; render(); return;
+  }
+
   const del = e.target.closest('[data-del]');
   if(del){ focusKey=null; removePlan(del.dataset.del); return; }
   const tab = e.target.closest('[data-tab]');
