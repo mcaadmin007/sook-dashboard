@@ -2314,14 +2314,20 @@ function renderTable(c, chans){
       <td colspan="4"></td><td class="sep-l" colspan="4"></td><td class="sep-l"></td></tr>`;
     ch.rows.forEach((r,ri)=>{
       const d = `data-ch="${ci}" data-r="${ri}"`;
+      /* ขณะที่ผู้ใช้พิมพ์อยู่ ต้องแสดง "ข้อความดิบ" ที่พิมพ์ ไม่ใช่ตัวเลขที่ parse แล้ว
+         ไม่งั้นสถานะกลางคันอย่าง "0." จะโดนเขียนทับเป็น "0" >> พิมพ์ทศนิยมไม่ได้ */
       const typing = f => focusKey && focusKey.ch===ci && focusKey.r===ri && focusKey.f===f;
+      const shown  = (f, done) => (typing(f) && focusKey.raw != null) ? esc(focusKey.raw) : done;
       const achStyle = !(r.aRes>0 && r.paceTarget>0) ? 'class="muted"'
         : r.achieve>=1 ? 'style="color:var(--green);font-weight:600"'
         : r.achieve>=0.8 ? 'style="color:var(--amber);font-weight:600"'
         : 'style="color:var(--red);font-weight:600"';
-      const budgetCell = `<input class="num-in w-md" type="number" step="1000" value="${Math.round(r.budget)}" ${d} data-f="budget">`;
-      const cMinCell   = `<input class="num-in" type="number" step="any" value="${typing('cMin')?r.cMin:fx2(r.cMin)}" ${d} data-f="cMin">`;
-      const cMaxCell   = `<input class="num-in" type="number" step="any" value="${typing('cMax')?r.cMax:fx2(r.cMax)}" ${d} data-f="cMax">`;
+      const budgetCell = `<input class="num-in w-md" type="text" inputmode="numeric" autocomplete="off"
+        value="${shown('budget', Math.round(r.budget))}" ${d} data-f="budget">`;
+      const cMinCell   = `<input class="num-in" type="text" inputmode="decimal" autocomplete="off"
+        value="${shown('cMin', fx2(r.cMin))}" ${d} data-f="cMin">`;
+      const cMaxCell   = `<input class="num-in" type="text" inputmode="decimal" autocomplete="off"
+        value="${shown('cMax', fx2(r.cMax))}" ${d} data-f="cMax">`;
 
       /* ---- Post Engage : ปุ่มกางดูว่า Result จริง รวมอะไรบ้าง ---- */
       const engKey  = `${ch.name}|${r.obj}`;
@@ -3121,7 +3127,13 @@ function render(){
 
   if(focusKey){
     const el = document.querySelector(`[data-ch="${focusKey.ch}"][data-r="${focusKey.r}"][data-f="${focusKey.f}"]`);
-    if(el){ el.focus(); const v=el.value; el.value=''; el.value=v; }
+    if(el){
+      el.focus();
+      /* คืนตำแหน่งเคอร์เซอร์ให้ตรงจุดเดิม ไม่ให้เด้งไปท้ายช่องตอนแก้กลางตัวเลข
+         (ห้าม el.value='' แล้วใส่กลับ เพราะจะล้างข้อความดิบที่กำลังพิมพ์ เช่น "0.") */
+      const p = (focusKey.pos == null) ? el.value.length : Math.min(focusKey.pos, el.value.length);
+      try{ el.setSelectionRange(p, p); }catch(e){}
+    }
   }
   if(critKey){
     const el = document.querySelector(`select[data-lead="${critKey.k}"][data-crit="${critKey.c}"]`);
@@ -3160,12 +3172,29 @@ document.addEventListener('input', e=>{
   }
   if(t.dataset && t.dataset.f && t.dataset.ch!==undefined){
     const ci=+t.dataset.ch, ri=+t.dataset.r, f=t.dataset.f;
-    activePlan().channels[ci].rows[ri][f] = num(t.value);
-    focusKey={ch:ci,r:ri,f};
+    /* กันอักขระที่ไม่ใช่ตัวเลข: budget = จำนวนเต็ม, cMin/cMax = ทศนิยมได้ */
+    let raw = String(t.value).replace(/[^\d.]/g, '');
+    if(f === 'budget') raw = raw.replace(/\./g, '');
+    else { const i = raw.indexOf('.'); if(i > -1) raw = raw.slice(0,i+1) + raw.slice(i+1).replace(/\./g,''); }
+    let pos = null;
+    try{ pos = t.selectionStart; }catch(e){}
+    if(raw !== t.value && pos != null) pos = Math.max(0, pos - (t.value.length - raw.length));
+    activePlan().channels[ci].rows[ri][f] = num(raw);
+    focusKey = { ch:ci, r:ri, f, raw, pos };
     render();
     return;
   }
   if(t.id==='inBudget' || t.id==='inTarget' || t.id==='inMonths'){ focusKey=null; render(); }
+});
+
+/* ออกจากช่องเมื่อไหร่ ให้จัดรูปแบบตัวเลขในช่องนั้นเลย (เช่น "0." >> "0.00", ".8" >> "0.80")
+   แก้เฉพาะ input ตัวนั้นตรงๆ ไม่ render ใหม่ทั้งตาราง เพราะจะไปแย่งโฟกัสตอนกด Tab ไปช่องถัดไป */
+document.addEventListener('focusout', e=>{
+  const t = e.target;
+  if(!(t && t.dataset && t.dataset.f && t.dataset.ch!==undefined)) return;
+  const f = t.dataset.f, v = num(t.value);
+  t.value = (f === 'budget') ? String(Math.round(v)) : fx2(v);
+  if(focusKey && focusKey.ch===+t.dataset.ch && focusKey.r===+t.dataset.r && focusKey.f===f) focusKey = null;
 });
 
 document.addEventListener('click', e=>{
