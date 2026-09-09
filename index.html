@@ -600,6 +600,8 @@
     .sheet{border-radius:var(--radius)}
   }
 
+  .fhint{font-size:11px;line-height:1.45;color:var(--ink-3);margin-top:5px}
+
   /* ===== แถบยืนยันก่อนบันทึก ===== */
   .savebar{
     display:flex;align-items:center;gap:10px;flex-wrap:wrap;
@@ -853,8 +855,9 @@
     <div class="sec-body">
       <div class="grid">
         <div class="field">
-          <label>Budget รวม (บาท/เดือน)</label>
-          <input type="number" id="inBudget" value="0" step="1000">
+          <label>Budget รวมทั้งช่วง (บาท)</label>
+          <input type="number" id="inBudget" value="0" step="1000" title="ยอดรวมของทั้งโครงการ ไม่ใช่ต่อเดือน — แบ่งลงแต่ละเดือนในตารางแผนด้านล่าง">
+          <div class="fhint">ยอดรวมทั้งโครงการ ไม่ใช่ต่อเดือน · แบ่งลงแต่ละเดือนในตารางด้านล่าง</div>
         </div>
         <div class="field">
           <label>เป้า Lead รวม (Qualified)</label>
@@ -2698,7 +2701,8 @@ function renderTable(c, chans){
 }
 
 /* ===== KPI ===== */
-/* budgetTotal = Budget รวม (บาท/เดือน) × ระยะเวลา (เดือน)
+/* budgetTotal = Budget รวมทั้งช่วง (บาท) — ใส่ยอดรวมของทั้งโครงการตรงๆ ไม่คูณจำนวนเดือน
+                 การแบ่งงบลงแต่ละเดือน ทำในตารางแผนของเดือนนั้นๆ เอง
    targetLeads = เป้า Lead รวม (Qualified) ทั้งช่วง  ·  1 ฟอร์ม = 1 lead
    CPL         = งบใช้จริง ÷ Total Leadform (จำนวนฟอร์มจริง) */
 function renderKPI(c, targetLeads, budgetTotal){
@@ -3424,7 +3428,7 @@ function render(){
   if(num($('inMonths').value) !== months) $('inMonths').value = months;
 
   const targetLeads = num($('inTarget').value);          // เป้ารวมทั้งช่วง
-  const budgetTotal = num($('inBudget').value) * months; // บาท/เดือน × เดือน
+  const budgetTotal = num($('inBudget').value);          // งบรวมทั้งช่วง ไม่คูณจำนวนเดือน
 
   /* ---- เดือนที่เลือก : ตาราง / optimize ---- */
   const chans = p.channels;
