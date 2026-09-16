@@ -477,6 +477,32 @@
     cursor:pointer;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--ink-2,#4a5468)}
   .btn-back:hover{background:#f4f6fa;border-color:#d3d9e2}
   #anaDetailWrap[hidden]{display:none}
+  /* วิเคราะห์รายคอนเทนต์ — แก้ไขได้ */
+  .ar-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 12px}
+  .ar-head h3{margin:0}
+  .ar-actions{display:flex;align-items:center;gap:8px}
+  .ana-ins.edit li{padding:6px 8px;display:flex;align-items:center;gap:8px}
+  .ana-ins.edit li::before{display:none}
+  .ins-type{flex:none;width:24px;height:24px;border:0;border-radius:7px;cursor:pointer;
+    font-size:12px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center}
+  .ins-type.good{color:#1f8a4c;background:#d8efdf}
+  .ins-type.bad{color:#c9302c;background:#f7d9d6}
+  .ins-type.warn{color:#b9820a;background:#f7eccf}
+  .ins-type.act{color:#2f5fe0;background:#dbe6fb}
+  .ins-text{flex:1;min-width:0;outline:none;font-size:12.5px;line-height:1.5;color:var(--ink);
+    padding:2px 4px;border-radius:5px;word-break:break-word}
+  .ins-text:focus{background:rgba(255,255,255,.75);box-shadow:0 0 0 2px rgba(47,95,224,.18)}
+  .ins-text:empty::before{content:attr(data-ph);color:#a9b1c2}
+  .ins-del{flex:none;border:0;background:transparent;color:#c9302c;cursor:pointer;
+    font-size:16px;line-height:1;opacity:.45;padding:0 2px}
+  .ins-del:hover{opacity:1}
+  .ac-tools{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+  .ins-add,.ins-sys{border:1px dashed #cfd6e2;background:#fff;color:#4a5468;cursor:pointer;
+    padding:5px 12px;border-radius:8px;font-size:11.5px;font-weight:600}
+  .ins-add:hover{border-color:var(--blue);color:var(--blue)}
+  .ins-sys{border-style:solid;border-color:#e1e5ec}
+  .ins-sys:hover{border-color:var(--blue);color:var(--blue)}
+  .ana-dirty{font-size:11.5px;color:#c9720b;font-weight:600;margin-right:2px}
 
   /* ===== lead scoring ===== */
   table.lead tbody td.sc{padding:5px 8px}
@@ -3847,6 +3873,28 @@ function anaBadgeCls(score){
   if(score>=30) return 'a2'; return 'a1';
 }
 
+/* --- โน้ตวิเคราะห์ที่นนท์พิมพ์เอง (แยกตาม scope: 'live' หรือ id รายงาน) --- */
+const ANA_NOTES = 'sook_ana_notes';
+function anaLoadNotes(){ try{ return JSON.parse(localStorage.getItem(ANA_NOTES)||'{}')||{}; }catch(e){ return {}; } }
+let anaNotes = anaLoadNotes();
+let anaNotesDirty = false;
+function anaStoreNotes(){ try{ localStorage.setItem(ANA_NOTES, JSON.stringify(anaNotes)); }catch(e){} }
+function anaScopeKey(){ return anaCurrent || 'live'; }
+function anaGetNotes(ad){ const s = anaNotes[anaScopeKey()]; return (s && s[ad]) ? s[ad] : null; }
+/* เทมเพลตแถบสีว่าง 5 ข้อ (เขียว·ครีม·แดง·เขียว·น้ำเงิน) ให้พิมพ์เอง */
+const ANA_TPL = [{cls:'good',t:''},{cls:'warn',t:''},{cls:'bad',t:''},{cls:'good',t:''},{cls:'act',t:''}];
+const INS_ICON = { good:'▲', bad:'▼', warn:'!', act:'➜' };
+const INS_CYCLE = ['good','warn','bad','act'];
+function anaInsRowsHTML(bullets){
+  return (bullets||[]).map(b=>{
+    const cls = INS_ICON[b.cls] ? b.cls : 'good';
+    return `<li class="${cls}" data-cls="${cls}">`
+      + `<button class="ins-type ${cls}" data-cls="${cls}" type="button" title="เปลี่ยนประเภท (คลิกวนสี)">${INS_ICON[cls]}</button>`
+      + `<span class="ins-text" contenteditable="true" data-ph="พิมพ์ข้อสังเกต…">${esc(b.t||'')}</span>`
+      + `<button class="ins-del" type="button" title="ลบข้อ">×</button></li>`;
+  }).join('');
+}
+
 /* thumbnail: <img> + <span> ข้างกัน — img error → ซ่อน img โชว์ span (แก้บั๊ก no img") */
 function anaThumb(r, px){
   const s = px||52;
@@ -3957,20 +4005,90 @@ function renderAnalyze(){
     '</tr>';
   }).join('');
 
-  /* --- วิเคราะห์รายคอนเทนต์ (เรียงตามคะแนนมาก→น้อย) --- */
+  /* --- วิเคราะห์รายคอนเทนต์ (แก้ไขเอง + บันทึก) เรียงตามคะแนนมาก→น้อย --- */
   if(rep){
+    anaNotesDirty = false;
     const order = rows.map((r,i)=>({r, sc:scores[i]})).sort((a,b2)=> b2.sc.score - a.sc.score);
-    rep.innerHTML = `<div class="ana-report"><h3>วิเคราะห์รายคอนเทนต์ (${fmt(rows.length)} ชิ้น · เรียงจากคะแนนสูงสุด)</h3>` +
-      order.map(({r,sc})=>{
-        const ins = anaInsightsFor(r, b, sc);
-        return `<div class="ana-card">`
+    rep.innerHTML = `<div class="ana-report">`
+      + `<div class="ar-head"><h3>วิเคราะห์รายคอนเทนต์ (${fmt(rows.length)} ชิ้น · เรียงจากคะแนนสูงสุด · พิมพ์เองได้)</h3>`
+      + `<div class="ar-actions"><span class="ana-dirty" id="anaDirty" hidden>● ยังไม่บันทึก</span>`
+      + `<button class="btn-back" id="btnAnaNotesClear" type="button">↺ ล้างเป็นเทมเพลตว่าง</button>`
+      + `<button class="btn-ana" id="btnAnaNotesSave" type="button">บันทึกการวิเคราะห์</button></div></div>`
+      + order.map(({r,sc})=>{
+        const saved = anaGetNotes(r.ad_name);
+        const ins = saved || ANA_TPL.map(x=>({...x}));
+        return `<div class="ana-card" data-ad="${esc(r.ad_name)}">`
           + `<div class="ac-head">${anaThumb(r,44)}`
           + `<div class="ac-name">${esc(r.ad_name)||'—'}</div>`
           + `<div class="ac-sc"><span class="ana-num">${sc.score}</span><span class="ana-badge ${sc.cls}">${sc.label}</span></div></div>`
-          + `<ul class="ana-ins">` + ins.map(x=>`<li class="${x.cls}">${esc(x.t)}</li>`).join('') + `</ul>`
+          + `<ul class="ana-ins edit">` + anaInsRowsHTML(ins) + `</ul>`
+          + `<div class="ac-tools"><button class="ins-add" type="button">+ เพิ่มข้อ</button>`
+          + `<button class="ins-sys" type="button">ใช้ค่าระบบช่วยร่าง</button></div>`
           + `</div>`;
       }).join('') + `</div>`;
   }
+}
+
+/* ===== แก้ไข/บันทึกโน้ตวิเคราะห์ ===== */
+function anaMarkDirty(){
+  anaNotesDirty = true;
+  const d = $('anaDirty'); if(d) d.hidden = false;
+}
+function anaCycleType(btn){
+  const li = btn.closest('li'); if(!li) return;
+  const cur = li.dataset.cls || 'good';
+  const nx = INS_CYCLE[(INS_CYCLE.indexOf(cur)+1) % INS_CYCLE.length];
+  li.className = nx; li.dataset.cls = nx;
+  btn.className = 'ins-type ' + nx; btn.dataset.cls = nx; btn.textContent = INS_ICON[nx];
+  anaMarkDirty();
+}
+function anaAddLine(card){
+  const ul = card.querySelector('ul.ana-ins'); if(!ul) return;
+  ul.insertAdjacentHTML('beforeend', anaInsRowsHTML([{cls:'good',t:''}]));
+  const last = ul.lastElementChild && ul.lastElementChild.querySelector('.ins-text');
+  if(last) last.focus();
+  anaMarkDirty();
+}
+function anaFillSystem(card){
+  const ad = card.dataset.ad;
+  const rows = anaCurRows() || [];
+  const b = anaBench(rows);
+  const idx = rows.findIndex(r=>r.ad_name===ad);
+  if(idx<0) return;
+  const sc = anaScoreOne(rows[idx], b);
+  const ins = anaInsightsFor(rows[idx], b, sc);
+  const ul = card.querySelector('ul.ana-ins'); if(!ul) return;
+  ul.innerHTML = anaInsRowsHTML(ins);
+  anaMarkDirty();
+}
+function anaSaveNotesNow(){
+  const rep = $('anaReport'); if(!rep) return;
+  const scope = anaScopeKey();
+  const store = {};
+  rep.querySelectorAll('.ana-card').forEach(card=>{
+    const ad = card.dataset.ad;
+    const lines = [];
+    card.querySelectorAll('ul.ana-ins > li').forEach(li=>{
+      const t = (li.querySelector('.ins-text')?.textContent || '').trim();
+      const cls = li.dataset.cls || 'good';
+      if(t) lines.push({ cls, t });   // เก็บเฉพาะข้อที่มีข้อความ
+    });
+    if(lines.length) store[ad] = lines;
+  });
+  anaNotes[scope] = store;
+  anaStoreNotes();
+  anaNotesDirty = false;
+  const d = $('anaDirty'); if(d) d.hidden = true;
+  showToast('บันทึกการวิเคราะห์แล้ว');
+}
+function anaClearNotesUI(){
+  if(!confirm('ล้างข้อความวิเคราะห์ทั้งหมดในหน้านี้ให้เป็นแถบว่าง? (จะยังไม่หายจนกว่าจะกดบันทึก)')) return;
+  const rep = $('anaReport'); if(!rep) return;
+  rep.querySelectorAll('.ana-card').forEach(card=>{
+    const ul = card.querySelector('ul.ana-ins');
+    if(ul) ul.innerHTML = anaInsRowsHTML(ANA_TPL.map(x=>({...x})));
+  });
+  anaMarkDirty();
 }
 
 /* =========================================================
@@ -4219,6 +4337,8 @@ function setAdding(on){
 
 /* ===== events ===== */
 document.addEventListener('input', e=>{
+  /* ---- แก้ไขข้อความวิเคราะห์รายคอนเทนต์ ---- */
+  if(e.target.classList && e.target.classList.contains('ins-text')){ anaMarkDirty(); return; }
   /* ---- ช่องพิมพ์ยืนยันของกล่องลบถาวร ---- */
   if(e.target.id==='cfIn'){
     $('cfOk').disabled = e.target.value.trim() !== (e.target.dataset.want||'');
@@ -4347,10 +4467,16 @@ document.addEventListener('click', e=>{
   if(anadel){ e.stopPropagation(); anaDeleteById(anadel.dataset.anadel); return; }
   const anaopen = e.target.closest('[data-anaopen]');
   if(anaopen){ anaCurrent = anaopen.dataset.anaopen; renderAnalyze(); return; }
-  if(e.target.closest('#btnAnaBack')){ anaCurrent = null; renderAnalyze(); return; }
+  if(e.target.closest('#btnAnaBack')){ if(anaNotesDirty && !confirm('มีการแก้ไขที่ยังไม่บันทึก ออกโดยไม่บันทึก?')) return; anaCurrent = null; renderAnalyze(); return; }
   if(e.target.closest('#btnAnaDel')){ anaDeleteReport(); return; }
   if(e.target.id==='anaMClose' || e.target.id==='anaModal' || e.target.id==='anaFCancel'){ anaCloseModal(); return; }
   if(e.target.closest('#anaFOk')){ anaCreateReport(); return; }
+  if(e.target.closest('#btnAnaNotesSave')){ anaSaveNotesNow(); return; }
+  if(e.target.closest('#btnAnaNotesClear')){ anaClearNotesUI(); return; }
+  const inst = e.target.closest('.ins-type'); if(inst){ anaCycleType(inst); return; }
+  if(e.target.closest('.ins-del')){ const li=e.target.closest('li'); if(li){ li.remove(); anaMarkDirty(); } return; }
+  const insadd = e.target.closest('.ins-add'); if(insadd){ anaAddLine(insadd.closest('.ana-card')); return; }
+  const inssys = e.target.closest('.ins-sys'); if(inssys){ anaFillSystem(inssys.closest('.ana-card')); return; }
 
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
