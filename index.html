@@ -860,13 +860,24 @@
 
   <section id="secAnalyze" data-page="analyze">
     <div class="sec-head">
-      <h2>Analyze Content</h2>
-    </div>
-    <div class="sec-body">
-      <div style="padding:32px;text-align:center;color:var(--muted,#7b8496)">
-        <div style="font-size:15px;line-height:1.7">ส่วนวิเคราะห์คอนเทนต์ — อยู่ระหว่างพัฒนา</div>
-        <div style="font-size:13px;margin-top:6px;opacity:.8">พื้นที่นี้จะใช้สรุปผลและวิเคราะห์คอนเทนต์จาก Content Plan</div>
+      <div class="head-left">
+        <h2>Analyze Content</h2>
       </div>
+      <div class="head-right">
+        <span id="anaTag"></span>
+        <button class="btn-xls" id="btnAnaXls" title="ดาวน์โหลดตารางเป็นไฟล์ Excel">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1v9m0 0 3.2-3.2M8 10 4.8 6.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>Excel
+        </button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="lead" id="anaTable">
+        <thead id="anaHead"></thead>
+        <tbody id="anaBody"></tbody>
+      </table>
     </div>
   </section>
 
@@ -2880,17 +2891,6 @@ function renderLeads(month){
     (f ? ' ' + pill('p-amber', fName) : '') +
     ' ' + pill('p-blue', fmt(rows.length) + ' ราย');
 
-  // --- Diagnostic: reveal the actual Meta lead-form field names captured ---
-  if(src==='meta'){
-    const fset = new Set();
-    all.forEach(r => (r.fields||[]).forEach(fl => { if(fl && fl.name) fset.add(fl.name); }));
-    const fnames = [...fset].sort();
-    window.__leadFields = fnames;
-    if(fnames.length){
-      $('leadTag').innerHTML += ' ' + pill('p-grey', 'ฟิลด์ในฟอร์ม: ' + fnames.join(' · '));
-    }
-  }
-
   $('leadHead').innerHTML = '<tr>' + cols.map((c,i) =>
     `<th class="${i===0?'l':''}${c.t==='bool'?' r':''}">${c.h}</th>`).join('') + '</tr>';
 
@@ -3023,6 +3023,33 @@ const XLS_ICON = `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" ar
   <path d="M8 1v9m0 0 3.2-3.2M8 10 4.8 6.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
 </svg>`;
+
+async function exportAnalyze(){
+  const btn = document.getElementById('btnAnaXls');
+  if(!metaAdContent.length){ showToast('⚠ ยังไม่มีข้อมูล กด Sync Meta ก่อน'); return; }
+  const head = ['Ad Name','Spend','Reach','Click','CTR %','CPC','Like','Comment','Share','Save Post',
+    'View rate 3วิ %','VideoView 50% %','VideoView 75% %','VideoView 95% %'];
+  const rate = v => v==null ? '-' : Math.round(v*100)/100;
+  const body = metaAdContent.map(r=>[
+    r.ad_name, Math.round(r.spend), r.reach, r.click, Math.round(r.ctr*100)/100, Math.round(r.cpc*100)/100,
+    r.like, r.comment, r.share, r.save, rate(r.r3), rate(r.r50), rate(r.r75), rate(r.r95),
+  ]);
+  if(btn){ btn.disabled = true; btn.textContent = 'กำลังสร้าง…'; }
+  try{
+    const XLSX = await loadXLSX();
+    const ws = XLSX.utils.aoa_to_sheet([head, ...body]);
+    ws['!cols'] = head.map(h => ({ wch: Math.min(38, Math.max(11, String(h).length + 3)) }));
+    ws['!freeze'] = { xSplit:0, ySplit:1 };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Analyze Content');
+    XLSX.writeFile(wb, 'SooK_Analyze_Content.xlsx');
+  }catch(e){
+    console.warn('XLSX export failed', e);
+    showToast('⚠ สร้างไฟล์ Excel ไม่สำเร็จ');
+  }finally{
+    if(btn){ btn.disabled = false; btn.innerHTML = XLS_ICON + 'Excel'; }
+  }
+}
 
 /* ===== Dashboard ===== */
 const allLeadsOf = month => LEAD_SRC.flatMap(s =>
@@ -3287,7 +3314,7 @@ async function metaSyncAll(){
   metaSyncing = true;
   renderMetaBtn();
   try{
-    await Promise.all([metaSyncActuals(), metaSyncLeads()]);
+    await Promise.all([metaSyncActuals(), metaSyncLeads(), metaSyncAdContent()]);
   }catch(e){ console.error('Meta sync error:', e); }
   metaSyncing = false;
   renderMetaBtn();
@@ -3406,6 +3433,139 @@ async function metaSyncActuals(){
       )])
     ));
   }
+}
+
+/* =========================================================
+   ANALYZE CONTENT — ตารางระดับ Ad (Lifetime)
+   ดึง Insights level=ad + Creative thumbnail จาก Meta
+   นิยาม (ยืนยันกับนนท์):
+     • ช่วงเวลา   = Lifetime (date_preset=maximum)
+     • Click      = post_engagement (คลิกดูคอนเทนต์)
+     • CTR        = Click / Impressions
+     • CPC        = Spend / Click
+     • View rate  = ยอดวิว ÷ Reach (จำนวนคน)
+     • ภาพนิ่งไม่มี video metric → แสดง "-"
+   ========================================================= */
+let metaAdContent = (()=>{ try{ const c=JSON.parse(localStorage.getItem('meta_adcontent_cache')||'null'); return (c&&c.data)||[]; }catch(e){ return []; } })();
+
+const _av = (arr,type)=>{ const a=(arr||[]).find(x=>x.action_type===type); return a?num(a.value):0; };
+const _v0 = arr => { const a=(arr||[])[0]; return a?num(a.value):0; };
+
+async function metaSyncAdContent(){
+  // 1) creative thumbnail ต่อ ad
+  const creatives = {};
+  try{
+    let cur=null, more=true;
+    while(more){
+      const p = { fields:'id,name,creative{thumbnail_url,image_url}', limit:400 };
+      if(cur) p.after=cur;
+      const r = await metaFetch(`/${META_ACCOUNT_ID}/ads`, p);
+      (r.data||[]).forEach(a=>{
+        const cr=a.creative||{};
+        creatives[a.id] = { name:a.name||'', thumb: cr.thumbnail_url||cr.image_url||'' };
+      });
+      cur  = r.paging && r.paging.cursors && r.paging.cursors.after;
+      more = !!(cur && r.data && r.data.length===400);
+    }
+  }catch(e){ console.warn('Meta ads(creative):', e); }
+
+  // 2) insights level=ad, lifetime
+  const rows = [];
+  try{
+    let cur=null, more=true;
+    while(more){
+      const p = {
+        level:       'ad',
+        date_preset: 'maximum',
+        fields: 'ad_id,ad_name,spend,reach,impressions,actions,' +
+                'video_play_actions,video_p50_watched_actions,' +
+                'video_p75_watched_actions,video_p95_watched_actions',
+        limit: 400,
+      };
+      if(cur) p.after=cur;
+      const r = await metaFetch(`/${META_ACCOUNT_ID}/insights`, p);
+      (r.data||[]).forEach(row=>{
+        const acts   = row.actions||[];
+        const spend  = num(row.spend);
+        const reach  = num(row.reach);
+        const impr   = num(row.impressions);
+        const click  = _av(acts,'post_engagement');
+        const v3      = _av(acts,'video_view');            // 3-sec video views
+        const p50     = _v0(row.video_p50_watched_actions);
+        const p75     = _v0(row.video_p75_watched_actions);
+        const p95     = _v0(row.video_p95_watched_actions);
+        const plays   = _v0(row.video_play_actions);
+        const isVideo = (v3+p50+p75+p95+plays) > 0;
+        const cr      = creatives[row.ad_id] || {};
+        rows.push({
+          ad_id:   row.ad_id,
+          ad_name: row.ad_name || cr.name || '',
+          thumb:   cr.thumb || '',
+          spend, reach, impr, click,
+          ctr:  impr>0  ? click/impr*100  : 0,
+          cpc:  click>0 ? spend/click     : 0,
+          like:    _av(acts,'post_reaction'),
+          comment: _av(acts,'comment'),
+          share:   _av(acts,'post'),
+          save:    _av(acts,'onsite_conversion.post_save'),
+          isVideo,
+          r3:  isVideo && reach>0 ? v3/reach*100  : null,
+          r50: isVideo && reach>0 ? p50/reach*100 : null,
+          r75: isVideo && reach>0 ? p75/reach*100 : null,
+          r95: isVideo && reach>0 ? p95/reach*100 : null,
+        });
+      });
+      cur  = r.paging && r.paging.cursors && r.paging.cursors.after;
+      more = !!(cur && r.data && r.data.length===400);
+    }
+  }catch(e){ console.warn('Meta insights(ad):', e); showMetaErr((e&&e.message)||'ดึง Analyze Content ไม่สำเร็จ'); return; }
+
+  rows.sort((a,b)=> b.spend - a.spend);
+  metaAdContent = rows;
+  try{ localStorage.setItem('meta_adcontent_cache', JSON.stringify({ ts:Date.now(), data:rows })); }catch(e){}
+  renderAnalyze();
+}
+
+const ANA_COLS = [
+  { h:'Creative' }, { h:'Ad Name' }, { h:'Spend' }, { h:'Reach' }, { h:'Click' },
+  { h:'CTR' }, { h:'CPC' }, { h:'Like' }, { h:'Comment' }, { h:'Share' }, { h:'Save Post' },
+  { h:'View rate 3วิ' }, { h:'VideoView 50%' }, { h:'VideoView 75%' }, { h:'VideoView 95%' },
+];
+
+function renderAnalyze(){
+  const head = $('anaHead'), body = $('anaBody'), tag = $('anaTag');
+  if(!head || !body) return;
+  head.innerHTML = '<tr>' + ANA_COLS.map((c,i)=>
+    `<th class="${i<2?'l':'r'}">${c.h}</th>`).join('') + '</tr>';
+  if(tag) tag.innerHTML = pill('p-grey','Lifetime') + ' ' + pill('p-blue', fmt(metaAdContent.length)+' ads');
+  if(!metaAdContent.length){
+    body.innerHTML = `<tr class="lead-none"><td colspan="${ANA_COLS.length}">— ยังไม่มีข้อมูล กด Sync Meta เพื่อดึงคอนเทนต์ —</td></tr>`;
+    return;
+  }
+  const rate = v => v==null ? '<span class="muted">-</span>' : fmtPct(v);
+  body.innerHTML = metaAdContent.map(r=>{
+    const ph = `<span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:8px;background:var(--bg-2,#eef1f6);color:#9aa3b2;font-size:11px">no img</span>`;
+    const img = r.thumb
+      ? `<img src="${esc(r.thumb)}" alt="" loading="lazy" style="width:52px;height:52px;object-fit:cover;border-radius:8px;display:block" onerror="this.outerHTML='${ph.replace(/'/g,"&#39;")}'">`
+      : ph;
+    return '<tr>' +
+      `<td class="l ana-cre">${img}</td>` +
+      `<td class="l">${esc(r.ad_name)||'<span class="muted">—</span>'}</td>` +
+      `<td class="r mono">${fmt(r.spend)}</td>` +
+      `<td class="r mono">${fmt(r.reach)}</td>` +
+      `<td class="r mono">${fmt(r.click)}</td>` +
+      `<td class="r mono">${fmtPct(r.ctr)}</td>` +
+      `<td class="r mono">${fmtCost(r.cpc)}</td>` +
+      `<td class="r mono">${fmt(r.like)}</td>` +
+      `<td class="r mono">${fmt(r.comment)}</td>` +
+      `<td class="r mono">${fmt(r.share)}</td>` +
+      `<td class="r mono">${fmt(r.save)}</td>` +
+      `<td class="r mono">${rate(r.r3)}</td>` +
+      `<td class="r mono">${rate(r.r50)}</td>` +
+      `<td class="r mono">${rate(r.r75)}</td>` +
+      `<td class="r mono">${rate(r.r95)}</td>` +
+    '</tr>';
+  }).join('');
 }
 
 /* --- Sync Lead Form Submissions → Firestore leads ---
@@ -3554,6 +3714,7 @@ function render(){
   renderKPI(agg, targetLeads, budgetTotal);
   renderLeadStat(p.month);
   renderLeads(p.month);
+  renderAnalyze();
   renderDash(p.month);
   renderCal();
   renderModal();
@@ -3714,6 +3875,7 @@ document.addEventListener('click', e=>{
   rowDragMoved = false;
 
   if(e.target.closest('#btnLeadXls')){ exportLeads(); return; }
+  if(e.target.closest('#btnAnaXls')){ exportAnalyze(); return; }
 
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
