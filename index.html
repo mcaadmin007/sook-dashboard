@@ -3394,12 +3394,23 @@ async function metaSyncLeads(){
             (lead.field_data||[]).forEach(f=>{
               fd[f.name] = Array.isArray(f.values) ? f.values[0] : f.values;
             });
+            const pickCompany = () => {
+              const direct = fd.company_name||fd.company||fd.companyname||fd.organization||fd.org_name||fd.business_name;
+              if(direct) return direct;
+              for(const k in fd){
+                const lk = String(k).toLowerCase();
+                if(lk.indexOf('company')>=0 || lk.indexOf('organization')>=0 ||
+                   lk.indexOf('business')>=0 || k.indexOf('บริษัท')>=0 || k.indexOf('องค์กร')>=0 || k.indexOf('กิจการ')>=0)
+                  return fd[k];
+              }
+              return '';
+            };
             docs.push({
               id:            lead.id,
               src:           'meta',
               created_time:  lead.created_time||'',
               full_name:     fd.full_name||fd.name||'',
-              company:       fd.company_name||fd.company||'',
+              company:       pickCompany(),
               email:         fd.email||'',
               phone_number:  fd.phone_number||fd.phone||'',
               campaign_name: lead.campaign_name||'',
