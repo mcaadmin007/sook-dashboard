@@ -202,6 +202,7 @@
   .d-hot {background:#d93a30;box-shadow:0 0 0 3px rgba(217,58,48,.14)}
   .d-warm{background:#dd8a0b;box-shadow:0 0 0 3px rgba(221,138,11,.14)}
   .d-cold{background:#3a6ce6;box-shadow:0 0 0 3px rgba(58,108,230,.14)}
+  .d-unq {background:#6b7280;box-shadow:0 0 0 3px rgba(107,114,128,.16)}
   .d-none{background:#b6bcc8;box-shadow:0 0 0 3px rgba(182,188,200,.16)}
   .empty{
     text-align:center;color:var(--ink-4);font-size:20px;letter-spacing:.12em;
@@ -416,6 +417,7 @@
   .g-hot {background:linear-gradient(180deg,#e0453a,#c9302c)}
   .g-warm{background:linear-gradient(180deg,#e8930f,#cf7a06)}
   .g-cold{background:linear-gradient(180deg,#4d7bf0,#2f5fe0)}
+  .g-unq {background:linear-gradient(180deg,#828a99,#6b7280)}
   .g-none{background:#c3c9d4}
 
   table.lead tbody tr:nth-child(even) td{background:#fcfdfe}
@@ -1186,36 +1188,39 @@ let ACTUAL = {};
      updateLeads({ meta:[...], google:[...] })   // แทนที่ทั้งชุด
      fetchLeads('https://api.example.com/leads')
    ========================================================= */
-/* ===== เกณฑ์ให้คะแนน Lead (5 เกณฑ์ × 5 คะแนน = 25) ===== */
+/* ===== เกณฑ์ให้คะแนน Lead (3 เกณฑ์ × 5 คะแนน = 15) — Lead Tier ===== */
 const SCORE_CRIT = [
-  { k:'type',   h:'Business Type',      s:'Type',   opts:{
-      5:'Hospital / Wellness / Spa',
-      4:'Hotel / Property Develop / Aesthetic Clinic',
-      3:'Fitness / Sport Team / Sport Place' } },
-  { k:'years',  h:'Year of Operation',  s:'Years',  opts:{
-      5:'> 10 Years', 4:'> 5 Years', 3:'> 3 Years', 2:'> 1 Years', 1:'0 Years' } },
-  { k:'pl',     h:'P/L Previous Year',  s:'P/L',    opts:{
-      5:'Profit > 100M', 4:'Profit > 10M', 3:'Profit > 5M', 2:'Profit > 1M', 1:'No Profit' } },
-  { k:'budget', h:'Allocated Budget',   s:'Budget', opts:{
-      5:'Already Budget Approved',
-      4:'Work on process to approval budget',
-      3:'Will propose for the budget approval',
-      2:'Need to wait for next year budget',
-      1:'No Planning' } },
-  { k:'period', h:'Period of Buying',   s:'Period', opts:{
-      5:'Immediately', 4:'In 3 Months', 3:'In 6 Months', 2:'In 12 Months', 1:'No Period' } },
+  { k:'pic',      h:'PIC Position',                  s:'PIC',      opts:{
+      5:'Owner / Decision Maker',
+      4:'Management (Director / GM)',
+      3:'Operation / Department Head',
+      2:'Staff / User',
+      1:'No one / ไม่ระบุ' } },
+  { k:'timeline', h:'ระยะเวลาตัดสินใจ (Timeline)',   s:'Timeline', opts:{
+      5:'1–3 เดือน',
+      4:'4–6 เดือน',
+      3:'7–12 เดือน',
+      2:'มากกว่า 12 เดือน',
+      1:'มากกว่า 24 เดือน / ไม่ระบุ' } },
+  { k:'need',     h:'ระดับความต้องการ (Need Level)', s:'Need',     opts:{
+      5:'ต้องการซื้อทันที / มีงบและพร้อมซื้อ',
+      4:'มีความต้องการชัดเจน / ขอ Proposal',
+      3:'กำลังเลือก / เปรียบเทียบ',
+      2:'หาข้อมูล / ยังไม่ชัดเจน',
+      1:'ยังไม่ต้องการ' } },
 ];
 const SCORE_MAX  = SCORE_CRIT.length * 5;
-const LEAD_STATUS = [ {v:'hot',h:'HOT'}, {v:'warm',h:'WARM'}, {v:'cold',h:'COLD'} ];
-const GRADE_MIN   = { hot:20, warm:12 };
-const LEAD_TYPE   = { 5:'High-performance chamber buyer', 4:'Normal-performance chamber', 3:'Other devices' };
-const gradeOf = t => t >= GRADE_MIN.hot ? 'hot' : t >= GRADE_MIN.warm ? 'warm' : 'cold';
+const LEAD_STATUS = [ {v:'hot',h:'HOT'}, {v:'warm',h:'WARM'}, {v:'cold',h:'COLD'}, {v:'unqual',h:'UNQUALIFIED'} ];
+/* Hot 11–15 · Warm 7–10 · Cold 5–6 · Unqualified 0–4 */
+const GRADE_MIN   = { hot:11, warm:7, cold:5 };
+const gradeOf = t => t >= GRADE_MIN.hot ? 'hot' : t >= GRADE_MIN.warm ? 'warm' : t >= GRADE_MIN.cold ? 'cold' : 'unqual';
 
 const CRIT_COLS = SCORE_CRIT.map(c => ({ k:'__'+c.k, h:c.h, t:'crit', c:c.k }));
 const LEAD_COLS = {
   meta: [
     { k:'created_time',  h:'Created Time',  t:'dt' },
     { k:'full_name',     h:'ชื่อ-นามสกุล',  t:'key' },
+    { k:'company',       h:'ชื่อบริษัท' },
     { k:'__score',       h:'Lead Score',    t:'score' },
     ...CRIT_COLS,
     { k:'platform',      h:'Platform' },
@@ -1229,6 +1234,7 @@ const LEAD_COLS = {
   google: [
     { k:'submission_time', h:'Submission Time', t:'dt' },
     { k:'full_name',       h:'ชื่อ-นามสกุล',    t:'key' },
+    { k:'company',         h:'ชื่อบริษัท' },
     { k:'__score',         h:'Lead Score',      t:'score' },
     ...CRIT_COLS,
     { k:'campaign_name',   h:'Campaign Name' },
@@ -2820,7 +2826,7 @@ function critCell(src, r, ck){
     vals.map(v => `<option value="${v}"${cur===v?' selected':''}>${v} · ${esc(crit.opts[v])}</option>`).join('') +
     `</select></td>`;
 }
-const GNAME = { hot:'HOT LEAD', warm:'WARM LEAD', cold:'COLD LEAD', none:'ยังไม่ประเมิน' };
+const GNAME = { hot:'HOT LEAD', warm:'WARM LEAD', cold:'COLD LEAD', unqual:'UNQUALIFIED', none:'ยังไม่ประเมิน' };
 function scoreCell(src, r){
   const s = scoreSum(scoreOf(src, r));
   if(!s.done) return `<td class="sco"><span class="scv">${s.filled?fmt(s.total):'—'}<small> / ${SCORE_MAX}</small></span>` +
@@ -2836,12 +2842,13 @@ const STAT_CARD = [
   { v:'hot',  h:'HOT',            dot:'d-hot',  col:'#d93a30' },
   { v:'warm', h:'WARM',           dot:'d-warm', col:'#dd8a0b' },
   { v:'cold', h:'COLD',           dot:'d-cold', col:'#3a6ce6' },
+  { v:'unqual', h:'UNQUALIFIED',  dot:'d-unq',  col:'#6b7280' },
   { v:'none', h:'ยังไม่ประเมิน',  dot:'d-none', col:'#b6bcc8' },
 ];
 function renderLeadStat(month){
   const src  = state.src;
   const rows = leadsOf(src, month);
-  const n = { hot:0, warm:0, cold:0, none:0 };
+  const n = { hot:0, warm:0, cold:0, unqual:0, none:0 };
   rows.forEach(r => n[statOf(src, r)]++);
   const tot = rows.length;
   const srcName = (LEAD_SRC.find(s=>s.id===src)||{}).name || src;
@@ -3014,7 +3021,7 @@ function renderDash(month){
   const rows = allLeadsOf(month);
   const done = rows.filter(x => x.s.done);
   const tot  = rows.length;
-  const n = { hot:0, warm:0, cold:0 };
+  const n = { hot:0, warm:0, cold:0, unqual:0 };
   done.forEach(x => n[gradeOf(x.s.total)]++);
   const avg = done.length ? done.reduce((a,x) => a + x.s.total, 0) / done.length : 0;
 
@@ -3038,6 +3045,7 @@ function renderDash(month){
     card('HOT LEAD',  'd-hot',  '#d93a30', fmt(n.hot),  'ราย', done.length ? fmt(pcOf(n.hot),1)+'%'  : '—', pcOf(n.hot)) +
     card('WARM LEAD', 'd-warm', '#dd8a0b', fmt(n.warm), 'ราย', done.length ? fmt(pcOf(n.warm),1)+'%' : '—', pcOf(n.warm)) +
     card('COLD LEAD', 'd-cold', '#3a6ce6', fmt(n.cold), 'ราย', done.length ? fmt(pcOf(n.cold),1)+'%' : '—', pcOf(n.cold)) +
+    card('UNQUALIFIED', 'd-unq', '#6b7280', fmt(n.unqual), 'ราย', done.length ? fmt(pcOf(n.unqual),1)+'%' : '—', pcOf(n.unqual)) +
     card('คะแนนเฉลี่ย', '', '#2f5fe0', done.length ? fmt(avg,1) : '—', '/ ' + SCORE_MAX,
          done.length ? GNAME[gradeOf(avg)] : '—', done.length ? avg/SCORE_MAX*100 : 0);
 
@@ -3064,22 +3072,20 @@ function renderDash(month){
   $('rankTag').innerHTML = pill('p-grey', label(month)) + ' ' + pill('p-blue', fmt(rk.length) + ' ราย');
   $('rankHead').innerHTML = '<tr><th class="l">#</th><th class="l">ชื่อ-นามสกุล</th><th class="l">ที่มา</th>' +
     SCORE_CRIT.map(c => `<th>${c.s}</th>`).join('') +
-    '<th>Total</th><th>Grade</th><th class="l">Type</th></tr>';
+    '<th>Total</th><th>Grade</th></tr>';
   if(!rk.length){
-    $('rankBody').innerHTML = `<tr class="lead-none"><td colspan="${SCORE_CRIT.length+6}">—</td></tr>`;
+    $('rankBody').innerHTML = `<tr class="lead-none"><td colspan="${SCORE_CRIT.length+5}">—</td></tr>`;
   }else{
     $('rankBody').innerHTML = rk.map((x,i) => {
       const sc = scoreOf(x.src, x.r);
       const g  = gradeOf(x.s.total);
-      const ty = +sc.type || 0;
       return `<tr><td class="rk">${i+1}</td>` +
         `<td class="l">${esc(x.r.full_name)||'—'}</td>` +
         `<td class="l">${esc(x.srcName)}</td>` +
         SCORE_CRIT.map(c => { const v = +sc[c.k] || 0;
           return `<td class="sv"><i class="v${v}">${v||'—'}</i></td>`; }).join('') +
         `<td class="tot">${fmt(x.s.total)}</td>` +
-        `<td><span class="gbadge g-${g}">${GNAME[g]}</span></td>` +
-        `<td class="l">${ty ? 'Type ' + ty + ' · ' + esc(LEAD_TYPE[ty]) : '—'}</td></tr>`;
+        `<td><span class="gbadge g-${g}">${GNAME[g]}</span></td></tr>`;
     }).join('');
   }
 
@@ -3091,10 +3097,10 @@ function renderDash(month){
     [5,4,3,2,1].map(v => c.opts[v] !== undefined
       ? `<td>${esc(c.opts[v])}</td>` : `<td class="dash">—</td>`).join('') + '</tr>').join('');
   $('rubLegend').innerHTML =
-    [5,4,3].map(v => `<span class="lg"><span class="sv"><i class="v${v}">${v}</i></span> Type ${v} = ${LEAD_TYPE[v]}</span>`).join('') +
-    `<span class="lg"><span class="gbadge g-hot">HOT LEAD</span> <b>${GRADE_MIN.hot}+</b></span>` +
+    `<span class="lg"><span class="gbadge g-hot">HOT LEAD</span> <b>${GRADE_MIN.hot}–${SCORE_MAX}</b></span>` +
     `<span class="lg"><span class="gbadge g-warm">WARM LEAD</span> <b>${GRADE_MIN.warm}–${GRADE_MIN.hot-1}</b></span>` +
-    `<span class="lg"><span class="gbadge g-cold">COLD LEAD</span> <b>${SCORE_CRIT.length}–${GRADE_MIN.warm-1}</b></span>`;
+    `<span class="lg"><span class="gbadge g-cold">COLD LEAD</span> <b>${GRADE_MIN.cold}–${GRADE_MIN.warm-1}</b></span>` +
+    `<span class="lg"><span class="gbadge g-unq">UNQUALIFIED</span> <b>0–${GRADE_MIN.cold-1}</b></span>`;
 }
 
 function updateLeads(payload){
@@ -3393,6 +3399,7 @@ async function metaSyncLeads(){
               src:           'meta',
               created_time:  lead.created_time||'',
               full_name:     fd.full_name||fd.name||'',
+              company:       fd.company_name||fd.company||'',
               email:         fd.email||'',
               phone_number:  fd.phone_number||fd.phone||'',
               campaign_name: lead.campaign_name||'',

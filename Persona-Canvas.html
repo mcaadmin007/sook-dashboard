@@ -154,8 +154,9 @@
 <div class="page">
   <div class="doc-head">
     <h1>Persona Canvas — AC Sook corporation</h1>
-    <a class="mt-btn" href="Meta-Targeting.html" target="_blank" rel="noopener">🎯 ดู Meta Targeting Spec ↗</a>
+    <button type="button" class="mt-btn" id="mtToggle" onclick="toggleMeta()">🎯 ดู Meta Targeting Spec</button>
   </div>
+  <div id="personaView">
   <div id="root"></div>
 
   <section class="canvas method">
@@ -204,6 +205,11 @@
       </div>
     </div>
   </section>
+  </div>
+
+  <div id="metaView" style="display:none">
+    <iframe src="Meta-Targeting.html" title="Meta Targeting Spec" style="width:100%;min-height:82vh;border:1px solid var(--line);border-radius:16px;background:#fff;display:block"></iframe>
+  </div>
 </div>
 
 <script>
@@ -356,6 +362,17 @@ function render(p){
 }
 
 document.getElementById('root').innerHTML = PERSONAS.map(render).join('');
+
+function toggleMeta(){
+  var pv = document.getElementById('personaView');
+  var mv = document.getElementById('metaView');
+  var btn = document.getElementById('mtToggle');
+  var showMeta = (mv.style.display === 'none');
+  mv.style.display = showMeta ? '' : 'none';
+  pv.style.display = showMeta ? 'none' : '';
+  btn.textContent = showMeta ? '← กลับไป Persona Canvas' : '🎯 ดู Meta Targeting Spec';
+  window.scrollTo(0, 0);
+}
 </script>
 </body>
 </html>
