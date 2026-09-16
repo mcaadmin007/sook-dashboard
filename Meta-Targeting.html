@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AC Sook — Meta Ads Targeting Spec (Hot-Lead Persona)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1f2740; --muted:#7b8496; --line:#e6e9f2; --bg:#eef1f7; --soft:#f6f7fc;
+  --accent:#5b52d6; --green:#1f9d63; --greenbg:#e7f6ee; --amber:#d98a1f; --amberbg:#fdf3e3;
+  --red:#c0392b; --chip:#eef0fb; --code:#0f1424;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Sarabun',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+.doc-head{margin-bottom:22px}
+.kicker{font-size:12.5px;letter-spacing:.14em;font-weight:600;color:var(--accent);text-transform:uppercase}
+.doc-head h1{font-size:30px;line-height:1.2;margin:6px 0 8px;font-weight:700}
+.doc-head .sub{color:var(--muted);font-size:14px}
+.section{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:18px}
+.section h2{font-size:19px;font-weight:600;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+.section h2 .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;flex:none}
+.section .lead{color:var(--muted);font-size:14px;margin:0 0 16px}
+p{margin:0 0 10px}
+
+/* persona hero */
+.hero{display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:center}
+.hero .photo{width:150px;height:180px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#c7d0ff,#efe6ff)}
+.hero .photo img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.hero .who .role{font-size:12.5px;font-weight:600;color:var(--accent);letter-spacing:.04em}
+.hero .who h3{font-size:23px;margin:2px 0 2px;font-weight:700}
+.hero .who .meta{color:var(--muted);font-size:13.5px;margin-bottom:10px}
+.hero .who .quote{background:var(--soft);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 10px 10px 0;font-size:14px}
+.tier{display:inline-flex;align-items:center;gap:8px;background:var(--greenbg);color:var(--green);font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px;margin-top:12px}
+
+/* score table */
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:4px}
+th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600;font-size:13px}
+td .s{display:inline-block;min-width:22px;font-weight:700;color:var(--green)}
+.hotrow td{background:var(--greenbg)}
+
+/* mapping cards */
+.map{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mapcard{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--soft)}
+.mapcard .h{font-weight:600;font-size:14.5px;margin-bottom:6px}
+.mapcard .h small{display:block;font-weight:400;color:var(--muted);font-size:12.5px;margin-top:1px}
+.arrow{color:var(--accent);font-weight:700}
+
+/* spec grid */
+.spec{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.spec .kv{border:1px solid var(--line);border-radius:10px;padding:11px 14px;background:var(--soft)}
+.spec .kv .k{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.spec .kv .v{font-size:14.5px;font-weight:500;margin-top:2px}
+
+/* ad set blocks */
+.adset{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.adset .bar{padding:12px 16px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.adset.a .bar{background:#5b52d6}
+.adset.b .bar{background:#1f9d63}
+.adset.c .bar{background:#d98a1f}
+.adset .bar .t{font-weight:700;font-size:15px}
+.adset .bar .role{font-size:12.5px;opacity:.92}
+.adset .inner{padding:14px 16px}
+.adset .logic{font-size:13px;color:var(--muted);margin-bottom:10px}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid #dfe3f7;border-radius:999px;padding:5px 12px 5px 10px;font-size:13px;margin:0 6px 8px 0}
+.pill .id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--accent);background:#fff;border-radius:6px;padding:1px 6px;border:1px solid #dfe3f7}
+.pill .sz{font-size:11px;color:var(--muted)}
+.andlbl{display:inline-block;font-weight:700;color:var(--amber);font-size:12px;letter-spacing:.08em;margin:2px 0 8px}
+
+/* code */
+pre{background:var(--code);color:#e6e9f5;border-radius:12px;padding:16px 18px;overflow:auto;font-size:12.5px;line-height:1.5;font-family:ui-monospace,Menlo,Consolas,monospace;margin:6px 0 0}
+pre .c{color:#7f8bb0}
+pre .s{color:#9be6b4}
+pre .k{color:#c3b6ff}
+
+.note{background:var(--amberbg);border:1px solid #f2dcae;border-radius:12px;padding:14px 16px;font-size:13.5px}
+.note b{color:var(--amber)}
+.note ul{margin:8px 0 0;padding-left:18px}
+.note li{margin-bottom:5px}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:22px}
+@media(max-width:720px){
+  .hero{grid-template-columns:1fr}.hero .photo{width:130px;height:150px}
+  .map,.spec{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="doc-head">
+    <div class="kicker">AC Sook Corporation · Meta Ads Targeting Spec</div>
+    <h1>Persona สำหรับ Setting Ads บน Meta</h1>
+    <div class="sub">กลุ่มเป้าหมายที่ปั้นจากเกณฑ์ Lead Scoring (Hot-Lead) · ธุรกิจ: ขายโอกาสธุรกิจ/แฟรนไชส์สายสังคมสูงวัย–สุขภาพ</div>
+  </div>
+
+  <!-- 1. PERSONA -->
+  <div class="section">
+    <h2><span class="n">1</span> Persona เป้าหมาย — "เจ้าของกิจการพร้อมลงทุน"</h2>
+    <div class="hero">
+      <div class="photo"><img src="https://images.pexels.com/photos/8867433/pexels-photo-8867433.jpeg?auto=compress&cs=tinysrgb&w=400" alt="เจ้าของกิจการพร้อมลงทุน"></div>
+      <div class="who">
+        <div class="role">OWNER / DECISION MAKER</div>
+        <h3>คุณเอ — เจ้าของกิจการ วัย 42–58</h3>
+        <div class="meta">มีกิจการ/เงินเก็บของตัวเอง · เป็นคนตัดสินใจเรื่องเงินเอง · มองหาธุรกิจใหม่ที่ต่อยอดเทรนด์สังคมสูงวัย</div>
+        <div class="quote">"ถ้าโมเดลชัด คืนทุนเห็นภาพ มีทีมซัพพอร์ต ผมพร้อมคุยจริงจังภายในไตรมาสนี้"</div>
+        <div class="tier">🔥 เป้าหมาย Lead Tier: HOT (11–15 คะแนน)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. LEAD SCORE -->
+  <div class="section">
+    <h2><span class="n">2</span> คนแบบไหนที่นับเป็น "Hot Lead"</h2>
+    <p class="lead">อ้างจากเกณฑ์วัดผลที่ให้มา — Hot lead ที่อยากได้ต้องเข้าเงื่อนไข 3 แกน รวมกัน 11–15 คะแนน</p>
+    <table>
+      <tr><th style="width:26%">แกนวัด</th><th>เป้าหมายของเรา (คะแนนสูง)</th><th style="width:16%">คะแนน</th></tr>
+      <tr class="hotrow"><td><b>ตำแหน่งคนคุย</b><br>(PIC Position)</td><td>Owner / Decision Maker — คนที่เซ็นเงินได้เอง</td><td><span class="s">5</span>/5</td></tr>
+      <tr class="hotrow"><td><b>ระยะเวลาตัดสินใจ</b><br>(Timeline)</td><td>ตัดสินใจภายใน 1–3 เดือน</td><td><span class="s">5</span>/5</td></tr>
+      <tr class="hotrow"><td><b>ระดับความต้องการ</b><br>(Need Level)</td><td>มีงบและพร้อมซื้อ / ต้องการซื้อทันที</td><td><span class="s">5</span>/5</td></tr>
+    </table>
+    <p style="margin-top:12px;font-size:13.5px;color:var(--muted)">Warm = 7–10 (กำลังเลือก/เปรียบเทียบ) · Cold = 5–6 (หาข้อมูล) · Unqualified = 0–4 (ยังไม่สนใจ) — แอดจะพากลุ่มบนสุดเข้ามา ส่วนการคัดว่า "ตำแหน่ง/timeline/งบ" ครบไหม ใช้คำถามในฟอร์มเป็นตัวกรอง</p>
+  </div>
+
+  <!-- 3. MAPPING -->
+  <div class="section">
+    <h2><span class="n">3</span> แปลงเกณฑ์ Lead → Targeting บน Meta</h2>
+    <p class="lead">Meta ไม่มีปุ่มเลือก "คนที่จะซื้อใน 1–3 เดือน" ตรงๆ เราจึงใช้ <b>สัญญาณตัวแทน (proxy)</b> ที่ใกล้ที่สุด แล้วปล่อยให้ฟอร์ม + คำถามคัดคุณภาพเป็นตัวจบ</p>
+    <div class="map">
+      <div class="mapcard"><div class="h">ตำแหน่ง = Owner/Decision Maker <small>PIC Position (5 คะแนน)</small></div>
+        <span class="arrow">→</span> ยิงไป behavior "เจ้าของธุรกิจขนาดย่อม / ผู้ดูแลเพจธุรกิจ" + interest ผู้ประกอบการ (คนกลุ่มนี้มักเป็นคนตัดสินใจเอง)</div>
+      <div class="mapcard"><div class="h">Need Level = พร้อมซื้อ/มีงบ <small>Need Level (5 คะแนน)</small></div>
+        <span class="arrow">→</span> ยิงไป interest แฟรนไชส์ / การลงทุน / รายได้แบบพาสซีฟ (คนที่สนใจเรื่องนี้ = มีเงินและมองหาโอกาสอยู่แล้ว)</div>
+      <div class="mapcard"><div class="h">บริบทสินค้า = สังคมสูงวัย/สุขภาพ <small>ให้ตรงกับสิ่งที่ AC Sook ขาย</small></div>
+        <span class="arrow">→</span> ซ้อน interest สุขภาพและความเป็นอยู่ + ผู้ดูแลเพจสุขภาพ เพื่อคัดคนที่อินกับเทรนด์นี้ (ใช้ใน Ad Set แคบ)</div>
+      <div class="mapcard"><div class="h">Timeline = 1–3 เดือน <small>Timeline (5 คะแนน)</small></div>
+        <span class="arrow">→</span> <b>Meta คัดไม่ได้</b> — ต้องถามในฟอร์ม เช่น "พร้อมเริ่มเมื่อไหร่?" แล้วให้คะแนนตามคำตอบ</div>
+    </div>
+  </div>
+
+  <!-- 4. CORE SPEC -->
+  <div class="section">
+    <h2><span class="n">4</span> ค่าตั้งพื้นฐาน (Demographics &amp; Placement)</h2>
+    <div class="spec">
+      <div class="kv"><div class="k">ประเทศ / พื้นที่</div><div class="v">ไทย — เน้น กทม.–ปริมณฑล และหัวเมืองใหญ่ (เชียงใหม่ ชลบุรี ขอนแก่น นครราชสีมา ภูเก็ต หาดใหญ่)</div></div>
+      <div class="kv"><div class="k">อายุ</div><div class="v">42–58 ปี (ค่าเริ่มต้น) · เวอร์ชันคม: 45–58</div></div>
+      <div class="kv"><div class="k">เพศ</div><div class="v">ทุกเพศ (จากดาต้าจริง หญิงตอบดีกว่าเล็กน้อย — เผื่อทำชุดแยกเพศเทสต์)</div></div>
+      <div class="kv"><div class="k">ภาษา</div><div class="v">ไทย</div></div>
+      <div class="kv"><div class="k">ตำแหน่งแสดงโฆษณา</div><div class="v">Facebook + Instagram: Feed, Reels, Stories · ปิด Audience Network (คุม lead ให้มีคุณภาพ)</div></div>
+      <div class="kv"><div class="k">Optimization</div><div class="v">Leads (ยิงหา conversion แบบ form-fill) · ถ้ามี Pixel ครบ ค่อยขยับไป Conversion</div></div>
+    </div>
+    <p style="margin:14px 0 0;font-size:13px;color:var(--muted)">หมายเหตุ: อายุ 42–58 คือช่วงเจ้าของกิจการที่มีทุนสะสม สอดคล้องกับดาต้าจริงที่กลุ่มวัย 45–54 ในเมืองตอบฟอร์มดีที่สุด</p>
+  </div>
+
+  <!-- 5. AD SETS -->
+  <div class="section">
+    <h2><span class="n">5</span> ชุดกลุ่มเป้าหมาย (Interest / Behavior — ID จริง)</h2>
+    <p class="lead">เปิด 3 ad set แยกทดสอบ — เริ่มจาก A (กว้างสุด/คุ้มสุด) แล้วค่อยดูว่า B หรือ C ให้ lead คุณภาพดีกว่า</p>
+
+    <!-- AD SET A -->
+    <div class="adset a">
+      <div class="bar"><span class="t">Ad Set A · เจ้าของกิจการ (Core)</span><span class="role">= ตำแหน่ง Owner/Decision Maker</span></div>
+      <div class="inner">
+        <div class="logic">เลือก <b>อย่างใดอย่างหนึ่ง (OR)</b> — คนที่เป็นเจ้าของ/ดูแลธุรกิจ หรือสนใจการทำธุรกิจ</div>
+        <span class="pill">เจ้าของธุรกิจขนาดย่อม <span class="id">6002714898572</span><span class="sz">48.1M</span></span>
+        <span class="pill">ผู้ดูแลเพจธุรกิจ <span class="id">6020530281783</span><span class="sz">62.3M</span></span>
+        <span class="pill">ผู้ดูแลโปรไฟล์ธุรกิจ IG <span class="id">6297846662583</span><span class="sz">87.2M</span></span>
+        <span class="pill">Small business <span class="id">6002884511422</span><span class="sz">639M</span></span>
+        <span class="pill">Entrepreneurship <span class="id">6003371567474</span><span class="sz">834M</span></span>
+        <span class="pill">ธุรกิจและการเงิน <span class="id">6866302901418</span><span class="sz">100M</span></span>
+        <span class="pill">บริษัทสตาร์ทอัพ <span class="id">6003325004380</span><span class="sz">86.5M</span></span>
+      </div>
+    </div>
+
+    <!-- AD SET B -->
+    <div class="adset b">
+      <div class="bar"><span class="t">Ad Set B · อยากมีธุรกิจ/ลงทุน (Intent)</span><span class="role">= Need Level พร้อมซื้อ</span></div>
+      <div class="inner">
+        <div class="logic">เลือก <b>อย่างใดอย่างหนึ่ง (OR)</b> — คนที่กำลังมองหาโอกาสลงทุน/รายได้เพิ่ม</div>
+        <span class="pill">รายได้แบบพาสซีฟ <span class="id">6003287729076</span><span class="sz">13.0M</span></span>
+        <span class="pill">Investment <span class="id">6003388314512</span><span class="sz">679M</span></span>
+        <span class="pill">การจัดการการลงทุน <span class="id">6003293787730</span><span class="sz">12.1M</span></span>
+        <span class="pill">การวางแผนเกษียณ <span class="id">6003227721899</span><span class="sz">3.7M</span></span>
+        <span class="pill">Franchise consulting <span class="id">6003504688269</span><span class="sz">21.7K</span></span>
+      </div>
+    </div>
+
+    <!-- AD SET C -->
+    <div class="adset c">
+      <div class="bar"><span class="t">Ad Set C · เจ้าของกิจการ × สายสุขภาพ (Narrow)</span><span class="role">= ตรงบริบทสังคมสูงวัย</span></div>
+      <div class="inner">
+        <div class="logic">ซ้อน 2 เงื่อนไข — ต้องเป็นเจ้าของกิจการ <b>และ (AND)</b> อินเรื่องสุขภาพ (กลุ่มเล็กแต่ตรงสุด)</div>
+        <span class="pill">เจ้าของธุรกิจขนาดย่อม <span class="id">6002714898572</span></span>
+        <span class="pill">Small business <span class="id">6002884511422</span></span>
+        <span class="pill">Entrepreneurship <span class="id">6003371567474</span></span>
+        <div class="andlbl">— AND —</div><br>
+        <span class="pill">สุขภาพและความเป็นอยู่ <span class="id">6003258544357</span><span class="sz">207M</span></span>
+        <span class="pill">ผู้ดูแลเพจสุขภาพและความงาม <span class="id">6020568271383</span><span class="sz">30.3M</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">AC Sook Corporation · Meta Ads Account 2293937604431894 · จัดทำโดย M Creation</div>
+
+</div>
+</body>
+</html>

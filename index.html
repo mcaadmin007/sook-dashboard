@@ -846,6 +846,28 @@
     </div>
   </header>
 
+  <section id="secPersona" data-page="persona">
+    <div class="sec-head">
+      <h2>Persona Canvas</h2>
+      <a class="btn-ghost" href="Persona-Canvas.html" target="_blank" rel="noopener">เปิดเต็มหน้าจอ ↗</a>
+    </div>
+    <div class="sec-body" style="padding:0">
+      <iframe src="Persona-Canvas.html" title="Persona Canvas" style="width:100%;height:80vh;border:0;display:block;border-radius:0 0 12px 12px"></iframe>
+    </div>
+  </section>
+
+  <section id="secAnalyze" data-page="analyze">
+    <div class="sec-head">
+      <h2>Analyze Content</h2>
+    </div>
+    <div class="sec-body">
+      <div style="padding:32px;text-align:center;color:var(--muted,#7b8496)">
+        <div style="font-size:15px;line-height:1.7">ส่วนวิเคราะห์คอนเทนต์ — อยู่ระหว่างพัฒนา</div>
+        <div style="font-size:13px;margin-top:6px;opacity:.8">พื้นที่นี้จะใช้สรุปผลและวิเคราะห์คอนเทนต์จาก Content Plan</div>
+      </div>
+    </div>
+  </section>
+
   <section id="secKPI" data-page="plan">
     <div class="sec-head"><h2>สรุปภาพรวม</h2><span id="scopeTag"></span></div>
     <div class="sec-body"><div class="kpis" id="kpiRow"></div></div>
@@ -1128,7 +1150,9 @@ const CONV = { message: 0.10, click: 0.005 };
    META CONFIG — System User Token (Business Manager)
    ⚠  ถ้า repo เป็น Public ให้ย้าย token ไปเก็บใน env/secret
    ========================================================= */
-const META_TOKEN      = 'EAARuqHyZBjLsBSarigMoKNEJy1abz4ABUKxznEKdwYUgwJFLBbcbboOMWODBtdWJi7TujlVV2mHQBnWIuZBRRBTWZCnajedqDBTOww7ZASDMjsBzTJZBDh9r8wiGVj8JdxA8dbhNBav2GV9RryZCprHWVNJH5dcS6Lp7ijWrEZCEvdkdZBbMzeRotpiuYOc2rwZDZD';
+/* Token ไม่ hardcode ในไฟล์แล้ว (กัน token รั่วบน GitHub) — เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น
+   กดปุ่ม "Connect Meta" มุมขวาบนเพื่อวาง token ครั้งเดียว จะถูกจำไว้ใน localStorage */
+let META_TOKEN = (()=>{ try{ return localStorage.getItem('meta_token') || ''; }catch(e){ return ''; } })();
 const META_ACCOUNT_ID = 'act_2293937604431894';
 const META_PAGE_IDS   = [{ id:'1060650783807210', name:'SooK Page' }];
 const META_GRAPH_VER  = 'v20.0';
@@ -1222,7 +1246,7 @@ const LEAD_SRC = [ {id:'meta', name:'Meta Lead Form'}, {id:'google', name:'Googl
 let LEADS = { meta: [], google: [] };
 
 /* ===== state ===== */
-const PAGES = [ {id:'plan',h:'Media Plan'}, {id:'content',h:'Content Plan'}, {id:'leads',h:'Lead Generation'}, {id:'dash',h:'Dashboard'}, {id:'log',h:'Log'} ];
+const PAGES = [ {id:'persona',h:'Persona Canvas'}, {id:'plan',h:'Media Plan'}, {id:'content',h:'Content Plan'}, {id:'analyze',h:'Analyze Content'}, {id:'leads',h:'Lead Generation'}, {id:'dash',h:'Dashboard'}, {id:'log',h:'Log'} ];
 const state = { plans:[], active:null, adding:false, src:'meta', leadScore:{}, page:'plan', leadFilter:'',
   content:{}, cimg:{}, cMonth:'', cDay:null, timeline:{}, logs:{}, logFilter:{ platform:'', dateFrom:'', dateTo:'' },
   gtPlatFilter:'' };
@@ -3183,12 +3207,20 @@ function renderMetaBtn(){
   const btn = document.getElementById('metaBtn');
   if(!btn) return;
   btn.disabled    = metaSyncing;
-  btn.textContent = metaSyncing ? '⟳ Syncing…' : '⟳ Sync Meta';
+  btn.textContent = metaSyncing ? '⟳ Syncing…' : (META_TOKEN ? '⟳ Sync Meta' : '⊕ Connect Meta');
   btn.className   = metaSyncing ? 'navbtn' : 'navbtn meta-on';
 }
 
 /* --- click handler (ไม่ต้อง login — ใช้ System User Token) --- */
-function metaLoginAndSync(){ metaSyncAll(); }
+function metaLoginAndSync(){
+  if(!META_TOKEN){
+    const t = (prompt('วาง Meta System User Access Token\n(เก็บไว้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกอัปขึ้น GitHub):') || '').trim();
+    if(!t) return;
+    META_TOKEN = t;
+    try{ localStorage.setItem('meta_token', META_TOKEN); }catch(e){}
+  }
+  metaSyncAll();
+}
 
 /* --- โหลด cache จาก localStorage แสดงข้อมูลทันที ก่อน API ตอบ --- */
 function loadMetaCache(){
@@ -3205,6 +3237,7 @@ function loadMetaCache(){
 /* --- sync ทั้งสอง feed พร้อมกัน --- */
 async function metaSyncAll(){
   if(metaSyncing) return;
+  if(!META_TOKEN){ renderMetaBtn(); return; }
   metaSyncing = true;
   renderMetaBtn();
   try{
