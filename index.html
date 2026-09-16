@@ -409,6 +409,50 @@
   .ana-badge.a3{background:#fdf5e6;color:#b9820a}
   .ana-badge.a2{background:#fdeede;color:#c9720b}
   .ana-badge.a1{background:#fbe9e7;color:#c9302c}
+  /* thumbnail + fallback */
+  .ana-thumb{width:52px;height:52px;object-fit:cover;border-radius:8px;display:block}
+  .ana-noimg{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;
+    border-radius:8px;background:#eef1f6;color:#9aa3b2;font-size:11px}
+  /* Create-Analyze bar */
+  .btn-ana{display:inline-flex;align-items:center;gap:6px;border:0;cursor:pointer;
+    padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:700;color:#fff;
+    background:linear-gradient(180deg,#3a6ce6,#2f5fe0);box-shadow:0 1px 2px rgba(47,95,224,.28)}
+  .btn-ana:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .btn-ana:active{transform:translateY(0)}
+  .ana-sel{padding:7px 10px;border:1px solid var(--line-3,#e1e5ec);border-radius:9px;
+    background:#fff;font-size:12.5px;color:var(--ink);max-width:230px;cursor:pointer}
+  .ana-sel:focus{outline:none;border-color:var(--blue);box-shadow:var(--ring)}
+  .btn-anadel{border:1px solid #f0c9c6;background:#fff;color:#c9302c;cursor:pointer;
+    padding:7px 10px;border-radius:9px;font-size:12px;font-weight:600}
+  .btn-anadel:hover{background:#fbe9e7}
+  .btn-anadel[hidden]{display:none}
+  /* report meta bar */
+  .ana-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:10px 14px;margin:0 0 2px;border-bottom:1px solid var(--line-2,#eef0f4)}
+  .ana-meta .am-title{font-size:14px;font-weight:800;color:var(--ink)}
+  .ana-meta .am-range{font-size:12px;color:var(--ink-3)}
+  /* per-content analysis */
+  .ana-report{padding:14px}
+  .ana-report h3{font-size:14px;font-weight:800;margin:2px 0 12px;color:var(--ink)}
+  .ana-card{border:1px solid var(--line-2,#eef0f4);border-radius:12px;padding:12px 14px;
+    margin-bottom:10px;background:#fff}
+  .ana-card .ac-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .ana-card .ac-head img,.ana-card .ac-head .ana-noimg{width:44px;height:44px;flex:none}
+  .ana-card .ac-name{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3;flex:1;min-width:0}
+  .ana-card .ac-sc{font-size:12px;color:var(--ink-3);white-space:nowrap}
+  .ana-ins{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .ana-ins li{position:relative;padding:6px 10px 6px 30px;border-radius:8px;font-size:12.5px;
+    line-height:1.45;color:var(--ink)}
+  .ana-ins li::before{position:absolute;left:9px;top:6px;font-size:12px}
+  .ana-ins li.good{background:#eef8f1}
+  .ana-ins li.good::before{content:'▲';color:#1f8a4c}
+  .ana-ins li.bad{background:#fbe9e7}
+  .ana-ins li.bad::before{content:'▼';color:#c9302c}
+  .ana-ins li.warn{background:#fdf5e6}
+  .ana-ins li.warn::before{content:'!';color:#b9820a;font-weight:800}
+  .ana-ins li.act{background:#eef2fb}
+  .ana-ins li.act::before{content:'➜';color:#2f5fe0}
+  .ana-ins li.act{font-weight:600}
 
   /* ===== lead scoring ===== */
   table.lead tbody td.sc{padding:5px 8px}
@@ -885,6 +929,13 @@
         <h2>Analyze Content</h2>
       </div>
       <div class="head-right">
+        <button class="btn-ana" id="btnAnaNew" title="สร้างรายงานวิเคราะห์จากช่วงวันที่ที่เลือก">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 3.2v9.6M3.2 8h9.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>Create Analyze
+        </button>
+        <select class="ana-sel" id="anaSel" title="เลือกรายงานที่บันทึกไว้"></select>
+        <button class="btn-anadel" id="btnAnaDel" hidden title="ลบรายงานนี้">ลบรายงาน</button>
         <span id="anaTag"></span>
         <button class="btn-xls" id="btnAnaXls" title="ดาวน์โหลดตารางเป็นไฟล์ Excel">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -894,12 +945,14 @@
         </button>
       </div>
     </div>
+    <div id="anaMeta"></div>
     <div class="table-scroll">
       <table class="lead" id="anaTable">
         <thead id="anaHead"></thead>
         <tbody id="anaBody"></tbody>
       </table>
     </div>
+    <div id="anaReport"></div>
   </section>
 
   <section id="secKPI" data-page="plan">
@@ -1169,6 +1222,33 @@
       <div class="cf-act">
         <button class="cf-btn" id="cfCancel" type="button">ยกเลิก</button>
         <button class="cf-btn go" id="cfOk" type="button">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="anaModal" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>สร้างรายงานวิเคราะห์</h3>
+      <button class="xbtn" id="anaMClose" type="button">&times;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label>หัวข้อรายงาน</label>
+        <input type="text" id="anaFTitle" placeholder="เช่น สรุปคอนเทนต์ ก.ย. 2568" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>ตั้งแต่วันที่</label>
+        <input type="date" id="anaFSince">
+      </div>
+      <div class="field">
+        <label>ถึงวันที่</label>
+        <input type="date" id="anaFUntil">
+      </div>
+      <p class="cf-warn" id="anaFWarn" hidden></p>
+      <div class="cf-act">
+        <button class="cf-btn" id="anaFCancel" type="button">ยกเลิก</button>
+        <button class="cf-btn go" id="anaFOk" type="button">ดึงข้อมูล & วิเคราะห์</button>
       </div>
     </div>
   </div>
@@ -3047,12 +3127,13 @@ const XLS_ICON = `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" ar
 
 async function exportAnalyze(){
   const btn = document.getElementById('btnAnaXls');
-  if(!metaAdContent.length){ showToast('⚠ ยังไม่มีข้อมูล กด Sync Meta ก่อน'); return; }
+  const dataRows = anaCurRows() || [];
+  if(!dataRows.length){ showToast('⚠ ยังไม่มีข้อมูล กด Sync Meta หรือ Create Analyze ก่อน'); return; }
   const head = ['Ad Name','Spend','Reach','Click','CTR %','CPC','Like','Comment','Share','Save Post',
     'View rate 3วิ %','VideoView 50% %','VideoView 75% %','VideoView 95% %','Score /100','Analyze'];
   const rate = v => v==null ? '-' : Math.round(v*100)/100;
-  const scores = anaScoreAll(metaAdContent);
-  const body = metaAdContent.map((r,i)=>[
+  const scores = anaScoreAll(dataRows);
+  const body = dataRows.map((r,i)=>[
     r.ad_name, Math.round(r.spend), r.reach, r.click, Math.round(r.ctr*100)/100, Math.round(r.cpc*100)/100,
     r.like, r.comment, r.share, r.save, rate(r.r3), rate(r.r50), rate(r.r75), rate(r.r95),
     (scores[i]||{}).score ?? '-', (scores[i]||{}).label ?? '-',
@@ -3065,7 +3146,9 @@ async function exportAnalyze(){
     ws['!freeze'] = { xSplit:0, ySplit:1 };
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Analyze Content');
-    XLSX.writeFile(wb, 'SooK_Analyze_Content.xlsx');
+    const _m = anaCurMeta();
+    const _fn = _m ? ('SooK_Analyze_' + String(_m.title).replace(/[\\/:*?"<>|]+/g,'_').slice(0,40)) : 'SooK_Analyze_Content';
+    XLSX.writeFile(wb, _fn + '.xlsx');
   }catch(e){
     console.warn('XLSX export failed', e);
     showToast('⚠ สร้างไฟล์ Excel ไม่สำเร็จ');
@@ -3474,7 +3557,11 @@ let metaAdContent = (()=>{ try{ const c=JSON.parse(localStorage.getItem('meta_ad
 const _av = (arr,type)=>{ const a=(arr||[]).find(x=>x.action_type===type); return a?num(a.value):0; };
 const _v0 = arr => { const a=(arr||[])[0]; return a?num(a.value):0; };
 
-async function metaSyncAdContent(){
+/* ดึง + รวมข้อมูล Ad ตามช่วงเวลา
+   timeRange = null → Lifetime (date_preset=maximum)
+             = {since:'YYYY-MM-DD', until:'YYYY-MM-DD'} → ช่วงที่เลือก
+   คืนค่า: array ของแถว (รวมตาม Ad Name แล้ว) หรือ null ถ้าดึงไม่สำเร็จ */
+async function anaFetchRows(timeRange){
   // 1) creative thumbnail ต่อ ad
   const creatives = {};
   try{
@@ -3492,19 +3579,19 @@ async function metaSyncAdContent(){
     }
   }catch(e){ console.warn('Meta ads(creative):', e); }
 
-  // 2) insights level=ad, lifetime — รวมยอดดิบตาม Ad Name (ชื่อเดียวกัน = แถวเดียว)
+  // 2) insights level=ad — รวมยอดดิบตาม Ad Name (ชื่อเดียวกัน = แถวเดียว)
   const agg = new Map();   // key = ad_name → ยอดดิบสะสม
   try{
     let cur=null, more=true;
     while(more){
       const p = {
-        level:       'ad',
-        date_preset: 'maximum',
+        level: 'ad',
         fields: 'ad_id,ad_name,spend,reach,impressions,actions,' +
                 'video_play_actions,video_p50_watched_actions,' +
                 'video_p75_watched_actions,video_p95_watched_actions',
         limit: 400,
       };
+      if(timeRange) p.time_range = timeRange; else p.date_preset = 'maximum';
       if(cur) p.after=cur;
       const r = await metaFetch(`/${META_ACCOUNT_ID}/insights`, p);
       (r.data||[]).forEach(row=>{
@@ -3541,7 +3628,7 @@ async function metaSyncAdContent(){
       cur  = r.paging && r.paging.cursors && r.paging.cursors.after;
       more = !!(cur && r.data && r.data.length===400);
     }
-  }catch(e){ console.warn('Meta insights(ad):', e); showMetaErr((e&&e.message)||'ดึง Analyze Content ไม่สำเร็จ'); return; }
+  }catch(e){ console.warn('Meta insights(ad):', e); showMetaErr((e&&e.message)||'ดึง Analyze Content ไม่สำเร็จ'); return null; }
 
   // 3) คำนวณ CTR / CPC / View rate ใหม่จากยอดที่รวมแล้ว
   const rows = Array.from(agg.values()).map(g=>{
@@ -3568,6 +3655,13 @@ async function metaSyncAdContent(){
   });
 
   rows.sort((a,b)=> b.spend - a.spend);
+  return rows;
+}
+
+/* Sync แบบ Lifetime (auto-refresh 30 นาที + ตอนกด Sync Meta) */
+async function metaSyncAdContent(){
+  const rows = await anaFetchRows(null);
+  if(!rows) return;                       // ดึงไม่สำเร็จ (แจ้ง error แล้ว)
   metaAdContent = rows;
   try{ localStorage.setItem('meta_adcontent_cache', JSON.stringify({ ts:Date.now(), data:rows })); }catch(e){}
   renderAnalyze();
@@ -3580,76 +3674,197 @@ const ANA_COLS = [
   { h:'Analyze' },
 ];
 
-/* --- ให้คะแนนคอนเทนต์ 0-100 เทียบกับ "ค่าเฉลี่ยของบัญชีตัวเอง"
-   50 = เท่าค่าเฉลี่ยบัญชี · >50 ดีกว่าเพื่อนในบัญชี · <50 แย่กว่า
-   อ่านเป็นกรวย 3 ด่าน:  Hook (หยุดนิ้ว) → ดูจบ → กดต่อ(Click/Engage)
-   วิดีโอ:  Hook 30% + ดูจบ 25% + Click 20% + Engage 25%
-   ภาพนิ่ง: Click 55% + Engage 45%  (ไม่มี metric วิดีโอ)              --- */
-function anaScoreAll(rows){
-  if(!rows || !rows.length) return [];
-  const engWt = r => r.like + r.comment + r.share*2 + r.save*2;   // share/save = สัญญาณคุณค่าแรง ให้ x2
-  let sImpr=0, sClick=0, sReach=0, sEng=0, vReach=0, sV3=0, sP95=0;
-  rows.forEach(r=>{
-    sImpr += r.impr; sClick += r.click; sReach += r.reach; sEng += engWt(r);
+/* --- ค่าเฉลี่ย (benchmark) ของบัญชี จากชุดข้อมูลที่กำลังดู --- */
+const anaEngWt = r => r.like + r.comment + r.share*2 + r.save*2;   // share/save = สัญญาณคุณค่าแรง x2
+function anaBench(rows){
+  let sSpend=0, sImpr=0, sClick=0, sReach=0, sEng=0, sSS=0, vReach=0, sV3=0, sP95=0;
+  (rows||[]).forEach(r=>{
+    sSpend += r.spend; sImpr += r.impr; sClick += r.click; sReach += r.reach;
+    sEng += anaEngWt(r); sSS += (r.share + r.save);
     if(r.isVideo){
       vReach += r.reach;
       sV3  += (r.r3 !=null ? r.r3 /100*r.reach : 0);
       sP95 += (r.r95!=null ? r.r95/100*r.reach : 0);
     }
   });
-  const bCTR  = sImpr>0  ? sClick/sImpr*100 : 0;   // benchmark บัญชี
-  const bEng  = sReach>0 ? sEng/sReach*100  : 0;
-  const bHook = vReach>0 ? sV3/vReach*100   : 0;
-  const bHold = vReach>0 ? sP95/vReach*100  : 0;
-  const sub = (v,b)=> b>0 ? Math.max(0, Math.min(100, v/b*50)) : 50;  // เฉลี่ย=50
-  return rows.map(r=>{
-    const ctrS = sub(r.ctr, bCTR);
-    const engS = sub(r.reach>0 ? engWt(r)/r.reach*100 : 0, bEng);
-    let score, gates;
-    if(r.isVideo){
-      const hookS = sub(r.r3 !=null ? r.r3 :0, bHook);
-      const holdS = sub(r.r95!=null ? r.r95:0, bHold);
-      score = hookS*0.30 + holdS*0.25 + ctrS*0.20 + engS*0.25;
-      gates = { 'Hook':hookS, 'ดูจบ':holdS, 'Click':ctrS, 'Engage':engS };
-    }else{
-      score = ctrS*0.55 + engS*0.45;
-      gates = { 'Click':ctrS, 'Engage':engS };
+  return {
+    bCTR:  sImpr>0  ? sClick/sImpr*100 : 0,
+    bCPC:  sClick>0 ? sSpend/sClick    : 0,
+    bEng:  sReach>0 ? sEng/sReach*100  : 0,
+    bSS:   sReach>0 ? sSS/sReach*100   : 0,
+    bHook: vReach>0 ? sV3/vReach*100   : 0,
+    bHold: vReach>0 ? sP95/vReach*100  : 0,
+  };
+}
+
+/* --- ให้คะแนนคอนเทนต์ 0-100 เทียบ benchmark บัญชี
+   50 = เท่าค่าเฉลี่ยบัญชี · >50 ดีกว่าเพื่อนในบัญชี · <50 แย่กว่า
+   วิดีโอ:  Hook 30% + ดูจบ 25% + Click 20% + Engage 25%
+   ภาพนิ่ง: Click 55% + Engage 45% --- */
+function anaScoreOne(r, b){
+  const sub = (v,bb)=> bb>0 ? Math.max(0, Math.min(100, v/bb*50)) : 50;
+  const ctrS = sub(r.ctr, b.bCTR);
+  const engS = sub(r.reach>0 ? anaEngWt(r)/r.reach*100 : 0, b.bEng);
+  let score, gates;
+  if(r.isVideo){
+    const hookS = sub(r.r3 !=null ? r.r3 :0, b.bHook);
+    const holdS = sub(r.r95!=null ? r.r95:0, b.bHold);
+    score = hookS*0.30 + holdS*0.25 + ctrS*0.20 + engS*0.25;
+    gates = { 'Hook':hookS, 'ดูจบ':holdS, 'Click':ctrS, 'Engage':engS };
+  }else{
+    score = ctrS*0.55 + engS*0.45;
+    gates = { 'Click':ctrS, 'Engage':engS };
+  }
+  score = Math.round(score);
+  let label, cls;
+  if(score>=70){ label='ดีมาก';   cls='a5'; }
+  else if(score>=55){ label='ดี';       cls='a4'; }
+  else if(score>=45){ label='ปานกลาง'; cls='a3'; }
+  else if(score>=30){ label='ต้องปรับ'; cls='a2'; }
+  else { label='อ่อน'; cls='a1'; }
+  const gl = Object.entries(gates);
+  const strong = gl.reduce((a,b)=> b[1]>a[1]?b:a);
+  const weak   = gl.reduce((a,b)=> b[1]<a[1]?b:a);
+  return { score, label, cls, strong:strong[0], weak:weak[0],
+           tip:`เด่น: ${strong[0]} · อ่อน: ${weak[0]}  (50 = ค่าเฉลี่ยบัญชี)` };
+}
+function anaScoreAll(rows){
+  if(!rows || !rows.length) return [];
+  const b = anaBench(rows);
+  return rows.map(r=>anaScoreOne(r,b));
+}
+
+/* --- วิเคราะห์รายคอนเทนต์: อ่านสถิติจริง → ลิสต์ข้อสังเกต + สิ่งที่ควรทำ
+   คืน array ของ {cls:'good'|'bad'|'warn'|'act', t:'ข้อความ'} --- */
+function anaInsightsFor(r, b, sc){
+  const out = [];
+  const pctUp = ratio => Math.round(Math.abs(ratio-1)*100);   // ต่าง n%
+  // 1) Hook — หยุดนิ้วได้ไหม
+  if(r.isVideo){
+    if((r.r3||0)>0 && b.bHook>0){
+      const hr = r.r3/b.bHook;
+      if(hr>=1.15) out.push({cls:'good', t:`Hook แข็ง — วิว 3วิ ${fmtPct(r.r3)} สูงกว่าค่าเฉลี่ยบัญชี ${pctUp(hr)}% (ท่อนเปิด/ธัมบ์หยุดนิ้วได้)`});
+      else if(hr<=0.85) out.push({cls:'bad', t:`Hook อ่อน — วิว 3วิ ${fmtPct(r.r3)} ต่ำกว่าเฉลี่ย ${pctUp(hr)}% คนเลื่อนผ่านตั้งแต่ต้น → เปลี่ยน 3 วินาทีแรก/ธัมบ์`});
     }
-    score = Math.round(score);
-    let label, cls;
-    if(score>=70){ label='ดีมาก';   cls='a5'; }
-    else if(score>=55){ label='ดี';       cls='a4'; }
-    else if(score>=45){ label='ปานกลาง'; cls='a3'; }
-    else if(score>=30){ label='ต้องปรับ'; cls='a2'; }
-    else { label='อ่อน'; cls='a1'; }
-    const gl = Object.entries(gates);
-    const strong = gl.reduce((a,b)=> b[1]>a[1]?b:a);
-    const weak   = gl.reduce((a,b)=> b[1]<a[1]?b:a);
-    const tip = `เด่น: ${strong[0]} · อ่อน: ${weak[0]}  (50 = ค่าเฉลี่ยบัญชี)`;
-    return { score, label, cls, tip };
-  });
+    // 2) Hold — ดูจบไหม (จากคนที่ดู 3วิ เหลือดูจนจบกี่ %)
+    if((r.r3||0)>0){
+      const hold = r.r95!=null ? r.r95/r.r3*100 : 0;
+      if(hold>0 && hold<15) out.push({cls:'warn', t:`คนดูจบน้อย — จากคนที่ดู 3วิ เหลือดูจนจบแค่ ${fmt(hold,0)}% เนื้อกลางคลิปหลุด → ตัดให้กระชับ/ใส่จุดพีคใหม่กลางคลิป`});
+      else if(hold>=35) out.push({cls:'good', t:`คนดูจบเยอะ — จากคนที่ดู 3วิ ดูจนจบถึง ${fmt(hold,0)}% เนื้อหาดึงอยู่ทั้งคลิป`});
+    }
+  } else {
+    if(b.bCTR>0){
+      const hr = r.ctr/b.bCTR;
+      if(hr>=1.15) out.push({cls:'good', t:`ภาพดึงคลิก — CTR ${fmtPct(r.ctr)} สูงกว่าค่าเฉลี่ยบัญชี ${pctUp(hr)}%`});
+      else if(hr<=0.7) out.push({cls:'bad', t:`ภาพไม่ดึงคลิก — CTR ${fmtPct(r.ctr)} ต่ำกว่าเฉลี่ย ${pctUp(hr)}% → เปลี่ยนภาพ/พาดหัว`});
+    }
+  }
+  // 3) ต้นทุน — CPC เทียบบัญชี
+  if(r.click>0 && b.bCPC>0){
+    const cr = r.cpc/b.bCPC;
+    if(cr<=0.7) out.push({cls:'good', t:`ต้นทุนถูก — CPC ${fmtCost(r.cpc)} ถูกกว่าค่าเฉลี่ยบัญชี ${pctUp(cr)}% คุ้มงบ`});
+    else if(cr>=1.4) out.push({cls:'bad', t:`ต้นทุนแพง — CPC ${fmtCost(r.cpc)} แพงกว่าเฉลี่ย ${pctUp(cr)}% ${sc.score<45?'ควรลดงบ/หยุด':'จับตา'}`});
+  }
+  // 4) คุณค่า — Save+Share สูง = คนอยากเก็บ/บอกต่อ
+  if(r.reach>0 && b.bSS>0){
+    const ssr = (r.share+r.save)/r.reach*100;
+    if(ssr >= b.bSS*1.3 && (r.share+r.save)>0)
+      out.push({cls:'good', t:`คนอยากเก็บ/บอกต่อ — Save+Share ${fmt(r.save+r.share)} ครั้ง สูงกว่าเฉลี่ย = คอนเทนต์มีคุณค่า ทำแนวนี้เพิ่ม`});
+  }
+  // 5) Engagement รวมต่ำ (ถ้ายังไม่มีข้อบวกด้าน engage)
+  if(r.reach>0 && b.bEng>0){
+    const er = anaEngWt(r)/r.reach*100 / b.bEng;
+    if(er<=0.6) out.push({cls:'warn', t:`คนมีส่วนร่วมน้อย — Like/Comment/Share/Save รวมต่ำกว่าเฉลี่ย ${pctUp(er)}% คอนเทนต์ยังไม่กระตุ้นให้คนตอบสนอง`});
+  }
+  // 6) สรุป + สิ่งที่ควรทำ (จากคะแนน + จุดอ่อน)
+  let act;
+  if(sc.score>=70) act = `สรุป: ตัวชนะ (คะแนน ${sc.score}) → สเกลงบตัวนี้เพิ่ม + ทำคอนเทนต์แนวเดียวกันต่อ`;
+  else if(sc.score>=45) act = `สรุป: พอไปได้ (คะแนน ${sc.score}) → เก็บของดีไว้ ปรับ "${sc.weak}" ที่ยังอ่อนก่อนเติมงบ`;
+  else act = `สรุป: ต้องแก้ (คะแนน ${sc.score}) → ${sc.weak==='Hook'?'รื้อ hook/ท่อนเปิดใหม่':sc.weak==='ดูจบ'?'ตัดคลิปให้กระชับ':'รีเมคหรือหยุด'} ก่อนเติมงบ`;
+  out.push({cls:'act', t:act});
+  return out;
+}
+
+/* =========================================================
+   ANALYZE REPORTS — เก็บได้หลายรายงาน (localStorage)
+   ========================================================= */
+const ANA_STORE = 'sook_analyses';
+function anaLoadReports(){ try{ return JSON.parse(localStorage.getItem(ANA_STORE)||'[]')||[]; }catch(e){ return []; } }
+function anaSaveReports(){ try{ localStorage.setItem(ANA_STORE, JSON.stringify(anaReports)); }catch(e){} }
+let anaReports = anaLoadReports();
+let anaCurrent = null;    // id ของรายงานที่กำลังดู หรือ null = Live (Lifetime)
+
+function anaCurRows(){
+  if(anaCurrent){ const rp = anaReports.find(x=>x.id===anaCurrent); if(rp) return rp.rows||[]; }
+  return metaAdContent;
+}
+function anaCurMeta(){
+  if(anaCurrent){ return anaReports.find(x=>x.id===anaCurrent) || null; }
+  return null;
+}
+
+/* thumbnail: <img> + <span> ข้างกัน — img error → ซ่อน img โชว์ span (แก้บั๊ก no img") */
+function anaThumb(r, px){
+  const s = px||52;
+  const noimg = `<span class="ana-noimg" style="width:${s}px;height:${s}px">no img</span>`;
+  if(!r.thumb) return noimg.replace('style="','style="display:inline-flex;');
+  return `<img class="ana-thumb" src="${esc(r.thumb)}" alt="" loading="lazy" style="width:${s}px;height:${s}px" `
+    + `onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'">`
+    + `<span class="ana-noimg" style="display:none;width:${s}px;height:${s}px">no img</span>`;
+}
+
+/* วันที่ไทยแบบสั้น (yyyy-mm-dd → d ม.ค. yy) */
+const THMON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function thDate(s){
+  if(!s) return '';
+  const p = String(s).split('-'); if(p.length<3) return s;
+  return `${+p[2]} ${THMON[+p[1]-1]||''} ${(+p[0]+543)%100}`;
 }
 
 function renderAnalyze(){
   const head = $('anaHead'), body = $('anaBody'), tag = $('anaTag');
   if(!head || !body) return;
+  const rows = anaCurRows() || [];
+  const meta = anaCurMeta();
+
+  /* --- selector รายงาน --- */
+  const sel = $('anaSel');
+  if(sel){
+    sel.innerHTML = `<option value="">🔴 Live · Lifetime</option>` +
+      anaReports.map(rp=>`<option value="${rp.id}">${esc(rp.title)}</option>`).join('');
+    sel.value = anaCurrent || '';
+  }
+  const delBtn = $('btnAnaDel'); if(delBtn) delBtn.hidden = !anaCurrent;
+
+  /* --- meta bar (หัวข้อ + ช่วงวันที่) --- */
+  const mbar = $('anaMeta');
+  if(mbar){
+    mbar.innerHTML = meta
+      ? `<div class="ana-meta"><span class="am-title">${esc(meta.title)}</span>`
+        + `<span class="am-range">ช่วง ${thDate(meta.since)} – ${thDate(meta.until)}`
+        + (meta.createdAt?` · สร้างเมื่อ ${thDate(new Date(meta.createdAt).toISOString().slice(0,10))}`:'') + `</span></div>`
+      : '';
+  }
+
   head.innerHTML = '<tr>' + ANA_COLS.map((c,i)=>
     `<th class="${i<2?'l':'r'}">${c.h}</th>`).join('') + '</tr>';
-  if(tag) tag.innerHTML = pill('p-grey','Lifetime') + ' ' + pill('p-blue', fmt(metaAdContent.length)+' ads');
-  if(!metaAdContent.length){
-    body.innerHTML = `<tr class="lead-none"><td colspan="${ANA_COLS.length}">— ยังไม่มีข้อมูล กด Sync Meta เพื่อดึงคอนเทนต์ —</td></tr>`;
+  if(tag) tag.innerHTML = pill('p-grey', meta?'Report':'Lifetime') + ' ' + pill('p-blue', fmt(rows.length)+' ads');
+
+  const rep = $('anaReport');
+  if(!rows.length){
+    body.innerHTML = `<tr class="lead-none"><td colspan="${ANA_COLS.length}">— ${anaCurrent?'รายงานนี้ไม่มีข้อมูล':'ยังไม่มีข้อมูล กด Sync Meta เพื่อดึงคอนเทนต์ หรือกด Create Analyze'} —</td></tr>`;
+    if(rep) rep.innerHTML = '';
     return;
   }
+
   const rate = v => v==null ? '<span class="muted">-</span>' : fmtPct(v);
-  const scores = anaScoreAll(metaAdContent);
-  body.innerHTML = metaAdContent.map((r,i)=>{
+  const b = anaBench(rows);
+  const scores = anaScoreAll(rows);
+
+  body.innerHTML = rows.map((r,i)=>{
     const sc = scores[i] || { score:0, label:'—', cls:'a3', tip:'' };
-    const ph = `<span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:8px;background:var(--bg-2,#eef1f6);color:#9aa3b2;font-size:11px">no img</span>`;
-    const img = r.thumb
-      ? `<img src="${esc(r.thumb)}" alt="" loading="lazy" style="width:52px;height:52px;object-fit:cover;border-radius:8px;display:block" onerror="this.outerHTML='${ph.replace(/'/g,"&#39;")}'">`
-      : ph;
     return '<tr>' +
-      `<td class="l ana-cre">${img}</td>` +
+      `<td class="l ana-cre">${anaThumb(r)}</td>` +
       `<td class="l">${esc(r.ad_name)||'<span class="muted">—</span>'}</td>` +
       `<td class="r mono">${fmt(r.spend)}</td>` +
       `<td class="r mono">${fmt(r.reach)}</td>` +
@@ -3667,6 +3882,82 @@ function renderAnalyze(){
       `<td class="r ana-sc" title="${esc(sc.tip)}"><span class="ana-num">${sc.score}</span><span class="ana-badge ${sc.cls}">${sc.label}</span></td>` +
     '</tr>';
   }).join('');
+
+  /* --- วิเคราะห์รายคอนเทนต์ (เรียงตามคะแนนมาก→น้อย) --- */
+  if(rep){
+    const order = rows.map((r,i)=>({r, sc:scores[i]})).sort((a,b2)=> b2.sc.score - a.sc.score);
+    rep.innerHTML = `<div class="ana-report"><h3>วิเคราะห์รายคอนเทนต์ (${fmt(rows.length)} ชิ้น · เรียงจากคะแนนสูงสุด)</h3>` +
+      order.map(({r,sc})=>{
+        const ins = anaInsightsFor(r, b, sc);
+        return `<div class="ana-card">`
+          + `<div class="ac-head">${anaThumb(r,44)}`
+          + `<div class="ac-name">${esc(r.ad_name)||'—'}</div>`
+          + `<div class="ac-sc"><span class="ana-num">${sc.score}</span><span class="ana-badge ${sc.cls}">${sc.label}</span></div></div>`
+          + `<ul class="ana-ins">` + ins.map(x=>`<li class="${x.cls}">${esc(x.t)}</li>`).join('') + `</ul>`
+          + `</div>`;
+      }).join('') + `</div>`;
+  }
+}
+
+/* =========================================================
+   CREATE ANALYZE — modal + สร้างรายงานจากช่วงวันที่
+   ========================================================= */
+function anaOpenModal(){
+  const m = $('anaModal'); if(!m) return;
+  const today = new Date();
+  const until = today.toISOString().slice(0,10);
+  const since = new Date(today.getTime() - 29*864e5).toISOString().slice(0,10);
+  const t = $('anaFTitle'), s = $('anaFSince'), u = $('anaFUntil'), w = $('anaFWarn');
+  if(s) s.value = since;
+  if(u) u.value = until;
+  if(t) t.value = '';
+  if(w){ w.hidden = true; w.textContent = ''; }
+  m.hidden = false;
+  if(t) setTimeout(()=>t.focus(), 30);
+}
+function anaCloseModal(){ const m=$('anaModal'); if(m) m.hidden = true; }
+
+async function anaCreateReport(){
+  const t = $('anaFTitle'), s = $('anaFSince'), u = $('anaFUntil'), w = $('anaFWarn'), ok = $('anaFOk');
+  const title = (t?t.value:'').trim();
+  const since = s?s.value:'', until = u?u.value:'';
+  const warn = msg => { if(w){ w.hidden=false; w.textContent=msg; } };
+  if(!title){ warn('ใส่หัวข้อรายงานก่อนนะครับ'); return; }
+  if(!since || !until){ warn('เลือกช่วงวันที่ให้ครบ'); return; }
+  if(since > until){ warn('วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด'); return; }
+  if(typeof META_TOKEN==='undefined' || !META_TOKEN){ warn('ยังไม่ได้ใส่ Meta Token — กด Sync Meta ใส่ token ก่อน'); return; }
+
+  if(ok){ ok.disabled = true; ok.textContent = 'กำลังดึงข้อมูล…'; }
+  try{
+    const rows = await anaFetchRows({ since, until });
+    if(!rows){ warn('ดึงข้อมูลไม่สำเร็จ — เช็ค token/สิทธิ์ แล้วลองใหม่'); return; }
+    if(!rows.length){ warn('ช่วงวันที่นี้ไม่มีคอนเทนต์ที่มีการใช้จ่าย ลองขยายช่วง'); return; }
+    const rp = { id:'ana_'+Date.now(), title, since, until, createdAt:Date.now(), rows };
+    anaReports.unshift(rp);
+    anaSaveReports();
+    anaCurrent = rp.id;
+    anaCloseModal();
+    renderAnalyze();
+    showToast('สร้างรายงาน "'+title+'" แล้ว ('+fmt(rows.length)+' คอนเทนต์)');
+  }catch(e){
+    console.warn('anaCreateReport failed', e);
+    warn('เกิดข้อผิดพลาด: ' + (e && e.message ? e.message : 'ลองใหม่อีกครั้ง'));
+  }finally{
+    if(ok){ ok.disabled = false; ok.textContent = 'ดึงข้อมูล & วิเคราะห์'; }
+  }
+}
+
+function anaSelectReport(id){ anaCurrent = id || null; renderAnalyze(); }
+function anaDeleteReport(){
+  if(!anaCurrent) return;
+  const rp = anaReports.find(x=>x.id===anaCurrent);
+  if(!rp) return;
+  if(!confirm('ลบรายงาน "'+rp.title+'" ถาวร?')) return;
+  anaReports = anaReports.filter(x=>x.id!==anaCurrent);
+  anaSaveReports();
+  anaCurrent = null;
+  renderAnalyze();
+  showToast('ลบรายงานแล้ว');
 }
 
 /* --- Sync Lead Form Submissions → Firestore leads ---
@@ -3977,6 +4268,10 @@ document.addEventListener('click', e=>{
 
   if(e.target.closest('#btnLeadXls')){ exportLeads(); return; }
   if(e.target.closest('#btnAnaXls')){ exportAnalyze(); return; }
+  if(e.target.closest('#btnAnaNew')){ anaOpenModal(); return; }
+  if(e.target.closest('#btnAnaDel')){ anaDeleteReport(); return; }
+  if(e.target.id==='anaMClose' || e.target.id==='anaModal' || e.target.id==='anaFCancel'){ anaCloseModal(); return; }
+  if(e.target.closest('#anaFOk')){ anaCreateReport(); return; }
 
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
@@ -4049,6 +4344,7 @@ document.addEventListener('click', e=>{
   }
 });
 document.addEventListener('change', e=>{
+  if(e.target.id==='anaSel'){ anaSelectReport(e.target.value); return; }
   if(e.target.id==='logFrom'){ state.logFilter.dateFrom = e.target.value||''; renderLog(); return; }
   if(e.target.id==='logTo')  { state.logFilter.dateTo   = e.target.value||''; renderLog(); return; }
   if(e.target.id==='cfFile'){
