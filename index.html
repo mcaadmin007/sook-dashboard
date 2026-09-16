@@ -453,6 +453,30 @@
   .ana-ins li.act{background:#eef2fb}
   .ana-ins li.act::before{content:'➜';color:#2f5fe0}
   .ana-ins li.act{font-weight:600}
+  /* gallery ของรายงาน (กล่อง) */
+  .ana-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:16px}
+  .ana-empty{padding:40px 16px;text-align:center;color:var(--ink-3);font-size:13px}
+  .rcard{position:relative;border:1px solid var(--line-2,#eef0f4);border-radius:14px;padding:16px 16px 14px;
+    background:#fff;cursor:pointer;transition:box-shadow .15s,transform .15s,border-color .15s;overflow:hidden}
+  .rcard:hover{box-shadow:0 6px 20px rgba(24,39,75,.10);transform:translateY(-2px);border-color:#d7deea}
+  .rcard.live{background:linear-gradient(180deg,#f7faff,#eef4ff);border-color:#dbe6fb}
+  .rcard .rc-title{font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.3;margin:0 24px 6px 0}
+  .rcard .rc-range{font-size:12px;color:var(--ink-3);margin-bottom:12px}
+  .rcard .rc-stats{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rcard .rc-ads{font-size:12px;color:var(--ink-2,#4a5468);background:#f1f4f9;padding:3px 9px;border-radius:99px;font-weight:600}
+  .rcard .rc-avg{display:flex;align-items:baseline;gap:4px}
+  .rcard .rc-avg b{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+  .rcard .rc-avg small{font-size:11px;color:var(--ink-3)}
+  .rcard .rc-del{position:absolute;top:10px;right:10px;width:24px;height:24px;border:0;border-radius:7px;
+    background:#f4f5f8;color:#9aa3b2;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .rcard .rc-del:hover{background:#fbe9e7;color:#c9302c}
+  .rcard .rc-open{margin-top:12px;font-size:11.5px;color:var(--blue);font-weight:700}
+  /* แถบ back ในหน้ารายละเอียด */
+  .ana-back{display:flex;align-items:center;gap:10px;padding:12px 14px 0}
+  .btn-back{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-3,#e1e5ec);background:#fff;
+    cursor:pointer;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--ink-2,#4a5468)}
+  .btn-back:hover{background:#f4f6fa;border-color:#d3d9e2}
+  #anaDetailWrap[hidden]{display:none}
 
   /* ===== lead scoring ===== */
   table.lead tbody td.sc{padding:5px 8px}
@@ -934,10 +958,8 @@
             <path d="M8 3.2v9.6M3.2 8h9.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
           </svg>Create Analyze
         </button>
-        <select class="ana-sel" id="anaSel" title="เลือกรายงานที่บันทึกไว้"></select>
-        <button class="btn-anadel" id="btnAnaDel" hidden title="ลบรายงานนี้">ลบรายงาน</button>
         <span id="anaTag"></span>
-        <button class="btn-xls" id="btnAnaXls" title="ดาวน์โหลดตารางเป็นไฟล์ Excel">
+        <button class="btn-xls" id="btnAnaXls" hidden title="ดาวน์โหลดตารางเป็นไฟล์ Excel">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M8 1v9m0 0 3.2-3.2M8 10 4.8 6.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
@@ -945,14 +967,25 @@
         </button>
       </div>
     </div>
-    <div id="anaMeta"></div>
-    <div class="table-scroll">
-      <table class="lead" id="anaTable">
-        <thead id="anaHead"></thead>
-        <tbody id="anaBody"></tbody>
-      </table>
+
+    <!-- หน้ารวม: กล่องรายงาน -->
+    <div id="anaGallery"></div>
+
+    <!-- หน้ารายละเอียด: เปิดเมื่อคลิกกล่อง -->
+    <div id="anaDetailWrap" hidden>
+      <div class="ana-back">
+        <button class="btn-back" id="btnAnaBack" type="button">← กลับไปรายการรายงาน</button>
+        <button class="btn-anadel" id="btnAnaDel" title="ลบรายงานนี้">ลบรายงาน</button>
+      </div>
+      <div id="anaMeta"></div>
+      <div class="table-scroll">
+        <table class="lead" id="anaTable">
+          <thead id="anaHead"></thead>
+          <tbody id="anaBody"></tbody>
+        </table>
+      </div>
+      <div id="anaReport"></div>
     </div>
-    <div id="anaReport"></div>
   </section>
 
   <section id="secKPI" data-page="plan">
@@ -3792,15 +3825,26 @@ const ANA_STORE = 'sook_analyses';
 function anaLoadReports(){ try{ return JSON.parse(localStorage.getItem(ANA_STORE)||'[]')||[]; }catch(e){ return []; } }
 function anaSaveReports(){ try{ localStorage.setItem(ANA_STORE, JSON.stringify(anaReports)); }catch(e){} }
 let anaReports = anaLoadReports();
-let anaCurrent = null;    // id ของรายงานที่กำลังดู หรือ null = Live (Lifetime)
+let anaCurrent = null;    // null = หน้ารวมกล่อง · 'live' = Lifetime · 'ana_...' = รายงานที่บันทึก
 
 function anaCurRows(){
+  if(anaCurrent==='live') return metaAdContent;
   if(anaCurrent){ const rp = anaReports.find(x=>x.id===anaCurrent); if(rp) return rp.rows||[]; }
-  return metaAdContent;
+  return [];
 }
 function anaCurMeta(){
-  if(anaCurrent){ return anaReports.find(x=>x.id===anaCurrent) || null; }
+  if(anaCurrent && anaCurrent!=='live'){ return anaReports.find(x=>x.id===anaCurrent) || null; }
   return null;
+}
+function anaAvgScore(rows){
+  const sc = anaScoreAll(rows||[]);
+  if(!sc.length) return null;
+  return Math.round(sc.reduce((a,x)=>a+x.score,0)/sc.length);
+}
+function anaBadgeCls(score){
+  if(score==null) return 'a3';
+  if(score>=70) return 'a5'; if(score>=55) return 'a4'; if(score>=45) return 'a3';
+  if(score>=30) return 'a2'; return 'a1';
 }
 
 /* thumbnail: <img> + <span> ข้างกัน — img error → ซ่อน img โชว์ span (แก้บั๊ก no img") */
@@ -3822,19 +3866,48 @@ function thDate(s){
 }
 
 function renderAnalyze(){
-  const head = $('anaHead'), body = $('anaBody'), tag = $('anaTag');
+  const gallery = $('anaGallery'), detail = $('anaDetailWrap'), tag = $('anaTag'), xls = $('btnAnaXls');
+
+  /* ===== หน้ารวม: กล่องรายงาน ===== */
+  if(!anaCurrent){
+    if(detail) detail.hidden = true;
+    if(xls) xls.hidden = true;
+    if(tag) tag.innerHTML = pill('p-blue', fmt(anaReports.length)+' รายงาน');
+    if(gallery){
+      const liveN = metaAdContent.length;
+      const liveAvg = anaAvgScore(metaAdContent);
+      const liveCard =
+        `<div class="rcard live" data-anaopen="live">`
+        + `<div class="rc-title">🔴 Live · Lifetime</div>`
+        + `<div class="rc-range">ข้อมูลล่าสุดทั้งหมด (อัปเดตตอน Sync Meta)</div>`
+        + `<div class="rc-stats"><span class="rc-ads">${fmt(liveN)} คอนเทนต์</span>`
+        + (liveAvg!=null?`<span class="rc-avg"><b>${liveAvg}</b><small>/100 เฉลี่ย</small></span>`:'') + `</div>`
+        + `<div class="rc-open">คลิกเพื่อดูข้อมูล →</div></div>`;
+      const cards = anaReports.map(rp=>{
+        const n = (rp.rows||[]).length;
+        const avg = anaAvgScore(rp.rows);
+        return `<div class="rcard" data-anaopen="${rp.id}">`
+          + `<button class="rc-del" data-anadel="${rp.id}" title="ลบรายงาน">×</button>`
+          + `<div class="rc-title">${esc(rp.title)}</div>`
+          + `<div class="rc-range">ช่วง ${thDate(rp.since)} – ${thDate(rp.until)}</div>`
+          + `<div class="rc-stats"><span class="rc-ads">${fmt(n)} คอนเทนต์</span>`
+          + (avg!=null?`<span class="rc-avg"><b>${avg}</b><small>/100 เฉลี่ย</small></span>`:'') + `</div>`
+          + `<div class="rc-open">คลิกเพื่อดูข้อมูล →</div></div>`;
+      }).join('');
+      gallery.innerHTML = `<div class="ana-gallery">${liveCard}${cards}</div>`
+        + (anaReports.length ? '' : `<div class="ana-empty">ยังไม่มีรายงานที่บันทึกไว้ — กด <b>Create Analyze</b> เพื่อสร้างรายงานจากช่วงวันที่ที่ต้องการ</div>`);
+    }
+    return;
+  }
+
+  /* ===== หน้ารายละเอียด ===== */
+  if(gallery) gallery.innerHTML = '';
+  if(detail) detail.hidden = false;
+  if(xls) xls.hidden = false;
+  const head = $('anaHead'), body = $('anaBody');
   if(!head || !body) return;
   const rows = anaCurRows() || [];
   const meta = anaCurMeta();
-
-  /* --- selector รายงาน --- */
-  const sel = $('anaSel');
-  if(sel){
-    sel.innerHTML = `<option value="">🔴 Live · Lifetime</option>` +
-      anaReports.map(rp=>`<option value="${rp.id}">${esc(rp.title)}</option>`).join('');
-    sel.value = anaCurrent || '';
-  }
-  const delBtn = $('btnAnaDel'); if(delBtn) delBtn.hidden = !anaCurrent;
 
   /* --- meta bar (หัวข้อ + ช่วงวันที่) --- */
   const mbar = $('anaMeta');
@@ -3843,8 +3916,9 @@ function renderAnalyze(){
       ? `<div class="ana-meta"><span class="am-title">${esc(meta.title)}</span>`
         + `<span class="am-range">ช่วง ${thDate(meta.since)} – ${thDate(meta.until)}`
         + (meta.createdAt?` · สร้างเมื่อ ${thDate(new Date(meta.createdAt).toISOString().slice(0,10))}`:'') + `</span></div>`
-      : '';
+      : `<div class="ana-meta"><span class="am-title">🔴 Live · Lifetime</span><span class="am-range">ข้อมูลล่าสุดทั้งหมด</span></div>`;
   }
+  const delBtn = $('btnAnaDel'); if(delBtn) delBtn.hidden = (anaCurrent==='live');
 
   head.innerHTML = '<tr>' + ANA_COLS.map((c,i)=>
     `<th class="${i<2?'l':'r'}">${c.h}</th>`).join('') + '</tr>';
@@ -3852,7 +3926,7 @@ function renderAnalyze(){
 
   const rep = $('anaReport');
   if(!rows.length){
-    body.innerHTML = `<tr class="lead-none"><td colspan="${ANA_COLS.length}">— ${anaCurrent?'รายงานนี้ไม่มีข้อมูล':'ยังไม่มีข้อมูล กด Sync Meta เพื่อดึงคอนเทนต์ หรือกด Create Analyze'} —</td></tr>`;
+    body.innerHTML = `<tr class="lead-none"><td colspan="${ANA_COLS.length}">— ${anaCurrent==='live'?'ยังไม่มีข้อมูล กด Sync Meta เพื่อดึงคอนเทนต์':'รายงานนี้ไม่มีข้อมูล'} —</td></tr>`;
     if(rep) rep.innerHTML = '';
     return;
   }
@@ -3947,18 +4021,18 @@ async function anaCreateReport(){
   }
 }
 
-function anaSelectReport(id){ anaCurrent = id || null; renderAnalyze(); }
-function anaDeleteReport(){
-  if(!anaCurrent) return;
-  const rp = anaReports.find(x=>x.id===anaCurrent);
+function anaDeleteById(id){
+  if(!id || id==='live') return;
+  const rp = anaReports.find(x=>x.id===id);
   if(!rp) return;
   if(!confirm('ลบรายงาน "'+rp.title+'" ถาวร?')) return;
-  anaReports = anaReports.filter(x=>x.id!==anaCurrent);
+  anaReports = anaReports.filter(x=>x.id!==id);
   anaSaveReports();
-  anaCurrent = null;
+  if(anaCurrent===id) anaCurrent = null;   // ถ้ากำลังดูอยู่ → กลับหน้ารวม
   renderAnalyze();
   showToast('ลบรายงานแล้ว');
 }
+function anaDeleteReport(){ anaDeleteById(anaCurrent); }
 
 /* --- Sync Lead Form Submissions → Firestore leads ---
    ขั้นตอน: ดึง Page Access Token ก่อน → เรียก leadgen_forms → ดึง leads  --- */
@@ -4269,6 +4343,11 @@ document.addEventListener('click', e=>{
   if(e.target.closest('#btnLeadXls')){ exportLeads(); return; }
   if(e.target.closest('#btnAnaXls')){ exportAnalyze(); return; }
   if(e.target.closest('#btnAnaNew')){ anaOpenModal(); return; }
+  const anadel = e.target.closest('[data-anadel]');
+  if(anadel){ e.stopPropagation(); anaDeleteById(anadel.dataset.anadel); return; }
+  const anaopen = e.target.closest('[data-anaopen]');
+  if(anaopen){ anaCurrent = anaopen.dataset.anaopen; renderAnalyze(); return; }
+  if(e.target.closest('#btnAnaBack')){ anaCurrent = null; renderAnalyze(); return; }
   if(e.target.closest('#btnAnaDel')){ anaDeleteReport(); return; }
   if(e.target.id==='anaMClose' || e.target.id==='anaModal' || e.target.id==='anaFCancel'){ anaCloseModal(); return; }
   if(e.target.closest('#anaFOk')){ anaCreateReport(); return; }
@@ -4344,7 +4423,6 @@ document.addEventListener('click', e=>{
   }
 });
 document.addEventListener('change', e=>{
-  if(e.target.id==='anaSel'){ anaSelectReport(e.target.value); return; }
   if(e.target.id==='logFrom'){ state.logFilter.dateFrom = e.target.value||''; renderLog(); return; }
   if(e.target.id==='logTo')  { state.logFilter.dateTo   = e.target.value||''; renderLog(); return; }
   if(e.target.id==='cfFile'){
