@@ -2880,6 +2880,17 @@ function renderLeads(month){
     (f ? ' ' + pill('p-amber', fName) : '') +
     ' ' + pill('p-blue', fmt(rows.length) + ' ราย');
 
+  // --- Diagnostic: reveal the actual Meta lead-form field names captured ---
+  if(src==='meta'){
+    const fset = new Set();
+    all.forEach(r => (r.fields||[]).forEach(fl => { if(fl && fl.name) fset.add(fl.name); }));
+    const fnames = [...fset].sort();
+    window.__leadFields = fnames;
+    if(fnames.length){
+      $('leadTag').innerHTML += ' ' + pill('p-grey', 'ฟิลด์ในฟอร์ม: ' + fnames.join(' · '));
+    }
+  }
+
   $('leadHead').innerHTML = '<tr>' + cols.map((c,i) =>
     `<th class="${i===0?'l':''}${c.t==='bool'?' r':''}">${c.h}</th>`).join('') + '</tr>';
 
@@ -3414,6 +3425,10 @@ async function metaSyncLeads(){
               }
               return '';
             };
+            const rawFields = (lead.field_data||[]).map(f=>({
+              name: f.name,
+              value: (Array.isArray(f.values) ? f.values[0] : f.values) || ''
+            }));
             docs.push({
               id:            lead.id,
               src:           'meta',
@@ -3427,6 +3442,7 @@ async function metaSyncLeads(){
               ad_name:       lead.ad_name||'',
               form_name:     form.name||'',
               platform:      'Facebook',
+              fields:        rawFields,
             });
           }
           cursor2  = lr.paging && lr.paging.cursors && lr.paging.cursors.after;
