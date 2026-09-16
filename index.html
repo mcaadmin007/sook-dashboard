@@ -453,6 +453,13 @@
   .ana-ins li.act{background:#eef2fb}
   .ana-ins li.act::before{content:'➜';color:#2f5fe0}
   .ana-ins li.act{font-weight:600}
+  /* แถบวิเคราะห์แนบใต้แถวข้อมูล (in-table) */
+  .ana-report{padding:2px 2px 10px}
+  table.lead tbody tr.ana-drow > td{border-bottom:0}
+  table.lead tbody tr.ana-exp > td{padding:2px 12px 16px;background:#fbfcfe;border-top:0;
+    box-shadow:inset 0 -1px 0 var(--line,#eef0f4)}
+  .ana-exp .ana-card{border:0;border-radius:0;margin:0;padding:0;background:transparent}
+  .ana-exp .ana-ins{max-width:920px}
   /* gallery ของรายงาน (กล่อง) */
   .ana-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:16px}
   .ana-empty{padding:40px 16px;text-align:center;color:var(--ink-3);font-size:13px}
@@ -1004,13 +1011,13 @@
         <button class="btn-anadel" id="btnAnaDel" title="ลบรายงานนี้">ลบรายงาน</button>
       </div>
       <div id="anaMeta"></div>
+      <div id="anaReport"></div>
       <div class="table-scroll">
         <table class="lead" id="anaTable">
           <thead id="anaHead"></thead>
           <tbody id="anaBody"></tbody>
         </table>
       </div>
-      <div id="anaReport"></div>
     </div>
   </section>
 
@@ -3983,9 +3990,15 @@ function renderAnalyze(){
   const b = anaBench(rows);
   const scores = anaScoreAll(rows);
 
+  anaNotesDirty = false;
+  const ncol = ANA_COLS.length;
+
+  /* แต่ละคอนเทนต์: แถวข้อมูล + แถบวิเคราะห์แก้ไขเอง (แนบใต้แถวเดียวกัน) */
   body.innerHTML = rows.map((r,i)=>{
     const sc = scores[i] || { score:0, label:'—', cls:'a3', tip:'' };
-    return '<tr>' +
+    const saved = anaGetNotes(r.ad_name);
+    const ins = saved || ANA_TPL.map(x=>({...x}));
+    const dataRow = '<tr class="ana-drow">' +
       `<td class="l ana-cre">${anaThumb(r)}</td>` +
       `<td class="l">${esc(r.ad_name)||'<span class="muted">—</span>'}</td>` +
       `<td class="r mono">${fmt(r.spend)}</td>` +
@@ -4003,29 +4016,22 @@ function renderAnalyze(){
       `<td class="r mono">${rate(r.r95)}</td>` +
       `<td class="r ana-sc" title="${esc(sc.tip)}"><span class="ana-num">${sc.score}</span><span class="ana-badge ${sc.cls}">${sc.label}</span></td>` +
     '</tr>';
+    const anaRow = `<tr class="ana-exp"><td colspan="${ncol}">`
+      + `<div class="ana-card" data-ad="${esc(r.ad_name)}">`
+      + `<ul class="ana-ins edit">` + anaInsRowsHTML(ins) + `</ul>`
+      + `<div class="ac-tools"><button class="ins-add" type="button">+ เพิ่มข้อ</button>`
+      + `<button class="ins-sys" type="button">ใช้ค่าระบบช่วยร่าง</button></div>`
+      + `</div></td></tr>`;
+    return dataRow + anaRow;
   }).join('');
 
-  /* --- วิเคราะห์รายคอนเทนต์ (แก้ไขเอง + บันทึก) เรียงตามคะแนนมาก→น้อย --- */
+  /* --- แถบเครื่องมือบันทึก (เหนือตาราง) --- */
   if(rep){
-    anaNotesDirty = false;
-    const order = rows.map((r,i)=>({r, sc:scores[i]})).sort((a,b2)=> b2.sc.score - a.sc.score);
     rep.innerHTML = `<div class="ana-report">`
-      + `<div class="ar-head"><h3>วิเคราะห์รายคอนเทนต์ (${fmt(rows.length)} ชิ้น · เรียงจากคะแนนสูงสุด · พิมพ์เองได้)</h3>`
+      + `<div class="ar-head"><h3>วิเคราะห์รายคอนเทนต์ (${fmt(rows.length)} ชิ้น · พิมพ์ใต้แต่ละคอนเทนต์ได้เลย)</h3>`
       + `<div class="ar-actions"><span class="ana-dirty" id="anaDirty" hidden>● ยังไม่บันทึก</span>`
       + `<button class="btn-back" id="btnAnaNotesClear" type="button">↺ ล้างเป็นเทมเพลตว่าง</button>`
-      + `<button class="btn-ana" id="btnAnaNotesSave" type="button">บันทึกการวิเคราะห์</button></div></div>`
-      + order.map(({r,sc})=>{
-        const saved = anaGetNotes(r.ad_name);
-        const ins = saved || ANA_TPL.map(x=>({...x}));
-        return `<div class="ana-card" data-ad="${esc(r.ad_name)}">`
-          + `<div class="ac-head">${anaThumb(r,44)}`
-          + `<div class="ac-name">${esc(r.ad_name)||'—'}</div>`
-          + `<div class="ac-sc"><span class="ana-num">${sc.score}</span><span class="ana-badge ${sc.cls}">${sc.label}</span></div></div>`
-          + `<ul class="ana-ins edit">` + anaInsRowsHTML(ins) + `</ul>`
-          + `<div class="ac-tools"><button class="ins-add" type="button">+ เพิ่มข้อ</button>`
-          + `<button class="ins-sys" type="button">ใช้ค่าระบบช่วยร่าง</button></div>`
-          + `</div>`;
-      }).join('') + `</div>`;
+      + `<button class="btn-ana" id="btnAnaNotesSave" type="button">บันทึกการวิเคราะห์</button></div></div></div>`;
   }
 }
 
@@ -4062,7 +4068,7 @@ function anaFillSystem(card){
   anaMarkDirty();
 }
 function anaSaveNotesNow(){
-  const rep = $('anaReport'); if(!rep) return;
+  const rep = $('anaBody'); if(!rep) return;
   const scope = anaScopeKey();
   const store = {};
   rep.querySelectorAll('.ana-card').forEach(card=>{
@@ -4083,7 +4089,7 @@ function anaSaveNotesNow(){
 }
 function anaClearNotesUI(){
   if(!confirm('ล้างข้อความวิเคราะห์ทั้งหมดในหน้านี้ให้เป็นแถบว่าง? (จะยังไม่หายจนกว่าจะกดบันทึก)')) return;
-  const rep = $('anaReport'); if(!rep) return;
+  const rep = $('anaBody'); if(!rep) return;
   rep.querySelectorAll('.ana-card').forEach(card=>{
     const ul = card.querySelector('ul.ana-ins');
     if(ul) ul.innerHTML = anaInsRowsHTML(ANA_TPL.map(x=>({...x})));
