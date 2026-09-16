@@ -3941,15 +3941,6 @@ function renderAnalyze(){
     if(xls) xls.hidden = true;
     if(tag) tag.innerHTML = pill('p-blue', fmt(anaReports.length)+' รายงาน');
     if(gallery){
-      const liveN = metaAdContent.length;
-      const liveAvg = anaAvgScore(metaAdContent);
-      const liveCard =
-        `<div class="rcard live" data-anaopen="live">`
-        + `<div class="rc-title">🔴 Live · Lifetime</div>`
-        + `<div class="rc-range">ข้อมูลล่าสุดทั้งหมด (อัปเดตตอน Sync Meta)</div>`
-        + `<div class="rc-stats"><span class="rc-ads">${fmt(liveN)} คอนเทนต์</span>`
-        + (liveAvg!=null?`<span class="rc-avg"><b>${liveAvg}</b><small>/100 เฉลี่ย</small></span>`:'') + `</div>`
-        + `<div class="rc-open">คลิกเพื่อดูข้อมูล →</div></div>`;
       const cards = anaReports.map(rp=>{
         const n = (rp.rows||[]).length;
         const avg = anaAvgScore(rp.rows);
@@ -3961,7 +3952,7 @@ function renderAnalyze(){
           + (avg!=null?`<span class="rc-avg"><b>${avg}</b><small>/100 เฉลี่ย</small></span>`:'') + `</div>`
           + `<div class="rc-open">คลิกเพื่อดูข้อมูล →</div></div>`;
       }).join('');
-      gallery.innerHTML = `<div class="ana-gallery">${liveCard}${cards}</div>`
+      gallery.innerHTML = `<div class="ana-gallery">${cards}</div>`
         + (anaReports.length ? '' : `<div class="ana-empty">ยังไม่มีรายงานที่บันทึกไว้ — กด <b>Create Analyze</b> เพื่อสร้างรายงานจากช่วงวันที่ที่ต้องการ</div>`);
     }
     return;
