@@ -3949,8 +3949,7 @@ function renderAnalyze(){
           + `<button class="rc-del" data-anadel="${rp.id}" title="ลบรายงาน">×</button>`
           + `<div class="rc-title">${esc(rp.title)}</div>`
           + `<div class="rc-range">ช่วง ${thDate(rp.since)} – ${thDate(rp.until)}</div>`
-          + `<div class="rc-stats"><span class="rc-ads">${fmt(n)} คอนเทนต์</span>`
-          + (avg!=null?`<span class="rc-avg"><b>${avg}</b><small>/100 เฉลี่ย</small></span>`:'') + `</div>`
+          + `<div class="rc-stats"><span class="rc-ads">${fmt(n)} คอนเทนต์</span></div>`
           + `<div class="rc-open">คลิกเพื่อดูข้อมูล →</div></div>`;
       }).join('');
       gallery.innerHTML = `<div class="ana-gallery">${cards}</div>`
