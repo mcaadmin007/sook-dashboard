@@ -3469,8 +3469,8 @@ async function metaSyncAdContent(){
     }
   }catch(e){ console.warn('Meta ads(creative):', e); }
 
-  // 2) insights level=ad, lifetime
-  const rows = [];
+  // 2) insights level=ad, lifetime — รวมยอดดิบตาม Ad Name (ชื่อเดียวกัน = แถวเดียว)
+  const agg = new Map();   // key = ad_name → ยอดดิบสะสม
   try{
     let cur=null, more=true;
     while(more){
@@ -3486,39 +3486,63 @@ async function metaSyncAdContent(){
       const r = await metaFetch(`/${META_ACCOUNT_ID}/insights`, p);
       (r.data||[]).forEach(row=>{
         const acts   = row.actions||[];
-        const spend  = num(row.spend);
-        const reach  = num(row.reach);
-        const impr   = num(row.impressions);
-        const click  = _av(acts,'post_engagement');
+        const cr      = creatives[row.ad_id] || {};
+        const name    = row.ad_name || cr.name || '(ไม่มีชื่อ)';
         const v3      = _av(acts,'video_view');            // 3-sec video views
         const p50     = _v0(row.video_p50_watched_actions);
         const p75     = _v0(row.video_p75_watched_actions);
         const p95     = _v0(row.video_p95_watched_actions);
         const plays   = _v0(row.video_play_actions);
-        const isVideo = (v3+p50+p75+p95+plays) > 0;
-        const cr      = creatives[row.ad_id] || {};
-        rows.push({
-          ad_id:   row.ad_id,
-          ad_name: row.ad_name || cr.name || '',
-          thumb:   cr.thumb || '',
-          spend, reach, impr, click,
-          ctr:  impr>0  ? click/impr*100  : 0,
-          cpc:  click>0 ? spend/click     : 0,
-          like:    _av(acts,'post_reaction'),
-          comment: _av(acts,'comment'),
-          share:   _av(acts,'post'),
-          save:    _av(acts,'onsite_conversion.post_save'),
-          isVideo,
-          r3:  isVideo && reach>0 ? v3/reach*100  : null,
-          r50: isVideo && reach>0 ? p50/reach*100 : null,
-          r75: isVideo && reach>0 ? p75/reach*100 : null,
-          r95: isVideo && reach>0 ? p95/reach*100 : null,
-        });
+        let g = agg.get(name);
+        if(!g){
+          g = { ad_name:name, thumb:'', spend:0, reach:0, impr:0, click:0,
+                like:0, comment:0, share:0, save:0,
+                v3:0, p50:0, p75:0, p95:0, plays:0 };
+          agg.set(name, g);
+        }
+        if(!g.thumb && cr.thumb) g.thumb = cr.thumb;   // ใช้ thumbnail ตัวแรกที่เจอ
+        g.spend   += num(row.spend);
+        g.reach   += num(row.reach);
+        g.impr    += num(row.impressions);
+        g.click   += _av(acts,'post_engagement');
+        g.like    += _av(acts,'post_reaction');
+        g.comment += _av(acts,'comment');
+        g.share   += _av(acts,'post');
+        g.save    += _av(acts,'onsite_conversion.post_save');
+        g.v3      += v3;
+        g.p50     += p50;
+        g.p75     += p75;
+        g.p95     += p95;
+        g.plays   += plays;
       });
       cur  = r.paging && r.paging.cursors && r.paging.cursors.after;
       more = !!(cur && r.data && r.data.length===400);
     }
   }catch(e){ console.warn('Meta insights(ad):', e); showMetaErr((e&&e.message)||'ดึง Analyze Content ไม่สำเร็จ'); return; }
+
+  // 3) คำนวณ CTR / CPC / View rate ใหม่จากยอดที่รวมแล้ว
+  const rows = Array.from(agg.values()).map(g=>{
+    const isVideo = (g.v3+g.p50+g.p75+g.p95+g.plays) > 0;
+    return {
+      ad_name: g.ad_name,
+      thumb:   g.thumb || '',
+      spend:   g.spend,
+      reach:   g.reach,
+      impr:    g.impr,
+      click:   g.click,
+      ctr:  g.impr>0  ? g.click/g.impr*100 : 0,
+      cpc:  g.click>0 ? g.spend/g.click    : 0,
+      like:    g.like,
+      comment: g.comment,
+      share:   g.share,
+      save:    g.save,
+      isVideo,
+      r3:  isVideo && g.reach>0 ? g.v3/g.reach*100  : null,
+      r50: isVideo && g.reach>0 ? g.p50/g.reach*100 : null,
+      r75: isVideo && g.reach>0 ? g.p75/g.reach*100 : null,
+      r95: isVideo && g.reach>0 ? g.p95/g.reach*100 : null,
+    };
+  });
 
   rows.sort((a,b)=> b.spend - a.spend);
   metaAdContent = rows;
