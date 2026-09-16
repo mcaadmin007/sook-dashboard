@@ -3395,13 +3395,22 @@ async function metaSyncLeads(){
               fd[f.name] = Array.isArray(f.values) ? f.values[0] : f.values;
             });
             const pickCompany = () => {
-              const direct = fd.company_name||fd.company||fd.companyname||fd.organization||fd.org_name||fd.business_name;
+              // known standard fields we must NOT treat as company
+              const STD = /(full[_\s]?name|first[_\s]?name|last[_\s]?name|^name$|e[-_\s]?mail|phone|มือถือ|เบอร์|โทร|ชื่อ.?นามสกุล|ชื่อ.?จริง|นามสกุล|line|ไลน์)/i;
+              const KEY = /(company|organi[sz]ation|business|corp|employer|workplace|บริษัท|องค์กร|หน่วยงาน|กิจการ|สถานประกอบการ|ที่ทำงาน|หจก|บมจ|บ\.)/i;
+              const isEmail = v => /@/.test(String(v));
+              const isPhone = v => /^\d{8,}$/.test(String(v).replace(/[\s\-()+]/g,''));
+              // 1) direct common keys
+              const direct = fd.company_name||fd.company||fd.companyname||fd.organization||fd.organisation||fd.org_name||fd.business_name||fd.business;
               if(direct) return direct;
+              // 2) match by field-name keyword
+              for(const k in fd){ if(KEY.test(k) && fd[k]) return fd[k]; }
+              // 3) fallback: first non-standard free-text field that isn't an email/phone
               for(const k in fd){
-                const lk = String(k).toLowerCase();
-                if(lk.indexOf('company')>=0 || lk.indexOf('organization')>=0 ||
-                   lk.indexOf('business')>=0 || k.indexOf('บริษัท')>=0 || k.indexOf('องค์กร')>=0 || k.indexOf('กิจการ')>=0)
-                  return fd[k];
+                if(STD.test(k)) continue;
+                const v = fd[k];
+                if(!v || isEmail(v) || isPhone(v)) continue;
+                return v;
               }
               return '';
             };
