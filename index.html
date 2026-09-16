@@ -3231,12 +3231,44 @@ function renderMetaBtn(){
 /* --- click handler (ไม่ต้อง login — ใช้ System User Token) --- */
 function metaLoginAndSync(){
   if(!META_TOKEN){
-    const t = (prompt('วาง Meta System User Access Token\n(เก็บไว้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกอัปขึ้น GitHub):') || '').trim();
-    if(!t) return;
-    META_TOKEN = t;
-    try{ localStorage.setItem('meta_token', META_TOKEN); }catch(e){}
+    showMetaTokenModal();
+    return;
   }
   metaSyncAll();
+}
+
+/* --- ช่องกรอก token บนหน้าเว็บ (แทน prompt() ที่ถูก Chrome บล็อก) --- */
+function showMetaTokenModal(){
+  if(document.getElementById('metaTokenModal')) return;
+  const ov = document.createElement('div');
+  ov.id = 'metaTokenModal';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(2,6,23,.78);display:flex;align-items:center;justify-content:center;font-family:inherit';
+  ov.innerHTML =
+    '<div style="width:min(560px,92vw);background:#0b1220;color:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.6);border:2px solid #22c55e">'+
+      '<div style="font-size:17px;font-weight:800;margin-bottom:6px">เชื่อมต่อ Meta — วาง Access Token</div>'+
+      '<div style="font-size:12px;color:#94a3b8;margin-bottom:14px">เก็บไว้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกอัปขึ้น GitHub</div>'+
+      '<input id="metaTokenInput" type="text" placeholder="วาง token (ขึ้นต้น EAA...)" autocomplete="off" '+
+        'style="width:100%;box-sizing:border-box;padding:12px 13px;border-radius:10px;border:1px solid #334;background:#111827;color:#fff;font-size:14px;margin-bottom:12px" />'+
+      '<div style="display:flex;gap:10px">'+
+        '<button id="metaTokenCancel" style="flex:0 0 auto;padding:12px 16px;border:1px solid #334;border-radius:10px;background:transparent;color:#cbd5e1;font-size:14px;cursor:pointer">ยกเลิก</button>'+
+        '<button id="metaTokenSave" style="flex:1;padding:12px;border:0;border-radius:10px;background:#22c55e;color:#06210f;font-weight:800;font-size:15px;cursor:pointer">บันทึก แล้ว Sync</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(ov);
+  const inp = document.getElementById('metaTokenInput');
+  if(inp) inp.focus();
+  const close = ()=>{ const m=document.getElementById('metaTokenModal'); if(m) m.remove(); };
+  document.getElementById('metaTokenCancel').onclick = close;
+  document.getElementById('metaTokenSave').onclick = ()=>{
+    const t = (document.getElementById('metaTokenInput').value || '').trim();
+    if(!t){ inp.style.borderColor='#ef4444'; inp.focus(); return; }
+    META_TOKEN = t;
+    try{ localStorage.setItem('meta_token', META_TOKEN); }catch(e){}
+    close();
+    renderMetaBtn();
+    metaSyncAll();
+  };
+  if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('metaTokenSave').click(); });
 }
 
 /* --- โหลด cache จาก localStorage แสดงข้อมูลทันที ก่อน API ตอบ --- */
