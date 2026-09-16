@@ -4024,8 +4024,7 @@ function renderAnalyze(){
       + `<div class="ac-bar" title="${esc(sc.tip)}"><span class="ac-lbl">วิเคราะห์</span>`
       + `<span class="ana-num">${sc.score}</span><span class="ana-badge ${sc.cls}">${sc.label}</span></div>`
       + `<ul class="ana-ins edit">` + anaInsRowsHTML(ins) + `</ul>`
-      + `<div class="ac-tools"><button class="ins-add" type="button">+ เพิ่มข้อ</button>`
-      + `<button class="ins-sys" type="button">ใช้ค่าระบบช่วยร่าง</button></div>`
+      + `<div class="ac-tools"><button class="ins-add" type="button">+ เพิ่มข้อ</button></div>`
       + `</div></td></tr>`;
     return dataRow + anaRow;
   }).join('');
@@ -4033,7 +4032,7 @@ function renderAnalyze(){
   /* --- แถบเครื่องมือบันทึก (เหนือตาราง) --- */
   if(rep){
     rep.innerHTML = `<div class="ana-report">`
-      + `<div class="ar-head"><h3>วิเคราะห์รายคอนเทนต์ (${fmt(rows.length)} ชิ้น · พิมพ์ใต้แต่ละคอนเทนต์ได้เลย)</h3>`
+      + `<div class="ar-head">`
       + `<div class="ar-actions"><span class="ana-dirty" id="anaDirty" hidden>● ยังไม่บันทึก</span>`
       + `<button class="btn-back" id="btnAnaNotesClear" type="button">↺ ล้างเป็นเทมเพลตว่าง</button>`
       + `<button class="btn-ana" id="btnAnaNotesSave" type="button">บันทึกการวิเคราะห์</button></div></div></div>`;
