@@ -389,6 +389,27 @@
   }
   table.lead thead th.c{text-align:center}
 
+  /* ===== Analyze table — คอลัมน์ชิด ===== */
+  #anaTable{min-width:0}
+  #anaTable thead th{padding:7px 6px;font-size:10px;letter-spacing:.01em}
+  #anaTable tbody td{padding:5px 6px}
+  #anaTable tbody td.mono{font-size:11px;letter-spacing:0}
+  #anaTable td.ana-cre{padding:4px 6px;min-width:0;width:auto}
+  #anaTable thead th:nth-child(1),
+  #anaTable tbody td:nth-child(1){min-width:0;width:auto}
+  #anaTable thead th:nth-child(2),
+  #anaTable tbody td:nth-child(2){left:auto;position:static;box-shadow:none;max-width:190px;
+    white-space:normal;line-height:1.3}
+  #anaTable td.ana-sc{white-space:nowrap}
+  .ana-num{font-size:14px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
+  .ana-badge{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 6px;
+    border-radius:99px;margin-left:5px;vertical-align:1px;white-space:nowrap}
+  .ana-badge.a5{background:#e6f6ec;color:#1f8a4c}
+  .ana-badge.a4{background:#eef8f1;color:#2f9d5c}
+  .ana-badge.a3{background:#fdf5e6;color:#b9820a}
+  .ana-badge.a2{background:#fdeede;color:#c9720b}
+  .ana-badge.a1{background:#fbe9e7;color:#c9302c}
+
   /* ===== lead scoring ===== */
   table.lead tbody td.sc{padding:5px 8px}
   .csel{
@@ -3028,11 +3049,13 @@ async function exportAnalyze(){
   const btn = document.getElementById('btnAnaXls');
   if(!metaAdContent.length){ showToast('⚠ ยังไม่มีข้อมูล กด Sync Meta ก่อน'); return; }
   const head = ['Ad Name','Spend','Reach','Click','CTR %','CPC','Like','Comment','Share','Save Post',
-    'View rate 3วิ %','VideoView 50% %','VideoView 75% %','VideoView 95% %'];
+    'View rate 3วิ %','VideoView 50% %','VideoView 75% %','VideoView 95% %','Score /100','Analyze'];
   const rate = v => v==null ? '-' : Math.round(v*100)/100;
-  const body = metaAdContent.map(r=>[
+  const scores = anaScoreAll(metaAdContent);
+  const body = metaAdContent.map((r,i)=>[
     r.ad_name, Math.round(r.spend), r.reach, r.click, Math.round(r.ctr*100)/100, Math.round(r.cpc*100)/100,
     r.like, r.comment, r.share, r.save, rate(r.r3), rate(r.r50), rate(r.r75), rate(r.r95),
+    (scores[i]||{}).score ?? '-', (scores[i]||{}).label ?? '-',
   ]);
   if(btn){ btn.disabled = true; btn.textContent = 'กำลังสร้าง…'; }
   try{
@@ -3554,7 +3577,58 @@ const ANA_COLS = [
   { h:'Creative' }, { h:'Ad Name' }, { h:'Spend' }, { h:'Reach' }, { h:'Click' },
   { h:'CTR' }, { h:'CPC' }, { h:'Like' }, { h:'Comment' }, { h:'Share' }, { h:'Save Post' },
   { h:'View rate 3วิ' }, { h:'VideoView 50%' }, { h:'VideoView 75%' }, { h:'VideoView 95%' },
+  { h:'Analyze' },
 ];
+
+/* --- ให้คะแนนคอนเทนต์ 0-100 เทียบกับ "ค่าเฉลี่ยของบัญชีตัวเอง"
+   50 = เท่าค่าเฉลี่ยบัญชี · >50 ดีกว่าเพื่อนในบัญชี · <50 แย่กว่า
+   อ่านเป็นกรวย 3 ด่าน:  Hook (หยุดนิ้ว) → ดูจบ → กดต่อ(Click/Engage)
+   วิดีโอ:  Hook 30% + ดูจบ 25% + Click 20% + Engage 25%
+   ภาพนิ่ง: Click 55% + Engage 45%  (ไม่มี metric วิดีโอ)              --- */
+function anaScoreAll(rows){
+  if(!rows || !rows.length) return [];
+  const engWt = r => r.like + r.comment + r.share*2 + r.save*2;   // share/save = สัญญาณคุณค่าแรง ให้ x2
+  let sImpr=0, sClick=0, sReach=0, sEng=0, vReach=0, sV3=0, sP95=0;
+  rows.forEach(r=>{
+    sImpr += r.impr; sClick += r.click; sReach += r.reach; sEng += engWt(r);
+    if(r.isVideo){
+      vReach += r.reach;
+      sV3  += (r.r3 !=null ? r.r3 /100*r.reach : 0);
+      sP95 += (r.r95!=null ? r.r95/100*r.reach : 0);
+    }
+  });
+  const bCTR  = sImpr>0  ? sClick/sImpr*100 : 0;   // benchmark บัญชี
+  const bEng  = sReach>0 ? sEng/sReach*100  : 0;
+  const bHook = vReach>0 ? sV3/vReach*100   : 0;
+  const bHold = vReach>0 ? sP95/vReach*100  : 0;
+  const sub = (v,b)=> b>0 ? Math.max(0, Math.min(100, v/b*50)) : 50;  // เฉลี่ย=50
+  return rows.map(r=>{
+    const ctrS = sub(r.ctr, bCTR);
+    const engS = sub(r.reach>0 ? engWt(r)/r.reach*100 : 0, bEng);
+    let score, gates;
+    if(r.isVideo){
+      const hookS = sub(r.r3 !=null ? r.r3 :0, bHook);
+      const holdS = sub(r.r95!=null ? r.r95:0, bHold);
+      score = hookS*0.30 + holdS*0.25 + ctrS*0.20 + engS*0.25;
+      gates = { 'Hook':hookS, 'ดูจบ':holdS, 'Click':ctrS, 'Engage':engS };
+    }else{
+      score = ctrS*0.55 + engS*0.45;
+      gates = { 'Click':ctrS, 'Engage':engS };
+    }
+    score = Math.round(score);
+    let label, cls;
+    if(score>=70){ label='ดีมาก';   cls='a5'; }
+    else if(score>=55){ label='ดี';       cls='a4'; }
+    else if(score>=45){ label='ปานกลาง'; cls='a3'; }
+    else if(score>=30){ label='ต้องปรับ'; cls='a2'; }
+    else { label='อ่อน'; cls='a1'; }
+    const gl = Object.entries(gates);
+    const strong = gl.reduce((a,b)=> b[1]>a[1]?b:a);
+    const weak   = gl.reduce((a,b)=> b[1]<a[1]?b:a);
+    const tip = `เด่น: ${strong[0]} · อ่อน: ${weak[0]}  (50 = ค่าเฉลี่ยบัญชี)`;
+    return { score, label, cls, tip };
+  });
+}
 
 function renderAnalyze(){
   const head = $('anaHead'), body = $('anaBody'), tag = $('anaTag');
@@ -3567,7 +3641,9 @@ function renderAnalyze(){
     return;
   }
   const rate = v => v==null ? '<span class="muted">-</span>' : fmtPct(v);
-  body.innerHTML = metaAdContent.map(r=>{
+  const scores = anaScoreAll(metaAdContent);
+  body.innerHTML = metaAdContent.map((r,i)=>{
+    const sc = scores[i] || { score:0, label:'—', cls:'a3', tip:'' };
     const ph = `<span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:8px;background:var(--bg-2,#eef1f6);color:#9aa3b2;font-size:11px">no img</span>`;
     const img = r.thumb
       ? `<img src="${esc(r.thumb)}" alt="" loading="lazy" style="width:52px;height:52px;object-fit:cover;border-radius:8px;display:block" onerror="this.outerHTML='${ph.replace(/'/g,"&#39;")}'">`
@@ -3588,6 +3664,7 @@ function renderAnalyze(){
       `<td class="r mono">${rate(r.r50)}</td>` +
       `<td class="r mono">${rate(r.r75)}</td>` +
       `<td class="r mono">${rate(r.r95)}</td>` +
+      `<td class="r ana-sc" title="${esc(sc.tip)}"><span class="ana-num">${sc.score}</span><span class="ana-badge ${sc.cls}">${sc.label}</span></td>` +
     '</tr>';
   }).join('');
 }
