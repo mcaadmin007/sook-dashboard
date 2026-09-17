@@ -1012,6 +1012,12 @@
             <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
           </svg>Excel
         </button>
+        <button class="btn-xls" id="btnAnaPublish" title="ดาวน์โหลด reports.json แล้วอัปขึ้น GitHub เพื่อให้ทุกคนเห็นรายงานชุดเดียวกัน">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1v9m0 0 3.2-3.2M8 10 4.8 6.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>บันทึกไฟล์กลาง
+        </button>
       </div>
     </div>
 
@@ -3899,6 +3905,46 @@ function anaLoadNotes(){ try{ return JSON.parse(localStorage.getItem(ANA_NOTES)|
 let anaNotes = anaLoadNotes();
 let anaNotesDirty = false;
 function anaStoreNotes(){ try{ localStorage.setItem(ANA_NOTES, JSON.stringify(anaNotes)); }catch(e){} }
+
+/* --- ไฟล์กลาง reports.json: ให้ทุกคนที่เปิดเว็บเห็นรายงาน+ข้อความวิเคราะห์ชุดเดียวกัน ---
+   โหลดตอนเปิดเว็บ (ไฟล์กลางเป็นฐาน · ของในเครื่องทับเฉพาะ id/โน้ตที่ตรงกัน) */
+async function anaLoadShared(){
+  try{
+    const res = await fetch('./reports.json?v=' + Date.now(), { cache:'no-store' });
+    if(!res.ok) return false;
+    const data = await res.json();
+    let changed = false;
+    if(data && Array.isArray(data.reports)){
+      const localById = {}; anaReports.forEach(r=>{ localById[r.id] = r; });
+      const merged = data.reports.map(r => localById[r.id] || r);            // ไฟล์กลางเป็นฐาน
+      anaReports.forEach(r=>{ if(!data.reports.some(s=>s.id===r.id)) merged.unshift(r); }); // รายงานในเครื่องที่ยังไม่ publish
+      anaReports = merged; changed = true;
+    }
+    if(data && data.notes && typeof data.notes==='object'){
+      const out = {};
+      Object.keys(data.notes).forEach(scope=>{ out[scope] = Object.assign({}, data.notes[scope]); });        // ฐานจากไฟล์กลาง
+      Object.keys(anaNotes).forEach(scope=>{ out[scope] = Object.assign(out[scope]||{}, anaNotes[scope]); }); // โน้ตในเครื่องทับ
+      anaNotes = out; changed = true;
+    }
+    return changed;
+  }catch(e){ return false; }   // ไม่มีไฟล์กลาง = ใช้ของในเครื่องตามเดิม
+}
+
+/* ดาวน์โหลด reports.json (รายงาน + ข้อความวิเคราะห์ทั้งหมด) เพื่อเอาไปอัปขึ้น GitHub */
+function anaExportShared(){
+  if(anaNotesDirty){ try{ anaSaveNotesNow(); }catch(e){} }   // เก็บที่พิมพ์ค้างก่อน
+  const data = { reports: anaReports, notes: anaNotes, exportedAt: new Date().toISOString() };
+  try{
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'reports.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+    showToast('ดาวน์โหลด reports.json แล้ว — อัปไฟล์นี้ขึ้น GitHub (โฟลเดอร์เดียวกับ index.html) เพื่อให้ทุกคนเห็น');
+  }catch(e){ showToast('⚠ สร้างไฟล์ไม่สำเร็จ'); }
+}
+
 function anaScopeKey(){ return anaCurrent || 'live'; }
 function anaGetNotes(ad){ const s = anaNotes[anaScopeKey()]; return (s && s[ad]) ? s[ad] : null; }
 /* เทมเพลตแถบสีว่าง 5 ข้อ (เขียว·ครีม·แดง·เขียว·น้ำเงิน) ให้พิมพ์เอง */
@@ -4469,6 +4515,7 @@ document.addEventListener('click', e=>{
 
   if(e.target.closest('#btnLeadXls')){ exportLeads(); return; }
   if(e.target.closest('#btnAnaXls')){ exportAnalyze(); return; }
+  if(e.target.closest('#btnAnaPublish')){ anaExportShared(); return; }
   if(e.target.closest('#btnAnaNew')){ anaOpenModal(); return; }
   const anadel = e.target.closest('[data-anadel]');
   if(anadel){ e.stopPropagation(); anaDeleteById(anadel.dataset.anadel); return; }
@@ -4618,6 +4665,8 @@ document.addEventListener('drop', e=>{
   render();
   fbInit();
   initMetaSDK();
+  /* โหลดรายงาน+ข้อความวิเคราะห์จากไฟล์กลาง reports.json (ถ้ามี) แล้ว re-render */
+  anaLoadShared().then(changed=>{ if(changed) renderAnalyze(); });
 })();
 /* Esc = ปิดกล่องยืนยัน, Enter = ยืนยัน (ถ้าปุ่มกดได้) */
 document.addEventListener('keydown', e=>{
