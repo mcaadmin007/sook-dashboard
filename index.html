@@ -1353,6 +1353,26 @@ const CONV = { message: 0.10, click: 0.005 };
 /* Token ไม่ hardcode ในไฟล์แล้ว (กัน token รั่วบน GitHub) — เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น
    กดปุ่ม "Connect Meta" มุมขวาบนเพื่อวาง token ครั้งเดียว จะถูกจำไว้ใน localStorage */
 let META_TOKEN = (()=>{ try{ return localStorage.getItem('meta_token') || ''; }catch(e){ return ''; } })();
+<<<<<<< Updated upstream
+=======
+
+/* =========================================================
+   ขอเบราว์เซอร์ "ห้ามลบ" ข้อมูลเว็บนี้ทิ้งอัตโนมัติ (กัน token/ข้อมูลในเครื่องหาย)
+   ไม่การันตี 100% — Chrome จะให้สิทธิ์นี้เองถ้าเข้าเว็บนี้บ่อย/กด bookmark ไว้
+   ========================================================= */
+(function requestPersistentStorage(){
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      navigator.storage.persist().then(granted=>{
+        console.log(granted
+          ? '[Storage] เบราว์เซอร์อนุญาตเก็บข้อมูลเว็บนี้ถาวรแล้ว'
+          : '[Storage] ยังไม่ได้รับสิทธิ์เก็บถาวร — เข้าเว็บนี้บ่อยๆ หรือ bookmark ไว้จะช่วยให้ Chrome ให้สิทธิ์นี้เอง');
+      });
+    }
+  }catch(e){}
+})();
+
+>>>>>>> Stashed changes
 const META_ACCOUNT_ID = 'act_2293937604431894';
 const META_PAGE_IDS   = [{ id:'1060650783807210', name:'SooK Page' }];
 const META_GRAPH_VER  = 'v20.0';
@@ -1771,6 +1791,7 @@ const FB_BOARD = 'sook';
 const FB_VER   = '10.12.2';
 
 let fb = null, fbReady = false, fbApplying = false;
+let cloudPushBusy = 0;   // นับงานเขียนขึ้นคลาวด์ที่ยังไม่เสร็จ — ใช้กันรีเฟรชขณะเขียนยังไม่จบ (แก้บั๊ก budget/เป้า/ระยะเวลา ดีดกลับ)
 const fbLast = { plans:{}, scores:{}, settings:'', content:{}, cimg:{}, timeline:{}, logs:{} };
 
 function fbErr(on){ const el = document.getElementById('fbErr'); if(el) el.hidden = !on; }
@@ -2023,6 +2044,8 @@ function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; 
 
 async function cloudPush(){
   if(!fbReady || fbApplying) return;
+  cloudPushBusy++;
+  try{
   const { db, fs } = fb;
   const ref  = (name, id) => fs.doc(db, 'boards', FB_BOARD, name, id);
   const jobs = [];
@@ -2094,6 +2117,7 @@ async function cloudPush(){
 
   if(!jobs.length) return;
   try{ await Promise.all(jobs); fbErr(false); }catch(e){ fbErr(true); }
+  } finally { cloudPushBusy--; }
 }
 
 /* ===== content plan ===== */
@@ -4679,6 +4703,8 @@ window.addEventListener('beforeunload', e=>{
   saveNow();
   /* ปิดหน้าทั้งที่ยังไม่กดยืนยัน = ตัวเลขที่พิมพ์ค้างจะหาย เตือนก่อน */
   if(anyDirty()){ e.preventDefault(); e.returnValue = ''; return ''; }
+  /* กำลังเขียนขึ้นคลาวด์ค้างอยู่ (เพิ่งกดยืนยันบันทึก) — เตือนก่อนปิด/รีเฟรช กันของเก่าจากคลาวด์ทับของใหม่ */
+  if(cloudPushBusy > 0){ e.preventDefault(); e.returnValue = ''; return ''; }
 });
 </script>
 </body>
