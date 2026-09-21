@@ -1905,6 +1905,7 @@ async function fbInit(){
     fbReady = true;
     fbErr(false);
     fbWatch();
+    cloudPush();   // เผื่อมีการกดยืนยันบันทึกไปก่อนที่ต่อคลาวด์จะเสร็จ ให้ดันขึ้นคลาวด์ทันทีที่พร้อม
   }catch(e){ fbErr(true); }
 }
 
@@ -4327,7 +4328,19 @@ function render(){
   state.active = p.month;
   /* ---- ระยะเวลา (เดือน) = จำนวนแผนที่ถูกสร้าง : ใช้ร่วมกันทั้ง label + งบ ---- */
   const months = state.plans.length;
-  if(num($('inMonths').value) !== months) $('inMonths').value = months;
+  if(num($('inMonths').value) !== months){
+    $('inMonths').value = months;
+    /* inMonths เป็นช่อง readonly ที่คำนวณมาจากจำนวนแผน ไม่ใช่ค่าที่ผู้ใช้พิมพ์เอง
+       ถ้าค่านี้ถูกปรับหลังจากที่กดยืนยันบันทึกไปแล้ว (cSettings ถูกตั้งไว้แล้ว)
+       ต้องอัปเดต baseline ให้ตรงกันด้วย ไม่งั้นระบบจะเข้าใจผิดว่าผู้ใช้ยังไม่ได้บันทึก
+       ทั้งที่จริงมีแค่ตัวเลขเดือนที่ขยับตามจำนวนแผน ไม่เกี่ยวกับ Budget/เป้าที่กดยืนยันไปแล้ว */
+    if(cSettings !== null){
+      try{
+        const c = JSON.parse(cSettings);
+        if(c.months !== months){ c.months = months; cSettings = JSON.stringify(c); }
+      }catch(e){}
+    }
+  }
 
   const targetLeads = num($('inTarget').value);          // เป้ารวมทั้งช่วง
   const budgetTotal = num($('inBudget').value);          // งบรวมทั้งช่วง ไม่คูณจำนวนเดือน
