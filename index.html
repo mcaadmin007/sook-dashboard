@@ -453,6 +453,39 @@
   .ana-ins li.act{background:#eef2fb}
   .ana-ins li.act::before{content:'➜';color:#2f5fe0}
   .ana-ins li.act{font-weight:600}
+  /* รูปคอนเทนต์แนบในการ์ดวิเคราะห์ */
+  .ac-media{margin-bottom:10px}
+  .ac-media-box{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .ac-media-img{width:100%;max-width:220px;max-height:160px;object-fit:cover;
+    border-radius:10px;display:block;cursor:zoom-in;border:1px solid var(--line-2,#eef0f4)}
+  .ac-media-tools{display:flex;flex-direction:column;gap:6px}
+  .ac-media-btn{border:1px dashed #cfd6e2;background:#fff;color:#4a5468;cursor:pointer;
+    font-size:11px;font-weight:600;padding:5px 9px;border-radius:8px;white-space:nowrap}
+  .ac-media-btn:hover{border-color:var(--blue);color:var(--blue)}
+  .ac-media-btn.rm{color:#c9302c;border-color:#f2c9c4}
+  .ac-media-btn.rm:hover{background:#fbe9e7}
+  .ac-nomedia{border:1.5px dashed var(--line);border-radius:10px;background:var(--bg-2);
+    color:var(--ink-3);font-size:12px;font-weight:600;padding:14px;text-align:center;
+    cursor:pointer;max-width:220px}
+  .ac-nomedia:hover{border-color:var(--blue-line);background:var(--blue-soft);color:var(--blue)}
+  /* dropdown เลือกหัวข้อคุณภาพคอนเทนต์ ต่อบรรทัด */
+  .ins-tag{flex:none;border:1px solid var(--line-2,#eef0f4);border-radius:7px;
+    font-size:10.5px;font-weight:600;color:var(--ink-2,#4a5468);background:#fff;
+    padding:3px 4px;max-width:96px}
+  .ins-qual{border:1px solid #cfe0fb;background:#eef4ff;color:var(--blue,#2f5fe0);cursor:pointer;
+    font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:9px}
+  .ins-qual:hover{background:#dbe6fb}
+  /* สรุปแพทเทิร์นคอนเทนต์ดี/ไม่ดี + แนวทางถัดไป */
+  .ana-pattern{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;
+    margin-top:10px;padding-top:10px;border-top:1px dashed var(--line-2,#eef0f4)}
+  .ana-pattern.empty{display:block;color:var(--ink-3);font-size:12px;line-height:1.6;
+    padding:10px 2px 0}
+  .ap-col{background:#fafbfd;border:1px solid var(--line-2,#eef0f4);border-radius:10px;padding:10px 12px}
+  .ap-h{font-size:11.5px;font-weight:800;margin-bottom:5px}
+  .ap-h.good{color:#1f8a4c}
+  .ap-h.bad{color:#c9302c}
+  .ap-h.act{color:#2f5fe0}
+  .ap-b{font-size:12px;line-height:1.6;color:var(--ink)}
   /* แถบวิเคราะห์แนบใต้แถวข้อมูล (in-table) */
   .ana-report{padding:2px 2px 10px}
   /* คอลัมน์แคบลง — ตารางไม่ยาว */
@@ -1340,6 +1373,7 @@
   </div>
 </div>
 <div class="lbox" id="lbox" hidden><img id="lboxImg" alt=""></div>
+<input type="file" id="anaImgFile" accept="image/*" hidden>
 <div id="fbErr" class="fb-err" hidden>เชื่อมต่อคลาวด์ไม่ได้</div>
 
 <script>
@@ -3828,45 +3862,45 @@ function anaInsightsFor(r, b, sc){
   if(r.isVideo){
     if((r.r3||0)>0 && b.bHook>0){
       const hr = r.r3/b.bHook;
-      if(hr>=1.15) out.push({cls:'good', t:`Hook แข็ง — วิว 3วิ ${fmtPct(r.r3)} สูงกว่าค่าเฉลี่ยบัญชี ${pctUp(hr)}% (ท่อนเปิด/ธัมบ์หยุดนิ้วได้)`});
-      else if(hr<=0.85) out.push({cls:'bad', t:`Hook อ่อน — วิว 3วิ ${fmtPct(r.r3)} ต่ำกว่าเฉลี่ย ${pctUp(hr)}% คนเลื่อนผ่านตั้งแต่ต้น → เปลี่ยน 3 วินาทีแรก/ธัมบ์`});
+      if(hr>=1.15) out.push({cls:'good', tag:'hook', t:`Hook แข็ง — วิว 3วิ ${fmtPct(r.r3)} สูงกว่าค่าเฉลี่ยบัญชี ${pctUp(hr)}% (ท่อนเปิด/ธัมบ์หยุดนิ้วได้)`});
+      else if(hr<=0.85) out.push({cls:'bad', tag:'hook', t:`Hook อ่อน — วิว 3วิ ${fmtPct(r.r3)} ต่ำกว่าเฉลี่ย ${pctUp(hr)}% คนเลื่อนผ่านตั้งแต่ต้น → เปลี่ยน 3 วินาทีแรก/ธัมบ์`});
     }
     // 2) Hold — ดูจบไหม (จากคนที่ดู 3วิ เหลือดูจนจบกี่ %)
     if((r.r3||0)>0){
       const hold = r.r95!=null ? r.r95/r.r3*100 : 0;
-      if(hold>0 && hold<15) out.push({cls:'warn', t:`คนดูจบน้อย — จากคนที่ดู 3วิ เหลือดูจนจบแค่ ${fmt(hold,0)}% เนื้อกลางคลิปหลุด → ตัดให้กระชับ/ใส่จุดพีคใหม่กลางคลิป`});
-      else if(hold>=35) out.push({cls:'good', t:`คนดูจบเยอะ — จากคนที่ดู 3วิ ดูจนจบถึง ${fmt(hold,0)}% เนื้อหาดึงอยู่ทั้งคลิป`});
+      if(hold>0 && hold<15) out.push({cls:'warn', tag:'message', t:`คนดูจบน้อย — จากคนที่ดู 3วิ เหลือดูจนจบแค่ ${fmt(hold,0)}% เนื้อกลางคลิปหลุด → ตัดให้กระชับ/ใส่จุดพีคใหม่กลางคลิป`});
+      else if(hold>=35) out.push({cls:'good', tag:'message', t:`คนดูจบเยอะ — จากคนที่ดู 3วิ ดูจนจบถึง ${fmt(hold,0)}% เนื้อหาดึงอยู่ทั้งคลิป`});
     }
   } else {
     if(b.bCTR>0){
       const hr = r.ctr/b.bCTR;
-      if(hr>=1.15) out.push({cls:'good', t:`ภาพดึงคลิก — CTR ${fmtPct(r.ctr)} สูงกว่าค่าเฉลี่ยบัญชี ${pctUp(hr)}%`});
-      else if(hr<=0.7) out.push({cls:'bad', t:`ภาพไม่ดึงคลิก — CTR ${fmtPct(r.ctr)} ต่ำกว่าเฉลี่ย ${pctUp(hr)}% → เปลี่ยนภาพ/พาดหัว`});
+      if(hr>=1.15) out.push({cls:'good', tag:'visual', t:`ภาพดึงคลิก — CTR ${fmtPct(r.ctr)} สูงกว่าค่าเฉลี่ยบัญชี ${pctUp(hr)}%`});
+      else if(hr<=0.7) out.push({cls:'bad', tag:'visual', t:`ภาพไม่ดึงคลิก — CTR ${fmtPct(r.ctr)} ต่ำกว่าเฉลี่ย ${pctUp(hr)}% → เปลี่ยนภาพ/พาดหัว`});
     }
   }
   // 3) ต้นทุน — CPC เทียบบัญชี
   if(r.click>0 && b.bCPC>0){
     const cr = r.cpc/b.bCPC;
-    if(cr<=0.7) out.push({cls:'good', t:`ต้นทุนถูก — CPC ${fmtCost(r.cpc)} ถูกกว่าค่าเฉลี่ยบัญชี ${pctUp(cr)}% คุ้มงบ`});
-    else if(cr>=1.4) out.push({cls:'bad', t:`ต้นทุนแพง — CPC ${fmtCost(r.cpc)} แพงกว่าเฉลี่ย ${pctUp(cr)}% ${sc.score<45?'ควรลดงบ/หยุด':'จับตา'}`});
+    if(cr<=0.7) out.push({cls:'good', tag:'other', t:`ต้นทุนถูก — CPC ${fmtCost(r.cpc)} ถูกกว่าค่าเฉลี่ยบัญชี ${pctUp(cr)}% คุ้มงบ`});
+    else if(cr>=1.4) out.push({cls:'bad', tag:'other', t:`ต้นทุนแพง — CPC ${fmtCost(r.cpc)} แพงกว่าเฉลี่ย ${pctUp(cr)}% ${sc.score<45?'ควรลดงบ/หยุด':'จับตา'}`});
   }
   // 4) คุณค่า — Save+Share สูง = คนอยากเก็บ/บอกต่อ
   if(r.reach>0 && b.bSS>0){
     const ssr = (r.share+r.save)/r.reach*100;
     if(ssr >= b.bSS*1.3 && (r.share+r.save)>0)
-      out.push({cls:'good', t:`คนอยากเก็บ/บอกต่อ — Save+Share ${fmt(r.save+r.share)} ครั้ง สูงกว่าเฉลี่ย = คอนเทนต์มีคุณค่า ทำแนวนี้เพิ่ม`});
+      out.push({cls:'good', tag:'message', t:`คนอยากเก็บ/บอกต่อ — Save+Share ${fmt(r.save+r.share)} ครั้ง สูงกว่าเฉลี่ย = คอนเทนต์มีคุณค่า ทำแนวนี้เพิ่ม`});
   }
   // 5) Engagement รวมต่ำ (ถ้ายังไม่มีข้อบวกด้าน engage)
   if(r.reach>0 && b.bEng>0){
     const er = anaEngWt(r)/r.reach*100 / b.bEng;
-    if(er<=0.6) out.push({cls:'warn', t:`คนมีส่วนร่วมน้อย — Like/Comment/Share/Save รวมต่ำกว่าเฉลี่ย ${pctUp(er)}% คอนเทนต์ยังไม่กระตุ้นให้คนตอบสนอง`});
+    if(er<=0.6) out.push({cls:'warn', tag:'message', t:`คนมีส่วนร่วมน้อย — Like/Comment/Share/Save รวมต่ำกว่าเฉลี่ย ${pctUp(er)}% คอนเทนต์ยังไม่กระตุ้นให้คนตอบสนอง`});
   }
   // 6) สรุป + สิ่งที่ควรทำ (จากคะแนน + จุดอ่อน)
   let act;
   if(sc.score>=70) act = `สรุป: ตัวชนะ (คะแนน ${sc.score}) → สเกลงบตัวนี้เพิ่ม + ทำคอนเทนต์แนวเดียวกันต่อ`;
   else if(sc.score>=45) act = `สรุป: พอไปได้ (คะแนน ${sc.score}) → เก็บของดีไว้ ปรับ "${sc.weak}" ที่ยังอ่อนก่อนเติมงบ`;
   else act = `สรุป: ต้องแก้ (คะแนน ${sc.score}) → ${sc.weak==='Hook'?'รื้อ hook/ท่อนเปิดใหม่':sc.weak==='ดูจบ'?'ตัดคลิปให้กระชับ':'รีเมคหรือหยุด'} ก่อนเติมงบ`;
-  out.push({cls:'act', t:act});
+  out.push({cls:'act', tag:'other', t:act});
   return out;
 }
 
@@ -3906,6 +3940,21 @@ let anaNotes = anaLoadNotes();
 let anaNotesDirty = false;
 function anaStoreNotes(){ try{ localStorage.setItem(ANA_NOTES, JSON.stringify(anaNotes)); }catch(e){} }
 
+/* --- รูป Creative/คอนเทนต์ที่แนบเองต่อคอนเทนต์ (แยกตาม scope เหมือนโน้ต)
+   ใช้ตอนที่ Meta ไม่มี thumbnail หรืออยากใส่รูปที่ชัดกว่าให้ดูคู่กับข้อวิเคราะห์ --- */
+const ANA_IMGS = 'sook_ana_imgs';
+function anaLoadImgs(){ try{ return JSON.parse(localStorage.getItem(ANA_IMGS)||'{}')||{}; }catch(e){ return {}; } }
+let anaImgs = anaLoadImgs();
+function anaStoreImgs(){ try{ localStorage.setItem(ANA_IMGS, JSON.stringify(anaImgs)); }catch(e){} }
+function anaGetImg(ad){ const s = anaImgs[anaScopeKey()]; return (s && s[ad]) ? s[ad] : ''; }
+function anaSetImg(ad, dataUrl){
+  const scope = anaScopeKey();
+  if(!anaImgs[scope]) anaImgs[scope] = {};
+  if(dataUrl) anaImgs[scope][ad] = dataUrl; else delete anaImgs[scope][ad];
+  anaStoreImgs();
+}
+let anaImgTargetAd = null;   // ad name ที่กำลังรอไฟล์รูปจาก input
+
 /* --- ไฟล์กลาง reports.json: ให้ทุกคนที่เปิดเว็บเห็นรายงาน+ข้อความวิเคราะห์ชุดเดียวกัน ---
    โหลดตอนเปิดเว็บ (ไฟล์กลางเป็นฐาน · ของในเครื่องทับเฉพาะ id/โน้ตที่ตรงกัน) */
 async function anaLoadShared(){
@@ -3926,14 +3975,20 @@ async function anaLoadShared(){
       Object.keys(anaNotes).forEach(scope=>{ out[scope] = Object.assign(out[scope]||{}, anaNotes[scope]); }); // โน้ตในเครื่องทับ
       anaNotes = out; changed = true;
     }
+    if(data && data.images && typeof data.images==='object'){
+      const out = {};
+      Object.keys(data.images).forEach(scope=>{ out[scope] = Object.assign({}, data.images[scope]); });        // ฐานจากไฟล์กลาง
+      Object.keys(anaImgs).forEach(scope=>{ out[scope] = Object.assign(out[scope]||{}, anaImgs[scope]); });    // รูปในเครื่องทับ
+      anaImgs = out; changed = true;
+    }
     return changed;
   }catch(e){ return false; }   // ไม่มีไฟล์กลาง = ใช้ของในเครื่องตามเดิม
 }
 
-/* ดาวน์โหลด reports.json (รายงาน + ข้อความวิเคราะห์ทั้งหมด) เพื่อเอาไปอัปขึ้น GitHub */
+/* ดาวน์โหลด reports.json (รายงาน + ข้อความวิเคราะห์ + รูปที่แนบทั้งหมด) เพื่อเอาไปอัปขึ้น GitHub */
 function anaExportShared(){
   if(anaNotesDirty){ try{ anaSaveNotesNow(); }catch(e){} }   // เก็บที่พิมพ์ค้างก่อน
-  const data = { reports: anaReports, notes: anaNotes, exportedAt: new Date().toISOString() };
+  const data = { reports: anaReports, notes: anaNotes, images: anaImgs, exportedAt: new Date().toISOString() };
   try{
     const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
@@ -3947,16 +4002,51 @@ function anaExportShared(){
 
 function anaScopeKey(){ return anaCurrent || 'live'; }
 function anaGetNotes(ad){ const s = anaNotes[anaScopeKey()]; return (s && s[ad]) ? s[ad] : null; }
+
+/* หัวข้อคุณภาพคอนเทนต์ ให้ติดแท็กแต่ละข้อสังเกตว่าเป็นเรื่องอะไร (ใช้สรุปแพทเทิร์นภายหลัง) */
+const ANA_TAGS = [
+  { v:'visual',  h:'Visual/ภาพ' },
+  { v:'hook',    h:'Hook' },
+  { v:'message', h:'Message' },
+  { v:'product', h:'นำเสนอสินค้า' },
+  { v:'promo',   h:'โปรโมชัน' },
+  { v:'cta',     h:'CTA' },
+  { v:'other',   h:'ทั่วไป' },
+];
+const ANA_TAG_H  = Object.fromEntries(ANA_TAGS.map(t=>[t.v, t.h]));
+const ANA_TAG_PH = {
+  visual:  'ภาพ/วิดีโอเป็นแบบไหน สีสัน องค์ประกอบ หยุดสายตาคนดูได้ไหม…',
+  hook:    '3 วินาทีแรกเปิดเรื่องยังไง ดึงความสนใจได้ไหม…',
+  message: 'ข้อความ/บทพูดสื่อสารอะไร เข้าใจง่ายไหม ดูจบไหม…',
+  product: 'นำเสนอสินค้ายังไง เห็นจุดขาย/ประโยชน์ชัดไหม…',
+  promo:   'โปรโมชัน/ราคาที่ใส่ จูงใจให้ตัดสินใจไหม…',
+  cta:     'CTA ชัดเจนไหม กระตุ้นให้คนกดยังไง…',
+  other:   'พิมพ์ข้อสังเกต…',
+};
 /* เทมเพลตแถบสีว่าง 5 ข้อ (เขียว·ครีม·แดง·เขียว·น้ำเงิน) ให้พิมพ์เอง */
-const ANA_TPL = [{cls:'good',t:''},{cls:'warn',t:''},{cls:'bad',t:''},{cls:'good',t:''},{cls:'act',t:''}];
+const ANA_TPL = [{cls:'good',tag:'other',t:''},{cls:'warn',tag:'other',t:''},{cls:'bad',tag:'other',t:''},{cls:'good',tag:'other',t:''},{cls:'act',tag:'other',t:''}];
+/* เทมเพลตหัวข้อคุณภาพคอนเทนต์ 6 ข้อ — ให้พิมพ์วิเคราะห์ตัวคอนเทนต์เอง ไม่ใช่แค่ตัวเลข performance */
+const ANA_QUAL_TPL = [
+  {cls:'good',tag:'visual', t:''},
+  {cls:'good',tag:'hook',   t:''},
+  {cls:'good',tag:'message',t:''},
+  {cls:'good',tag:'product',t:''},
+  {cls:'good',tag:'promo',  t:''},
+  {cls:'good',tag:'cta',    t:''},
+];
 const INS_ICON = { good:'▲', bad:'▼', warn:'!', act:'➜' };
 const INS_CYCLE = ['good','warn','bad','act'];
 function anaInsRowsHTML(bullets){
   return (bullets||[]).map(b=>{
     const cls = INS_ICON[b.cls] ? b.cls : 'good';
-    return `<li class="${cls}" data-cls="${cls}">`
+    const tag = ANA_TAG_H[b.tag] ? b.tag : 'other';
+    const ph  = ANA_TAG_PH[tag] || ANA_TAG_PH.other;
+    return `<li class="${cls}" data-cls="${cls}" data-tag="${tag}">`
       + `<button class="ins-type ${cls}" data-cls="${cls}" type="button" title="เปลี่ยนประเภท (คลิกวนสี)">${INS_ICON[cls]}</button>`
-      + `<span class="ins-text" contenteditable="true" data-ph="พิมพ์ข้อสังเกต…">${esc(b.t||'')}</span>`
+      + `<select class="ins-tag" title="หัวข้อที่กำลังวิเคราะห์">`
+      + ANA_TAGS.map(t=>`<option value="${t.v}"${t.v===tag?' selected':''}>${t.h}</option>`).join('')
+      + `</select>`
+      + `<span class="ins-text" contenteditable="true" data-ph="${esc(ph)}">${esc(b.t||'')}</span>`
       + `<button class="ins-del" type="button" title="ลบข้อ">×</button></li>`;
   }).join('');
 }
@@ -4066,20 +4156,90 @@ function renderAnalyze(){
     '</tr>';
     const anaRow = `<tr class="ana-exp"><td colspan="${ncol}">`
       + `<div class="ana-card" data-ad="${esc(r.ad_name)}">`
+      + `<div class="ac-media">` + anaCardMedia(r) + `</div>`
       + `<ul class="ana-ins edit">` + anaInsRowsHTML(ins) + `</ul>`
-      + `<div class="ac-tools"><button class="ins-add" type="button">+ เพิ่มข้อ</button></div>`
+      + `<div class="ac-tools"><button class="ins-add" type="button">+ เพิ่มข้อ</button>`
+      + `<button class="ins-qual" type="button" title="แทรกหัวข้อ Visual · Hook · Message · นำเสนอสินค้า · โปรโมชัน · CTA">+ หัวข้อคุณภาพคอนเทนต์</button></div>`
       + `</div></td></tr>`;
     return dataRow + anaRow;
   }).join('');
 
-  /* --- แถบเครื่องมือบันทึก (เหนือตาราง) --- */
+  /* --- แถบเครื่องมือบันทึก + สรุปแพทเทิร์นคอนเทนต์ (เหนือตาราง) --- */
   if(rep){
     rep.innerHTML = `<div class="ana-report">`
       + `<div class="ar-head">`
       + `<div class="ar-actions"><span class="ana-dirty" id="anaDirty" hidden>● ยังไม่บันทึก</span>`
       + `<button class="btn-back" id="btnAnaNotesClear" type="button">↺ ล้างเป็นเทมเพลตว่าง</button>`
-      + `<button class="btn-ana" id="btnAnaNotesSave" type="button">บันทึกการวิเคราะห์</button></div></div></div>`;
+      + `<button class="btn-ana" id="btnAnaNotesSave" type="button">บันทึกการวิเคราะห์</button></div></div>`
+      + anaPatternHTML(rows)
+      + `</div>`;
   }
+}
+
+/* --- รูปคอนเทนต์ในการ์ดวิเคราะห์: ใช้รูปที่แนบเองก่อน ถ้าไม่มีค่อยใช้ thumbnail จาก Meta --- */
+function anaCardMedia(r){
+  const custom = anaGetImg(r.ad_name);
+  const src = custom || r.thumb || '';
+  if(!src){
+    return `<div class="ac-nomedia" data-anaimgadd="${esc(r.ad_name)}">+ แนบรูป Creative/คอนเทนต์</div>`;
+  }
+  return `<div class="ac-media-box">`
+    + `<img class="ac-media-img" src="${esc(src)}" alt="" data-anaimgview title="คลิกเพื่อดูรูปใหญ่">`
+    + `<div class="ac-media-tools">`
+    + `<button type="button" class="ac-media-btn" data-anaimgadd="${esc(r.ad_name)}">${custom?'เปลี่ยนรูป':'แนบรูปของฉัน'}</button>`
+    + (custom ? `<button type="button" class="ac-media-btn rm" data-anaimgrm="${esc(r.ad_name)}">ลบรูปที่แนบ</button>` : '')
+    + `</div></div>`;
+}
+
+/* --- สรุปแพทเทิร์นคอนเทนต์ทำดี/ควรปรับ + แนวทางคอนเทนต์ถัดไป
+   อ่านจากแท็กหัวข้อ (Visual/Hook/Message/สินค้า/โปรโมชัน/CTA) ที่ติดไว้ในข้อสังเกต good/bad ของแต่ละคอนเทนต์
+   เทียบคอนเทนต์คะแนนสูงสุด-ต่ำสุดในรายงานเดียวกัน (ยิ่งกรอกข้อสังเกตครบ ยิ่งแม่น) --- */
+function anaPatternSummary(rows){
+  if(!rows || rows.length<2) return null;
+  const scores = anaScoreAll(rows);
+  const withNotes = rows
+    .map((r,i)=>({ r, sc: scores[i] || {score:0}, notes: anaGetNotes(r.ad_name) }))
+    .filter(x=>x.notes && x.notes.length);
+  if(withNotes.length<2) return null;
+  const sorted = withNotes.slice().sort((a,b)=> b.sc.score - a.sc.score);
+  const n = Math.max(1, Math.round(sorted.length/3));
+  const top = sorted.slice(0, n);
+  const bottom = sorted.slice(-n);
+  const tally = (group, clsList) => {
+    const cnt = {};
+    group.forEach(x=>{
+      (x.notes||[]).forEach(note=>{
+        if(!clsList.includes(note.cls) || !note.t || !note.t.trim()) return;
+        const tag = note.tag || 'other';
+        if(tag==='other') return;
+        cnt[tag] = (cnt[tag]||0) + 1;
+      });
+    });
+    return Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+  };
+  return { top, bottom, total: rows.length, tagged: withNotes.length,
+    goodTags: tally(top, ['good']), badTags: tally(bottom, ['bad','warn']) };
+}
+function anaPatternHTML(rows){
+  const p = anaPatternSummary(rows);
+  if(!p){
+    return `<div class="ana-pattern empty">เติมข้อสังเกตแต่ละคอนเทนต์ (กด “+ หัวข้อคุณภาพคอนเทนต์” แล้ววิเคราะห์ Visual/Hook/Message/นำเสนอสินค้า/โปรโมชัน/CTA อย่างน้อย 2 คอนเทนต์) ระบบจะช่วยสรุปแพทเทิร์นคอนเทนต์ที่ทำดี/ควรปรับ และแนวทางคอนเทนต์ถัดไปให้อัตโนมัติ</div>`;
+  }
+  const listTxt = (arr, denom) => arr.length
+    ? arr.slice(0,3).map(([tag,n])=>`<b>${esc(ANA_TAG_H[tag]||tag)}</b> (${n}/${denom})`).join(', ')
+    : 'ยังไม่มีข้อสังเกตที่ระบุหัวข้อชัดเจน';
+  const nextTxt = [];
+  if(p.goodTags[0]) nextTxt.push(`รักษาไว้: เน้น <b>${esc(ANA_TAG_H[p.goodTags[0][0]])}</b> แบบเดิมในคอนเทนต์ถัดไป`);
+  if(p.badTags[0])  nextTxt.push(`ทดลองปรับ: แก้ <b>${esc(ANA_TAG_H[p.badTags[0][0]])}</b> ก่อนทำคอนเทนต์ใหม่`);
+  if(!nextTxt.length) nextTxt.push('เติมข้อสังเกตในคอนเทนต์คะแนนสูง/ต่ำให้ครบก่อน ระบบจะช่วยสรุปแนวทางให้');
+  return `<div class="ana-pattern">`
+    + `<div class="ap-col"><div class="ap-h good">คอนเทนต์ทำผลงานดี (Top ${p.top.length}/${p.total})</div>`
+    + `<div class="ap-b">${listTxt(p.goodTags, p.top.length)}</div></div>`
+    + `<div class="ap-col"><div class="ap-h bad">คอนเทนต์ที่ควรปรับ (Bottom ${p.bottom.length}/${p.total})</div>`
+    + `<div class="ap-b">${listTxt(p.badTags, p.bottom.length)}</div></div>`
+    + `<div class="ap-col"><div class="ap-h act">แนวทางคอนเทนต์ถัดไป</div>`
+    + `<div class="ap-b">${nextTxt.join(' · ')}</div></div>`
+    + `</div>`;
 }
 
 /* ===== แก้ไข/บันทึกโน้ตวิเคราะห์ ===== */
@@ -4095,11 +4255,20 @@ function anaCycleType(btn){
   btn.className = 'ins-type ' + nx; btn.dataset.cls = nx; btn.textContent = INS_ICON[nx];
   anaMarkDirty();
 }
-function anaAddLine(card){
+function anaAddLine(card, tag){
   const ul = card.querySelector('ul.ana-ins'); if(!ul) return;
-  ul.insertAdjacentHTML('beforeend', anaInsRowsHTML([{cls:'good',t:''}]));
+  ul.insertAdjacentHTML('beforeend', anaInsRowsHTML([{cls:'good',tag:tag||'other',t:''}]));
   const last = ul.lastElementChild && ul.lastElementChild.querySelector('.ins-text');
   if(last) last.focus();
+  anaMarkDirty();
+}
+/* แทรกหัวข้อคุณภาพคอนเทนต์ 6 ข้อ (Visual/Hook/Message/นำเสนอสินค้า/โปรโมชัน/CTA) ให้พิมพ์วิเคราะห์เอง */
+function anaAddQualityTpl(card){
+  const ul = card.querySelector('ul.ana-ins'); if(!ul) return;
+  ul.insertAdjacentHTML('beforeend', anaInsRowsHTML(ANA_QUAL_TPL.map(x=>({...x}))));
+  const firstNew = ul.children[ul.children.length - ANA_QUAL_TPL.length];
+  const t = firstNew && firstNew.querySelector('.ins-text');
+  if(t) t.focus();
   anaMarkDirty();
 }
 function anaFillSystem(card){
@@ -4124,7 +4293,8 @@ function anaSaveNotesNow(){
     card.querySelectorAll('ul.ana-ins > li').forEach(li=>{
       const t = (li.querySelector('.ins-text')?.textContent || '').trim();
       const cls = li.dataset.cls || 'good';
-      if(t) lines.push({ cls, t });   // เก็บเฉพาะข้อที่มีข้อความ
+      const tag = li.dataset.tag || 'other';
+      if(t) lines.push({ cls, tag, t });   // เก็บเฉพาะข้อที่มีข้อความ
     });
     if(lines.length) store[ad] = lines;
   });
@@ -4543,6 +4713,13 @@ document.addEventListener('click', e=>{
   if(e.target.closest('.ins-del')){ const li=e.target.closest('li'); if(li){ li.remove(); anaMarkDirty(); } return; }
   const insadd = e.target.closest('.ins-add'); if(insadd){ anaAddLine(insadd.closest('.ana-card')); return; }
   const inssys = e.target.closest('.ins-sys'); if(inssys){ anaFillSystem(inssys.closest('.ana-card')); return; }
+  const insqual = e.target.closest('.ins-qual'); if(insqual){ anaAddQualityTpl(insqual.closest('.ana-card')); return; }
+  const anaimgadd = e.target.closest('[data-anaimgadd]');
+  if(anaimgadd){ anaImgTargetAd = anaimgadd.dataset.anaimgadd; const f=$('anaImgFile'); if(f) f.click(); return; }
+  const anaimgrm = e.target.closest('[data-anaimgrm]');
+  if(anaimgrm){ anaSetImg(anaimgrm.dataset.anaimgrm, ''); renderAnalyze(); showToast('ลบรูปที่แนบแล้ว'); return; }
+  const anaimgview = e.target.closest('[data-anaimgview]');
+  if(anaimgview){ openLbox(anaimgview.src); return; }
 
   const go = e.target.closest('[data-page-go]');
   if(go){ state.page = go.dataset.pageGo; focusKey=null; render(); return; }
@@ -4620,6 +4797,28 @@ document.addEventListener('change', e=>{
   if(e.target.id==='cfFile'){
     const f = e.target.files && e.target.files[0];
     if(f) takeImg(f);
+    return;
+  }
+  if(e.target.id==='anaImgFile'){
+    const f = e.target.files && e.target.files[0];
+    const ad = anaImgTargetAd;
+    e.target.value = '';
+    if(f && ad){
+      shrinkImg(f, url=>{
+        if(url){ anaSetImg(ad, url); renderAnalyze(); showToast('แนบรูปคอนเทนต์แล้ว'); }
+      });
+    }
+    return;
+  }
+  const instag = e.target.closest ? e.target.closest('select.ins-tag') : null;
+  if(instag){
+    const li = instag.closest('li');
+    if(li){
+      li.dataset.tag = instag.value;
+      const span = li.querySelector('.ins-text');
+      if(span && !span.textContent.trim()) span.setAttribute('data-ph', ANA_TAG_PH[instag.value] || ANA_TAG_PH.other);
+      anaMarkDirty();
+    }
     return;
   }
   const s = e.target.closest ? e.target.closest('select[data-crit]') : null;
