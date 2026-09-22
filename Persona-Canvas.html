@@ -8,7 +8,8 @@
 <style>
   :root{
     --ink:#1f2740; --muted:#7b8496; --line:#e6e9f2; --bg:#eef1f7;
-    --soft:#f6f7fc; --accent:#5b52d6;
+    --soft:#f6f7fc; --accent:#5b52d6; --green:#1f9d63; --greenbg:#e7f6ee;
+    --amber:#d98a1f; --amberbg:#fdf3e3; --red:#c0392b; --chip:#eef0fb; --code:#0f1424;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:"Sarabun","Segoe UI",system-ui,sans-serif;color:var(--ink);
@@ -149,29 +150,60 @@
     .photo{height:150px}
   }
 
-  /* ===== split view: persona (left) + meta targeting (right) ===== */
-  .split{display:flex;gap:18px;align-items:flex-start}
-  .split-pane{width:50%;min-width:0}
-  .split-pane.right{position:sticky;top:16px;align-self:flex-start}
-  .meta-frame{width:100%;height:calc(100vh - 32px);border:1px solid var(--line);border-radius:16px;background:#fff;display:block}
+  /* ===== embedded Meta Targeting Spec (scoped under .ms) ===== */
+  .ms .mbody2{padding:24px 28px 26px}
+  .ms .section{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:18px}
+  .ms .section:last-child{margin-bottom:0}
+  .ms .section h2{font-size:17px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:10px;color:var(--ink)}
+  .ms .section h2 .n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;flex:none}
+  .ms .section .lead{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .ms .section p{margin:0 0 10px}
 
-  /* force the persona grid to a compact 2-col layout so it fits the left half regardless of viewport width */
-  .narrow2col .body{grid-template-columns:1fr 1fr!important;grid-template-areas:none!important}
-  .narrow2col .body>[class*="a-"]{grid-area:auto!important}
-  .narrow2col .card.side{grid-column:1/-1!important}
-  .narrow2col .photo{aspect-ratio:auto!important;height:120px!important}
-  .narrow2col .card.side .side-wrap{display:grid!important;grid-template-columns:140px 1fr!important;gap:16px!important;align-items:start!important}
-  .narrow2col .method .mgrid{grid-template-columns:1fr!important}
+  .ms .hero{display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:center}
+  .ms .hero .photo{width:150px;height:180px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#c7d0ff,#efe6ff)}
+  .ms .hero .photo img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+  .ms .hero .who .role{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.04em}
+  .ms .hero .who h3{font-size:21px;margin:2px 0 2px;font-weight:700}
+  .ms .hero .who .meta{color:var(--muted);font-size:13px;margin-bottom:10px}
+  .ms .hero .who .quote{background:var(--soft);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 10px 10px 0;font-size:13.5px}
+  .ms .tier{display:inline-flex;align-items:center;gap:8px;background:var(--greenbg);color:var(--green);font-weight:700;font-size:12.5px;padding:6px 12px;border-radius:999px;margin-top:12px}
 
-  @media(max-width:1300px){
-    .split{flex-direction:column}
-    .split-pane{width:100%}
-    .split-pane.right{position:static;top:auto}
-    .meta-frame{height:80vh}
+  .ms table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+  .ms th,.ms td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  .ms th{background:var(--soft);font-weight:600;font-size:12.5px}
+  .ms td .s{display:inline-block;min-width:22px;font-weight:700;color:var(--green)}
+  .ms .hotrow td{background:var(--greenbg)}
+
+  .ms .map{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .ms .mapcard{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--soft)}
+  .ms .mapcard .h{font-weight:600;font-size:14px;margin-bottom:6px}
+  .ms .mapcard .h small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:1px}
+  .ms .arrow{color:var(--accent);font-weight:700}
+
+  .ms .spec{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .ms .spec .kv{border:1px solid var(--line);border-radius:10px;padding:11px 14px;background:var(--soft);margin:0}
+  .ms .spec .kv .k{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0}
+  .ms .spec .kv .v{font-size:14px;font-weight:500;margin-top:2px}
+
+  .ms .tt-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .ms .tt-col{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .ms .tt-col .head{padding:10px 12px;color:#fff;font-weight:700;font-size:13px;line-height:1.3}
+  .ms .tt-col .head small{display:block;font-weight:400;font-size:11px;opacity:.9;margin-top:1px}
+  .ms .tt-col.a .head{background:#5b52d6}
+  .ms .tt-col.b .head{background:#1f9d63}
+  .ms .tt-col.c .head{background:#d98a1f}
+  .ms .tt-row{display:flex;gap:8px;padding:7px 12px;font-size:12.5px;border-top:1px solid var(--line)}
+  .ms .tt-row .num{color:var(--muted);width:14px;flex:none;text-align:right}
+  .ms .tt-row.narrow{background:var(--amberbg);font-weight:700;color:var(--amber);justify-content:center;font-size:11.5px;letter-spacing:.04em}
+
+  .ms .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:4px}
+
+  @media(max-width:720px){
+    .ms .hero{grid-template-columns:1fr}.ms .hero .photo{width:130px;height:150px}
+    .ms .map,.ms .spec{grid-template-columns:1fr}
   }
-  @media(max-width:480px){
-    .narrow2col .body{grid-template-columns:1fr!important}
-    .narrow2col .card.side .side-wrap{grid-template-columns:1fr!important}
+  @media(max-width:600px){
+    .ms .tt-wrap{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -179,11 +211,8 @@
 <div class="page">
   <div class="doc-head">
     <h1>Persona Canvas — AC Sook corporation</h1>
-    <a class="mt-btn" href="Meta-Targeting.html" target="_blank" rel="noopener">🎯 เปิด Meta Targeting Spec เต็มจอ</a>
   </div>
 
-  <div class="split">
-  <div class="split-pane left narrow2col" id="personaView">
   <div id="root"></div>
 
   <section class="canvas method">
@@ -232,12 +261,136 @@
       </div>
     </div>
   </section>
-  </div>
 
-  <div class="split-pane right">
-    <iframe class="meta-frame" src="Meta-Targeting.html" title="Meta Targeting Spec"></iframe>
-  </div>
-  </div>
+  <section class="canvas ms">
+    <div class="ptitle" style="background:linear-gradient(120deg,#5b52d6,#1f9d63)">Meta Ads Targeting Spec — Persona สำหรับ Setting Ads บน Meta</div>
+    <div class="ribbon"><span class="dot"></span><span><b>อ้างอิง:</b> กลุ่มเป้าหมายที่ปั้นจากเกณฑ์ Lead Scoring (Hot-Lead) · ธุรกิจ: ขายโอกาสธุรกิจ/แฟรนไชส์สายสังคมสูงวัย–สุขภาพ</span></div>
+    <div class="mbody2">
+
+      <!-- 1. PERSONA -->
+      <div class="section">
+        <h2><span class="n">1</span> Persona เป้าหมาย — "เจ้าของกิจการพร้อมลงทุน"</h2>
+        <div class="hero">
+          <div class="photo"><img src="https://images.pexels.com/photos/8867433/pexels-photo-8867433.jpeg?auto=compress&cs=tinysrgb&w=400" alt="เจ้าของกิจการพร้อมลงทุน"></div>
+          <div class="who">
+            <div class="role">OWNER / DECISION MAKER</div>
+            <h3>คุณเอ — เจ้าของกิจการ วัย 42–58</h3>
+            <div class="meta">มีกิจการ/เงินเก็บของตัวเอง · เป็นคนตัดสินใจเรื่องเงินเอง · มองหาธุรกิจใหม่ที่ต่อยอดเทรนด์สังคมสูงวัย</div>
+            <div class="quote">"ถ้าโมเดลชัด คืนทุนเห็นภาพ มีทีมซัพพอร์ต ผมพร้อมคุยจริงจังภายในไตรมาสนี้"</div>
+            <div class="tier">🔥 เป้าหมาย Lead Tier: HOT (11–15 คะแนน)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. LEAD SCORE -->
+      <div class="section">
+        <h2><span class="n">2</span> คนแบบไหนที่นับเป็น "Hot Lead"</h2>
+        <p class="lead">อ้างจากเกณฑ์วัดผลที่ให้มา — Hot lead ที่อยากได้ต้องเข้าเงื่อนไข 3 แกน รวมกัน 11–15 คะแนน</p>
+        <table>
+          <tr><th style="width:26%">แกนวัด</th><th>เป้าหมายของเรา (คะแนนสูง)</th><th style="width:16%">คะแนน</th></tr>
+          <tr class="hotrow"><td><b>ตำแหน่งคนคุย</b><br>(PIC Position)</td><td>Owner / Decision Maker — คนที่เซ็นเงินได้เอง</td><td><span class="s">5</span>/5</td></tr>
+          <tr class="hotrow"><td><b>ระยะเวลาตัดสินใจ</b><br>(Timeline)</td><td>ตัดสินใจภายใน 1–3 เดือน</td><td><span class="s">5</span>/5</td></tr>
+          <tr class="hotrow"><td><b>ระดับความต้องการ</b><br>(Need Level)</td><td>มีงบและพร้อมซื้อ / ต้องการซื้อทันที</td><td><span class="s">5</span>/5</td></tr>
+        </table>
+        <p style="margin-top:12px;font-size:13px;color:var(--muted)">Warm = 7–10 (กำลังเลือก/เปรียบเทียบ) · Cold = 5–6 (หาข้อมูล) · Unqualified = 0–4 (ยังไม่สนใจ) — แอดจะพากลุ่มบนสุดเข้ามา ส่วนการคัดว่า "ตำแหน่ง/timeline/งบ" ครบไหม ใช้คำถามในฟอร์มเป็นตัวกรอง</p>
+      </div>
+
+      <!-- 3. MAPPING -->
+      <div class="section">
+        <h2><span class="n">3</span> แปลงเกณฑ์ Lead → Targeting บน Meta</h2>
+        <p class="lead">Meta ไม่มีปุ่มเลือก "คนที่จะซื้อใน 1–3 เดือน" ตรงๆ เราจึงใช้ <b>สัญญาณตัวแทน (proxy)</b> ที่ใกล้ที่สุด แล้วปล่อยให้ฟอร์ม + คำถามคัดคุณภาพเป็นตัวจบ</p>
+        <div class="map">
+          <div class="mapcard"><div class="h">ตำแหน่ง = Owner/Decision Maker <small>PIC Position (5 คะแนน)</small></div>
+            <span class="arrow">→</span> ยิงไป behavior "เจ้าของธุรกิจขนาดย่อม / ผู้ดูแลเพจธุรกิจ" + interest ผู้ประกอบการ (คนกลุ่มนี้มักเป็นคนตัดสินใจเอง)</div>
+          <div class="mapcard"><div class="h">Need Level = พร้อมซื้อ/มีงบ <small>Need Level (5 คะแนน)</small></div>
+            <span class="arrow">→</span> ยิงไป interest แฟรนไชส์ / การลงทุน / รายได้แบบพาสซีฟ (คนที่สนใจเรื่องนี้ = มีเงินและมองหาโอกาสอยู่แล้ว)</div>
+          <div class="mapcard"><div class="h">บริบทสินค้า = สังคมสูงวัย/สุขภาพ <small>ให้ตรงกับสิ่งที่ AC Sook ขาย</small></div>
+            <span class="arrow">→</span> ซ้อน interest สุขภาพและความเป็นอยู่ + ผู้ดูแลเพจสุขภาพ เพื่อคัดคนที่อินกับเทรนด์นี้ (ใช้ใน Ad Set แคบ)</div>
+          <div class="mapcard"><div class="h">Timeline = 1–3 เดือน <small>Timeline (5 คะแนน)</small></div>
+            <span class="arrow">→</span> <b>Meta คัดไม่ได้</b> — ต้องถามในฟอร์ม เช่น "พร้อมเริ่มเมื่อไหร่?" แล้วให้คะแนนตามคำตอบ</div>
+        </div>
+      </div>
+
+      <!-- 4. CORE SPEC -->
+      <div class="section">
+        <h2><span class="n">4</span> ค่าตั้งพื้นฐาน (Demographics &amp; Placement)</h2>
+        <div class="spec">
+          <div class="kv"><div class="k">ประเทศ / พื้นที่</div><div class="v">ไทย — เน้น กทม.–ปริมณฑล และหัวเมืองใหญ่ (เชียงใหม่ ชลบุรี ขอนแก่น นครราชสีมา ภูเก็ต หาดใหญ่)</div></div>
+          <div class="kv"><div class="k">อายุ</div><div class="v">42–58 ปี (ค่าเริ่มต้น) · เวอร์ชันคม: 45–58</div></div>
+          <div class="kv"><div class="k">เพศ</div><div class="v">ทุกเพศ (จากดาต้าจริง หญิงตอบดีกว่าเล็กน้อย — เผื่อทำชุดแยกเพศเทสต์)</div></div>
+          <div class="kv"><div class="k">ภาษา</div><div class="v">ไทย</div></div>
+          <div class="kv"><div class="k">ตำแหน่งแสดงโฆษณา</div><div class="v">Facebook + Instagram: Feed, Reels, Stories · ปิด Audience Network (คุม lead ให้มีคุณภาพ)</div></div>
+          <div class="kv"><div class="k">Optimization</div><div class="v">Leads (ยิงหา conversion แบบ form-fill) · ถ้ามี Pixel ครบ ค่อยขยับไป Conversion</div></div>
+        </div>
+        <p style="margin:14px 0 0;font-size:12.5px;color:var(--muted)">หมายเหตุ: อายุ 42–58 คือช่วงเจ้าของกิจการที่มีทุนสะสม สอดคล้องกับดาต้าจริงที่กลุ่มวัย 45–54 ในเมืองตอบฟอร์มดีที่สุด</p>
+      </div>
+
+      <!-- 5. AD SETS -->
+      <div class="section">
+        <h2><span class="n">5</span> ชุดกลุ่มเป้าหมาย (Interest / Behavior)</h2>
+        <p class="lead">เปิด 3 ad set แยกทดสอบ — แถวที่ขึ้นต้นใหม่หลังแถบ "narrow" คือเงื่อนไข AND ซ้อนเพิ่ม (ต้องเข้าเงื่อนไขก่อนหน้าด้วย)</p>
+
+        <div class="tt-wrap">
+          <!-- AD SET A -->
+          <div class="tt-col a">
+            <div class="head">Ad Set A<small>Owner/Decision Maker</small></div>
+            <div class="tt-row"><span class="num">1</span><span>เจ้าของธุรกิจขนาดย่อม</span></div>
+            <div class="tt-row"><span class="num">2</span><span>ผู้ดูแลเพจธุรกิจ</span></div>
+            <div class="tt-row"><span class="num">3</span><span>ผู้ดูแลโปรไฟล์ธุรกิจ IG</span></div>
+            <div class="tt-row"><span class="num">4</span><span>Entrepreneurship</span></div>
+            <div class="tt-row"><span class="num">5</span><span>ธุรกิจและการเงิน</span></div>
+            <div class="tt-row"><span class="num">6</span><span>บริษัทสตาร์ทอัพ</span></div>
+            <div class="tt-row"><span class="num">7</span><span>Owner</span></div>
+            <div class="tt-row"><span class="num">8</span><span>Owner and CEO</span></div>
+            <div class="tt-row"><span class="num">9</span><span>Owner and Founder</span></div>
+            <div class="tt-row"><span class="num">10</span><span>Owner/Managing Director</span></div>
+            <div class="tt-row narrow">narrow</div>
+            <div class="tt-row"><span class="num">1</span><span>Resort (travel &amp; tourism business)</span></div>
+            <div class="tt-row"><span class="num">2</span><span>Frequent international travelers</span></div>
+            <div class="tt-row"><span class="num">3</span><span>Hotels</span></div>
+            <div class="tt-row"><span class="num">4</span><span>First class travel (travel &amp; tourism business)</span></div>
+            <div class="tt-row narrow">narrow</div>
+            <div class="tt-row"><span class="num">1</span><span>Investment (business &amp; finance)</span></div>
+            <div class="tt-row"><span class="num">2</span><span>Investment strategy (investing)</span></div>
+          </div>
+
+          <!-- AD SET B -->
+          <div class="tt-col b">
+            <div class="head">Ad Set B<small>Management (Director / GM)</small></div>
+            <div class="tt-row"><span class="num">1</span><span>Board of directors (business &amp; finance)</span></div>
+            <div class="tt-row"><span class="num">2</span><span>Managing Director</span></div>
+            <div class="tt-row"><span class="num">3</span><span>Executive director</span></div>
+            <div class="tt-row"><span class="num">4</span><span>Department Head</span></div>
+            <div class="tt-row"><span class="num">5</span><span>Head of Department</span></div>
+            <div class="tt-row narrow">narrow</div>
+            <div class="tt-row"><span class="num">1</span><span>Resort (travel &amp; tourism business)</span></div>
+            <div class="tt-row"><span class="num">2</span><span>Frequent international travelers</span></div>
+            <div class="tt-row"><span class="num">3</span><span>Hotels</span></div>
+            <div class="tt-row"><span class="num">4</span><span>First class travel (travel &amp; tourism business)</span></div>
+          </div>
+
+          <!-- AD SET C -->
+          <div class="tt-col c">
+            <div class="head">Ad Set C<small>Interest narrow</small></div>
+            <div class="tt-row"><span class="num">1</span><span>Health &amp; wellness (personal care)</span></div>
+            <div class="tt-row"><span class="num">2</span><span>Physical fitness (fitness)</span></div>
+            <div class="tt-row"><span class="num">3</span><span>Physical exercise (fitness)</span></div>
+            <div class="tt-row"><span class="num">4</span><span>Quality of life (psychology)</span></div>
+            <div class="tt-row"><span class="num">5</span><span>Well-being (psychology)</span></div>
+            <div class="tt-row narrow">narrow</div>
+            <div class="tt-row"><span class="num">1</span><span>Entrepreneurship</span></div>
+            <div class="tt-row"><span class="num">2</span><span>Board of directors (business &amp; finance)</span></div>
+            <div class="tt-row"><span class="num">3</span><span>Managing Director</span></div>
+            <div class="tt-row narrow">narrow</div>
+            <div class="tt-row"><span class="num">1</span><span>Investment (business &amp; finance)</span></div>
+            <div class="tt-row"><span class="num">2</span><span>Investment strategy (investing)</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">AC Sook Corporation · Meta Ads Account 2293937604431894 · จัดทำโดย M Creation</div>
+    </div>
+  </section>
 </div>
 
 <script>
