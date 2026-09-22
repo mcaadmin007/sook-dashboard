@@ -148,15 +148,42 @@
     .card.side .side-wrap{grid-template-columns:1fr}
     .photo{height:150px}
   }
+
+  /* ===== split view: persona (left) + meta targeting (right) ===== */
+  .split{display:flex;gap:18px;align-items:flex-start}
+  .split-pane{width:50%;min-width:0}
+  .split-pane.right{position:sticky;top:16px;align-self:flex-start}
+  .meta-frame{width:100%;height:calc(100vh - 32px);border:1px solid var(--line);border-radius:16px;background:#fff;display:block}
+
+  /* force the persona grid to a compact 2-col layout so it fits the left half regardless of viewport width */
+  .narrow2col .body{grid-template-columns:1fr 1fr!important;grid-template-areas:none!important}
+  .narrow2col .body>[class*="a-"]{grid-area:auto!important}
+  .narrow2col .card.side{grid-column:1/-1!important}
+  .narrow2col .photo{aspect-ratio:auto!important;height:120px!important}
+  .narrow2col .card.side .side-wrap{display:grid!important;grid-template-columns:140px 1fr!important;gap:16px!important;align-items:start!important}
+  .narrow2col .method .mgrid{grid-template-columns:1fr!important}
+
+  @media(max-width:1300px){
+    .split{flex-direction:column}
+    .split-pane{width:100%}
+    .split-pane.right{position:static;top:auto}
+    .meta-frame{height:80vh}
+  }
+  @media(max-width:480px){
+    .narrow2col .body{grid-template-columns:1fr!important}
+    .narrow2col .card.side .side-wrap{grid-template-columns:1fr!important}
+  }
 </style>
 </head>
 <body>
 <div class="page">
   <div class="doc-head">
     <h1>Persona Canvas — AC Sook corporation</h1>
-    <button type="button" class="mt-btn" id="mtToggle" onclick="toggleMeta()">🎯 ดู Meta Targeting Spec</button>
+    <a class="mt-btn" href="Meta-Targeting.html" target="_blank" rel="noopener">🎯 เปิด Meta Targeting Spec เต็มจอ</a>
   </div>
-  <div id="personaView">
+
+  <div class="split">
+  <div class="split-pane left narrow2col" id="personaView">
   <div id="root"></div>
 
   <section class="canvas method">
@@ -207,8 +234,9 @@
   </section>
   </div>
 
-  <div id="metaView" style="display:none">
-    <iframe src="Meta-Targeting.html" title="Meta Targeting Spec" style="width:100%;min-height:82vh;border:1px solid var(--line);border-radius:16px;background:#fff;display:block"></iframe>
+  <div class="split-pane right">
+    <iframe class="meta-frame" src="Meta-Targeting.html" title="Meta Targeting Spec"></iframe>
+  </div>
   </div>
 </div>
 
@@ -362,17 +390,6 @@ function render(p){
 }
 
 document.getElementById('root').innerHTML = PERSONAS.map(render).join('');
-
-function toggleMeta(){
-  var pv = document.getElementById('personaView');
-  var mv = document.getElementById('metaView');
-  var btn = document.getElementById('mtToggle');
-  var showMeta = (mv.style.display === 'none');
-  mv.style.display = showMeta ? '' : 'none';
-  pv.style.display = showMeta ? 'none' : '';
-  btn.textContent = showMeta ? '← กลับไป Persona Canvas' : '🎯 ดู Meta Targeting Spec';
-  window.scrollTo(0, 0);
-}
 </script>
 </body>
 </html>
