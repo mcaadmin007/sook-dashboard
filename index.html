@@ -3577,10 +3577,14 @@ function loadMetaCache(){
   }catch(e){}
 }
 
-/* --- sync ทั้งสอง feed พร้อมกัน --- */
+/* --- sync ทั้งสอง feed พร้อมกัน ---
+   กันเคสตัวเลขงบ/เป้า/ตารางแผนที่พิมพ์ค้างไว้ยังไม่กดยืนยันบันทึก แล้วดูเหมือนถูก Sync รีค่ากลับ:
+   ถ้ามีการแก้ค้างอยู่ (dirty) ให้บันทึกให้อัตโนมัติก่อนเริ่ม sync เสมอ เพื่อไม่ให้ข้อมูลที่พิมพ์ไว้หายไป */
 async function metaSyncAll(){
   if(metaSyncing) return;
   if(!META_TOKEN){ renderMetaBtn(); return; }
+  if(planDirty()) commitPlans();
+  if(setDirty())  commitSettings();
   metaSyncing = true;
   renderMetaBtn();
   try{
