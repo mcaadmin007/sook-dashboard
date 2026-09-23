@@ -1389,6 +1389,15 @@ const CONV = { message: 0.10, click: 0.005 };
 let META_TOKEN = (()=>{ try{ return localStorage.getItem('meta_token') || ''; }catch(e){ return ''; } })();
 const META_ACCOUNT_ID = 'act_2293937604431894';
 
+/* --- GitHub auto-publish: เก็บ Personal Access Token ไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น
+   ใช้ยิง Contents API เขียน reports.json ขึ้น GitHub ตรงๆ ทันทีที่บันทึกโน้ต/รูป
+   กันปัญหาข้อมูลอยู่แค่ localStorage เครื่องเดียวแล้ว "ย้อนกลับ" เวลาเปิดเครื่องอื่น --- */
+let GH_TOKEN = (()=>{ try{ return localStorage.getItem('sook_gh_token') || ''; }catch(e){ return ''; } })();
+const GH_OWNER  = 'mcaadmin007';
+const GH_REPO   = 'sook-dashboard';
+const GH_BRANCH = 'main';
+const GH_PATH   = 'reports.json';
+
 const META_PAGE_IDS   = [{ id:'1060650783807210', name:'SooK Page' }];
 const META_GRAPH_VER  = 'v20.0';
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3521,6 +3530,41 @@ function showMetaTokenModal(){
   if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('metaTokenSave').click(); });
 }
 
+/* --- ช่องกรอก GitHub token (Personal Access Token, scope: repo หรือ fine-grained ที่มี Contents: Read & Write บน repo นี้)
+   บันทึกครั้งเดียว หลังจากนั้นทุกครั้งที่กด "บันทึกไฟล์กลาง" หรือเซฟโน้ต จะเขียนขึ้น GitHub อัตโนมัติ --- */
+function showGhTokenModal(afterSave){
+  if(document.getElementById('ghTokenModal')) return;
+  const ov = document.createElement('div');
+  ov.id = 'ghTokenModal';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(2,6,23,.78);display:flex;align-items:center;justify-content:center;font-family:inherit';
+  ov.innerHTML =
+    '<div style="width:min(560px,92vw);background:#0b1220;color:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.6);border:2px solid #6366f1">'+
+      '<div style="font-size:17px;font-weight:800;margin-bottom:6px">เชื่อมต่อ GitHub — บันทึกอัตโนมัติ</div>'+
+      '<div style="font-size:12px;color:#94a3b8;margin-bottom:14px">วาง Personal Access Token ของ GitHub (Settings → Developer settings → Personal access tokens) ที่มีสิทธิ์เขียนไฟล์ในนี้ (\'repo\' หรือ fine-grained: Contents Read & Write) เก็บไว้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกส่งไปที่ไหนนอกจาก GitHub API</div>'+
+      '<input id="ghTokenInput" type="password" placeholder="วาง token (ขึ้นต้น ghp_ หรือ github_pat_...)" autocomplete="off" value="'+String(GH_TOKEN||'').replace(/"/g,'&quot;')+'" '+
+        'style="width:100%;box-sizing:border-box;padding:12px 13px;border-radius:10px;border:1px solid #334;background:#111827;color:#fff;font-size:14px;margin-bottom:12px" />'+
+      '<div style="display:flex;gap:10px">'+
+        '<button id="ghTokenCancel" style="flex:0 0 auto;padding:12px 16px;border:1px solid #334;border-radius:10px;background:transparent;color:#cbd5e1;font-size:14px;cursor:pointer">ยกเลิก</button>'+
+        '<button id="ghTokenSave" style="flex:1;padding:12px;border:0;border-radius:10px;background:#6366f1;color:#fff;font-weight:800;font-size:15px;cursor:pointer">บันทึก แล้วอัปขึ้น GitHub</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(ov);
+  const inp = document.getElementById('ghTokenInput');
+  if(inp){ inp.focus(); }
+  const close = ()=>{ const m=document.getElementById('ghTokenModal'); if(m) m.remove(); };
+  document.getElementById('ghTokenCancel').onclick = close;
+  document.getElementById('ghTokenSave').onclick = ()=>{
+    const t = (document.getElementById('ghTokenInput').value || '').trim();
+    if(!t){ inp.style.borderColor='#ef4444'; inp.focus(); return; }
+    GH_TOKEN = t;
+    try{ localStorage.setItem('sook_gh_token', GH_TOKEN); }catch(e){}
+    close();
+    renderAnaPublishBtn();
+    anaPublishToGithub();
+  };
+  if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('ghTokenSave').click(); });
+}
+
 /* --- โหลด cache จาก localStorage แสดงข้อมูลทันที ก่อน API ตอบ --- */
 function loadMetaCache(){
   try{
@@ -3952,6 +3996,7 @@ function anaSetImg(ad, dataUrl){
   if(!anaImgs[scope]) anaImgs[scope] = {};
   if(dataUrl) anaImgs[scope][ad] = dataUrl; else delete anaImgs[scope][ad];
   anaStoreImgs();
+  anaSchedulePublish();
 }
 let anaImgTargetAd = null;   // ad name ที่กำลังรอไฟล์รูปจาก input
 
@@ -3998,6 +4043,69 @@ function anaExportShared(){
     setTimeout(()=>URL.revokeObjectURL(url), 1500);
     showToast('ดาวน์โหลด reports.json แล้ว — อัปไฟล์นี้ขึ้น GitHub (โฟลเดอร์เดียวกับ index.html) เพื่อให้ทุกคนเห็น');
   }catch(e){ showToast('⚠ สร้างไฟล์ไม่สำเร็จ'); }
+}
+
+/* --- อัปเดตปุ่ม "บันทึกไฟล์กลาง" ตามสถานะเชื่อมต่อ GitHub --- */
+function renderAnaPublishBtn(){
+  const btn = document.getElementById('btnAnaPublish');
+  if(!btn) return;
+  if(GH_TOKEN){
+    btn.textContent = ghPublishing ? '⟳ กำลังบันทึกขึ้น GitHub…' : '☁ บันทึกขึ้น GitHub';
+    btn.title = 'บันทึก reports.json ขึ้น GitHub ให้ทุกคนเห็นทันที (เชื่อมต่อแล้ว)';
+    btn.disabled = ghPublishing;
+  } else {
+    btn.textContent = '🔗 เชื่อม GitHub เพื่อบันทึกอัตโนมัติ';
+    btn.title = 'ยังไม่ได้เชื่อม GitHub — กดเพื่อวาง token ครั้งเดียว หลังจากนั้นบันทึกอัตโนมัติทุกครั้ง';
+    btn.disabled = false;
+  }
+}
+
+/* --- เขียน reports.json ขึ้น GitHub ตรงๆ ผ่าน Contents API (ไม่ต้องดาวน์โหลด/อัปโหลดเองอีกต่อไป)
+   ต้อง GET ไฟล์เดิมก่อนเพื่อเอา sha มาใส่ตอน PUT (กันเขียนทับกันเอง) --- */
+let ghPublishing = false;
+let ghPublishTimer = null;
+async function anaPublishToGithub(){
+  if(!GH_TOKEN){ showGhTokenModal(); return false; }
+  if(ghPublishing) return false;
+  if(anaNotesDirty){ try{ anaSaveNotesNow(true); }catch(e){} }
+  ghPublishing = true; renderAnaPublishBtn();
+  const data = { reports: anaReports, notes: anaNotes, images: anaImgs, exportedAt: new Date().toISOString() };
+  try{
+    const api = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+    const headers = { 'Authorization': 'token ' + GH_TOKEN, 'Accept': 'application/vnd.github+json' };
+    const getRes = await fetch(api + '?ref=' + GH_BRANCH, { headers });
+    if(!getRes.ok) throw new Error('อ่านไฟล์เดิมบน GitHub ไม่สำเร็จ (' + getRes.status + (getRes.status===404?' — เช็คชื่อ owner/repo/path':'') + ')');
+    const getJson = await getRes.json();
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    const putRes = await fetch(api, {
+      method: 'PUT',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+      body: JSON.stringify({
+        message: 'Update reports.json — auto publish from dashboard',
+        content, sha: getJson.sha, branch: GH_BRANCH
+      })
+    });
+    if(!putRes.ok){
+      const errJson = await putRes.json().catch(()=>({}));
+      throw new Error(errJson.message || ('push ไม่สำเร็จ (' + putRes.status + ')'));
+    }
+    showToast('✅ บันทึกขึ้น GitHub แล้ว — ทุกคนจะเห็นข้อมูลใหม่ (รอ GitHub Pages build ~1-2 นาที)');
+    return true;
+  }catch(e){
+    console.warn('anaPublishToGithub failed', e);
+    showToast('⚠ บันทึกขึ้น GitHub ไม่สำเร็จ: ' + (e.message || e) + ' — ดาวน์โหลดไฟล์ไว้แทนแล้ว');
+    try{ anaExportShared(); }catch(_e){}
+    return false;
+  }finally{
+    ghPublishing = false; renderAnaPublishBtn();
+  }
+}
+
+/* debounce กันยิง API ถี่เกินตอนพิมพ์รัว เรียกใช้หลังบันทึกโน้ต/แนบรูป */
+function anaSchedulePublish(){
+  if(!GH_TOKEN) return;
+  clearTimeout(ghPublishTimer);
+  ghPublishTimer = setTimeout(()=>{ anaPublishToGithub(); }, 1500);
 }
 
 function anaScopeKey(){ return anaCurrent || 'live'; }
@@ -4283,7 +4391,7 @@ function anaFillSystem(card){
   ul.innerHTML = anaInsRowsHTML(ins);
   anaMarkDirty();
 }
-function anaSaveNotesNow(){
+function anaSaveNotesNow(skipPublish){
   const rep = $('anaBody'); if(!rep) return;
   const scope = anaScopeKey();
   const store = {};
@@ -4302,7 +4410,8 @@ function anaSaveNotesNow(){
   anaStoreNotes();
   anaNotesDirty = false;
   const d = $('anaDirty'); if(d) d.hidden = true;
-  showToast('บันทึกการวิเคราะห์แล้ว');
+  showToast(GH_TOKEN ? 'บันทึกการวิเคราะห์แล้ว — กำลังอัปขึ้น GitHub…' : 'บันทึกการวิเคราะห์แล้ว (เฉพาะเครื่องนี้ — ยังไม่เชื่อม GitHub)');
+  if(!skipPublish) anaSchedulePublish();
 }
 function anaClearNotesUI(){
   if(!confirm('ล้างข้อความวิเคราะห์ทั้งหมดในหน้านี้ให้เป็นแถบว่าง? (จะยังไม่หายจนกว่าจะกดบันทึก)')) return;
@@ -4350,6 +4459,7 @@ async function anaCreateReport(){
     const rp = { id:'ana_'+Date.now(), title, since, until, createdAt:Date.now(), rows };
     anaReports.unshift(rp);
     anaSaveReports();
+    anaSchedulePublish();
     anaCurrent = rp.id;
     anaCloseModal();
     renderAnalyze();
@@ -4369,6 +4479,7 @@ function anaDeleteById(id){
   if(!confirm('ลบรายงาน "'+rp.title+'" ถาวร?')) return;
   anaReports = anaReports.filter(x=>x.id!==id);
   anaSaveReports();
+  anaSchedulePublish();
   if(anaCurrent===id) anaCurrent = null;   // ถ้ากำลังดูอยู่ → กลับหน้ารวม
   renderAnalyze();
   showToast('ลบรายงานแล้ว');
@@ -4697,7 +4808,7 @@ document.addEventListener('click', e=>{
 
   if(e.target.closest('#btnLeadXls')){ exportLeads(); return; }
   if(e.target.closest('#btnAnaXls')){ exportAnalyze(); return; }
-  if(e.target.closest('#btnAnaPublish')){ anaExportShared(); return; }
+  if(e.target.closest('#btnAnaPublish')){ if(GH_TOKEN) anaPublishToGithub(); else showGhTokenModal(); return; }
   if(e.target.closest('#btnAnaNew')){ anaOpenModal(); return; }
   const anadel = e.target.closest('[data-anadel]');
   if(anadel){ e.stopPropagation(); anaDeleteById(anadel.dataset.anadel); return; }
@@ -4878,6 +4989,7 @@ document.addEventListener('drop', e=>{
   initMetaSDK();
   /* โหลดรายงาน+ข้อความวิเคราะห์จากไฟล์กลาง reports.json (ถ้ามี) แล้ว re-render */
   anaLoadShared().then(changed=>{ if(changed) renderAnalyze(); });
+  renderAnaPublishBtn();
 })();
 /* Esc = ปิดกล่องยืนยัน, Enter = ยืนยัน (ถ้าปุ่มกดได้) */
 document.addEventListener('keydown', e=>{
