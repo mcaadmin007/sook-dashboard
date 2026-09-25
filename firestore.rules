@@ -1,0 +1,39 @@
+/* =========================================================
+   Firestore rules — sook-lead-generation
+   ทุกเครื่องล็อกอินแบบ Anonymous Auth แล้วแชร์บอร์ดเดียวกัน (boards/sook)
+   เอาไปวางใน Firebase Console → Firestore Database → Rules → Publish
+   ========================================================= */
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /boards/{board} {
+      allow read, write: if request.auth != null;
+
+      /* คอลเลกชันที่แอปใช้จริง — เขียนได้เฉพาะชื่อที่อยู่ในลิสต์นี้ */
+      match /{coll}/{docId} {
+        allow read, write: if request.auth != null && coll in [
+          'plans',          // แผนงาน
+          'settings',       // ตั้งค่าบอร์ด
+          'content',        // คอนเทนต์
+          'contentImages',  // รูปคอนเทนต์ (เก็บ url ที่ชี้ไป Storage)
+          'leads',          // ลีด
+          'leadScores',     // คะแนนลีด
+          'actuals',        // ตัวเลขจริง
+          'timeline',       // ไทม์ไลน์
+          'logs',           // log
+          'analyses',       // รายงาน Analyze
+          'anaNotes',       // โน้ตวิเคราะห์รายคอนเทนต์
+          'anaImages',      // รูปแนบใน Analyze (เก็บ url)
+          'meta'            // ธง migration
+        ];
+      }
+    }
+
+    /* นอกเหนือจากนี้ปิดหมด */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

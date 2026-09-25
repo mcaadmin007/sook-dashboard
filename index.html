@@ -1045,12 +1045,6 @@
             <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
           </svg>Excel
         </button>
-        <button class="btn-xls" id="btnAnaPublish" title="ดาวน์โหลด reports.json แล้วอัปขึ้น GitHub เพื่อให้ทุกคนเห็นรายงานชุดเดียวกัน">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M8 1v9m0 0 3.2-3.2M8 10 4.8 6.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 11.5v1.8A1.7 1.7 0 0 0 3.7 15h8.6a1.7 1.7 0 0 0 1.7-1.7v-1.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
-          </svg>บันทึกไฟล์กลาง
-        </button>
       </div>
     </div>
 
@@ -1389,13 +1383,8 @@ const CONV = { message: 0.10, click: 0.005 };
 let META_TOKEN = (()=>{ try{ return localStorage.getItem('meta_token') || ''; }catch(e){ return ''; } })();
 const META_ACCOUNT_ID = 'act_2293937604431894';
 
-/* --- GitHub auto-publish: เก็บ Personal Access Token ไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น
-   ใช้ยิง Contents API เขียน reports.json ขึ้น GitHub ตรงๆ ทันทีที่บันทึกโน้ต/รูป
-   กันปัญหาข้อมูลอยู่แค่ localStorage เครื่องเดียวแล้ว "ย้อนกลับ" เวลาเปิดเครื่องอื่น --- */
-let GH_TOKEN = (()=>{ try{ return localStorage.getItem('sook_gh_token') || ''; }catch(e){ return ''; } })();
-const GH_OWNER  = 'mcaadmin007';
-const GH_REPO   = 'sook-dashboard';
-const GH_BRANCH = 'main';
+/* GitHub auto-publish ถูกถอดออกแล้ว — ข้อมูลทุกอย่างอยู่ที่ Firestore ที่เดียว
+   (reports.json เหลือไว้เป็นไฟล์สำรองของเก่าเท่านั้น ใช้ตอน migrate ครั้งแรก) */
 const GH_PATH   = 'reports.json';
 
 const META_PAGE_IDS   = [{ id:'1060650783807210', name:'SooK Page' }];
@@ -1841,7 +1830,8 @@ const livePlans = () => JSON.stringify(state.plans.map(planDoc));
 const liveSet   = () => JSON.stringify(settingsDoc());
 const planDirty = () => cPlans    !== null && cPlans    !== livePlans();
 const setDirty  = () => cSettings !== null && cSettings !== liveSet();
-const anyDirty  = () => planDirty() || setDirty();
+/* รวมโน้ตหน้า Analyze ที่ยังไม่บันทึกด้วย — ปิดแท็บทิ้งแล้วหาย */
+const anyDirty  = () => planDirty() || setDirty() || anaNotesDirty;
 
 /* จำค่าปัจจุบันว่า "นี่คือค่าที่บันทึกแล้ว" */
 function markSaved(which){
@@ -1938,19 +1928,58 @@ async function fbInit(){
   if(!FB_CONFIG.projectId) return;
   try{
     const base = 'https://www.gstatic.com/firebasejs/' + FB_VER + '/';
-    const [App, Auth, FS] = await Promise.all([
+    const [App, Auth, FS, ST] = await Promise.all([
       import(base + 'firebase-app.js'),
       import(base + 'firebase-auth.js'),
       import(base + 'firebase-firestore.js'),
+      import(base + 'firebase-storage.js'),
     ]);
     const app = App.initializeApp(FB_CONFIG);
     await Auth.signInAnonymously(Auth.getAuth(app));
-    fb = { db: FS.getFirestore(app), fs: FS };
+    fb = { db: FS.getFirestore(app), fs: FS, st: ST, storage: ST.getStorage(app) };
     fbReady = true;
     fbErr(false);
     fbWatch();
     cloudPush();   // เผื่อมีการกดยืนยันบันทึกไปก่อนที่ต่อคลาวด์จะเสร็จ ให้ดันขึ้นคลาวด์ทันทีที่พร้อม
+    anaMigrateOnce();   // ของเก่าใน reports.json/localStorage ย้ายเข้า Firestore ครั้งเดียว
   }catch(e){ fbErr(true); }
+}
+
+/* =========================================================
+   FIREBASE STORAGE — รูปทุกใบเก็บเป็นไฟล์จริง ไม่ใช่ base64 ใน database
+   ส่ง dataURL เข้ามา คืน https URL ออกไป · ถ้าเป็น URL อยู่แล้วคืนค่าเดิม
+   ========================================================= */
+const isUrl = v => /^https?:\/\//.test(String(v||''));
+
+/* คืน https URL = สำเร็จ · คืน '' = ไม่สำเร็จ (ผู้เรียกต้องจัดการเอง ห้ามคิดว่าสำเร็จ) */
+async function fbUploadImg(path, dataUrl){
+  if(!dataUrl) return '';
+  if(isUrl(dataUrl)) return dataUrl;                 // อัปไปแล้ว ไม่ต้องอัปซ้ำ
+  if(!fbReady || !fb.storage) return '';
+  try{
+    const r = fb.st.ref(fb.storage, path);
+    await fb.st.uploadString(r, dataUrl, 'data_url');
+    return await fb.st.getDownloadURL(r);
+  }catch(e){ console.warn('upload image failed', path, e); fbStorageWarn(e); return ''; }
+}
+/* เตือนครั้งเดียวพอ ไม่ให้ toast ถล่มตอนอัปหลายรูปพร้อมกัน */
+let fbStWarned = false;
+function fbStorageWarn(e){
+  if(fbStWarned) return;
+  fbStWarned = true;
+  const why = (e && (e.code || e.message)) || '';
+  showToast('⚠ อัปรูปขึ้น Storage ไม่ได้ (' + why + ') — เช็ค Storage rules ใน Firebase Console');
+}
+async function fbDeleteImg(path){
+  if(!fbReady || !fb.storage) return;
+  try{ await fb.st.deleteObject(fb.st.ref(fb.storage, path)); }catch(e){}
+}
+/* ชื่อไฟล์ที่ปลอดภัย: ชื่อคอนเทนต์มี / หรือช่องว่างได้ เลยแปลงเป็น hash สั้นๆ */
+function safeName(s){
+  let h = 5381;
+  const str = String(s||'');
+  for(let i=0;i<str.length;i++) h = ((h*33) ^ str.charCodeAt(i)) >>> 0;
+  return h.toString(36) + '_' + str.replace(/[^a-zA-Z0-9]/g,'').slice(0,24);
 }
 
 function fbWatch(){
@@ -2019,7 +2048,11 @@ function fbWatch(){
   sub('contentImages', (snap, first)=>{
     if(first && snap.empty && Object.keys(state.cimg).length){ fbLast.cimg={}; cloudPush(); return; }
     const next = {};
-    snap.forEach(doc=>{ const d = doc.data()||{}; if(typeof d.data === 'string') next[doc.id] = d.data; });
+    snap.forEach(doc=>{
+      const d = doc.data()||{};
+      const v = (typeof d.url === 'string' && d.url) ? d.url : d.data;   // url = แบบใหม่ (Storage) · data = ของเก่า base64
+      if(typeof v === 'string' && v) next[doc.id] = v;
+    });
     fbApply('cimg', ()=>{ state.cimg = next; });
   });
 
@@ -2062,12 +2095,67 @@ function fbWatch(){
     snap.forEach(doc=>{ const l = cleanLog(doc.data()); if(l) next[doc.id] = l; });
     fbApply(null, ()=>{ state.logs = next; renderLog(); });
   });
+
+  /* --- หน้า Analyze: รายงาน / โน้ตวิเคราะห์ / รูปแนบ อยู่ใน Firestore ทั้งหมด --- */
+  sub('analyses', snap=>{
+    const list = [];
+    snap.forEach(doc=>{
+      const d = doc.data() || {};
+      list.push({
+        id: doc.id,
+        title: d.title || '(ไม่มีชื่อ)',
+        since: d.since || '',
+        until: d.until || '',
+        createdAt: num(d.createdAt) || 0,
+        rows: Array.isArray(d.rows) ? d.rows : [],
+      });
+    });
+    list.sort((a,b)=> b.createdAt - a.createdAt);
+    anaReports = list;
+    anaRerender();
+  });
+
+  sub('anaNotes', snap=>{
+    if(anaNotesDirty) return;   // กำลังพิมพ์โน้ตค้างอยู่ ห้ามให้ของจากคลาวด์มาทับ
+    const next = {};
+    snap.forEach(doc=>{ try{ next[doc.id] = JSON.parse((doc.data()||{}).json || '{}') || {}; }catch(e){} });
+    anaNotes = next;
+    anaRerender();
+  });
+
+  sub('anaImages', snap=>{
+    const next = {};
+    snap.forEach(doc=>{ try{ next[doc.id] = JSON.parse((doc.data()||{}).json || '{}') || {}; }catch(e){} });
+    anaImgs = next;
+    anaRerender();
+  });
+}
+
+/* re-render หน้า Analyze เฉพาะตอนที่เปิดหน้านั้นอยู่จริง
+   และต้องไม่ทับโน้ตที่พิมพ์ค้างไว้ยังไม่ได้กดบันทึก */
+function anaRerender(){
+  if(anaNotesDirty) return;
+  try{ if(state.page === 'analyze') renderAnalyze(); }catch(e){}
 }
 
 function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; fbLast.timeline = {}; cloudPush(); }
 
+/* ตัวล็อกกันเรียกซ้อน — ตั้งแต่มีการ await อัปรูป cloudPush ไม่ใช่งานที่จบในทีเดียวอีกแล้ว
+   ถ้าเรียกซ้อนเข้ามาระหว่างที่รออัป จะจำไว้แล้วรันอีกรอบหลังรอบปัจจุบันจบ */
+let cpRunning = false, cpAgain = false;
 async function cloudPush(){
   if(!fbReady || fbApplying) return;
+  if(cpRunning){ cpAgain = true; return; }
+  cpRunning = true;
+  try{ await cloudPushRun(); }
+  catch(e){ console.warn('cloudPush failed', e); }
+  finally{
+    cpRunning = false;
+    if(cpAgain){ cpAgain = false; setTimeout(cloudPush, 0); }
+  }
+}
+
+async function cloudPushRun(){
   const { db, fs } = fb;
   const ref  = (name, id) => fs.doc(db, 'boards', FB_BOARD, name, id);
   const jobs = [];
@@ -2114,14 +2202,36 @@ async function cloudPush(){
     if(!seenC[k]){ delete fbLast.content[k]; jobs.push(fs.deleteDoc(ref('content', k))); }
   });
 
+  /* รูปคอนเทนต์: อัปเป็นไฟล์จริงขึ้น Storage แล้วเก็บแค่ URL ลง Firestore */
   const seenI = {};
-  Object.keys(state.cimg).forEach(k=>{
-    const j = imgSig(state.cimg[k]);
+  for(const k of Object.keys(state.cimg)){
     seenI[k] = 1;
-    if(fbLast.cimg[k] !== j){ fbLast.cimg[k] = j; jobs.push(fs.setDoc(ref('contentImages', k), { data: state.cimg[k] })); }
-  });
+    const before = state.cimg[k];
+    if(fbLast.cimg[k] === imgSig(before)) continue;
+
+    if(isUrl(before)){                      // อัปไว้แล้ว เขียน URL อย่างเดียว
+      fbLast.cimg[k] = imgSig(before);
+      jobs.push(fs.setDoc(ref('contentImages', k), { url: before }));
+      continue;
+    }
+    const url = await fbUploadImg(`boards/${FB_BOARD}/content/${safeName(k)}`, before);
+    if(state.cimg[k] !== before) continue;  // ผู้ใช้เปลี่ยน/ลบรูประหว่างรออัป — ปล่อยให้รอบหน้าจัดการ
+    if(url){
+      state.cimg[k]  = url;
+      fbLast.cimg[k] = imgSig(url);
+      jobs.push(fs.setDoc(ref('contentImages', k), { url }));
+    }else{
+      /* อัปไม่ผ่าน — เก็บ base64 ลง Firestore ไว้ก่อนไม่ให้รูปหาย
+         และตั้งใจไม่ stamp fbLast เพื่อให้ลองอัปใหม่ในรอบถัดไป */
+      jobs.push(fs.setDoc(ref('contentImages', k), { data: before }));
+    }
+  }
   Object.keys(fbLast.cimg).forEach(k=>{
-    if(!seenI[k]){ delete fbLast.cimg[k]; jobs.push(fs.deleteDoc(ref('contentImages', k))); }
+    if(!seenI[k]){
+      delete fbLast.cimg[k];
+      jobs.push(fs.deleteDoc(ref('contentImages', k)));
+      fbDeleteImg(`boards/${FB_BOARD}/content/${safeName(k)}`);
+    }
   });
 
   const seenL = {};
@@ -3530,40 +3640,8 @@ function showMetaTokenModal(){
   if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('metaTokenSave').click(); });
 }
 
-/* --- ช่องกรอก GitHub token (Personal Access Token, scope: repo หรือ fine-grained ที่มี Contents: Read & Write บน repo นี้)
-   บันทึกครั้งเดียว หลังจากนั้นทุกครั้งที่กด "บันทึกไฟล์กลาง" หรือเซฟโน้ต จะเขียนขึ้น GitHub อัตโนมัติ --- */
-function showGhTokenModal(afterSave){
-  if(document.getElementById('ghTokenModal')) return;
-  const ov = document.createElement('div');
-  ov.id = 'ghTokenModal';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(2,6,23,.78);display:flex;align-items:center;justify-content:center;font-family:inherit';
-  ov.innerHTML =
-    '<div style="width:min(560px,92vw);background:#0b1220;color:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.6);border:2px solid #6366f1">'+
-      '<div style="font-size:17px;font-weight:800;margin-bottom:6px">เชื่อมต่อ GitHub — บันทึกอัตโนมัติ</div>'+
-      '<div style="font-size:12px;color:#94a3b8;margin-bottom:14px">วาง Personal Access Token ของ GitHub (Settings → Developer settings → Personal access tokens) ที่มีสิทธิ์เขียนไฟล์ในนี้ (\'repo\' หรือ fine-grained: Contents Read & Write) เก็บไว้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกส่งไปที่ไหนนอกจาก GitHub API</div>'+
-      '<input id="ghTokenInput" type="password" placeholder="วาง token (ขึ้นต้น ghp_ หรือ github_pat_...)" autocomplete="off" value="'+String(GH_TOKEN||'').replace(/"/g,'&quot;')+'" '+
-        'style="width:100%;box-sizing:border-box;padding:12px 13px;border-radius:10px;border:1px solid #334;background:#111827;color:#fff;font-size:14px;margin-bottom:12px" />'+
-      '<div style="display:flex;gap:10px">'+
-        '<button id="ghTokenCancel" style="flex:0 0 auto;padding:12px 16px;border:1px solid #334;border-radius:10px;background:transparent;color:#cbd5e1;font-size:14px;cursor:pointer">ยกเลิก</button>'+
-        '<button id="ghTokenSave" style="flex:1;padding:12px;border:0;border-radius:10px;background:#6366f1;color:#fff;font-weight:800;font-size:15px;cursor:pointer">บันทึก แล้วอัปขึ้น GitHub</button>'+
-      '</div>'+
-    '</div>';
-  document.body.appendChild(ov);
-  const inp = document.getElementById('ghTokenInput');
-  if(inp){ inp.focus(); }
-  const close = ()=>{ const m=document.getElementById('ghTokenModal'); if(m) m.remove(); };
-  document.getElementById('ghTokenCancel').onclick = close;
-  document.getElementById('ghTokenSave').onclick = ()=>{
-    const t = (document.getElementById('ghTokenInput').value || '').trim();
-    if(!t){ inp.style.borderColor='#ef4444'; inp.focus(); return; }
-    GH_TOKEN = t;
-    try{ localStorage.setItem('sook_gh_token', GH_TOKEN); }catch(e){}
-    close();
-    renderAnaPublishBtn();
-    anaPublishToGithub();
-  };
-  if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('ghTokenSave').click(); });
-}
+/* GitHub token modal ถูกถอดออกแล้ว — ไม่ต้องใช้ token ส่วนตัวอีกต่อไป
+   ทุกอย่างบันทึกเข้า Firestore/Storage ผ่าน anonymous auth โดยตรง */
 
 /* --- โหลด cache จาก localStorage แสดงข้อมูลทันที ก่อน API ตอบ --- */
 function loadMetaCache(){
@@ -3953,13 +4031,63 @@ function anaInsightsFor(r, b, sc){
 }
 
 /* =========================================================
-   ANALYZE REPORTS — เก็บได้หลายรายงาน (localStorage)
+   ANALYZE REPORTS — เก็บใน Firestore ที่เดียว (boards/sook/analyses)
+   ไม่มี localStorage / ไม่มี reports.json บน GitHub อีกแล้ว
+   โครงข้อมูล  boards/{FB_BOARD}/
+     analyses/{id}       { title, since, until, createdAt, rows[] }
+     anaNotes/{scope}    { json }    ← โน้ตวิเคราะห์ของ scope นั้น
+     anaImages/{scope}   { json }    ← map ad → URL รูปบน Storage
    ========================================================= */
-const ANA_STORE = 'sook_analyses';
-function anaLoadReports(){ try{ return JSON.parse(localStorage.getItem(ANA_STORE)||'[]')||[]; }catch(e){ return []; } }
-function anaSaveReports(){ try{ localStorage.setItem(ANA_STORE, JSON.stringify(anaReports)); }catch(e){} }
-let anaReports = anaLoadReports();
+const ANA_STORE = 'sook_analyses';   // ใช้แค่ตอน migrate ของเก่าเข้า Firestore
+let anaReports = [];
 let anaCurrent = null;    // null = หน้ารวมกล่อง · 'live' = Lifetime · 'ana_...' = รายงานที่บันทึก
+
+/* ตัวช่วยเขียนลง Firestore — ถ้ายังต่อคลาวด์ไม่ได้จะเตือนแทนการเงียบหาย */
+function anaRef(coll, id){ return fb.fs.doc(fb.db, 'boards', FB_BOARD, coll, id); }
+function anaCloudReady(){
+  if(fbReady) return true;
+  showToast('⚠ ยังต่อคลาวด์ไม่ได้ — รอสักครู่แล้วลองใหม่ (ข้อมูลจะไม่ถูกบันทึกตอนนี้)');
+  return false;
+}
+/* Firestore จำกัด 1 เอกสารไม่เกิน ~1 MiB — รายงานเก็บ rows ทั้งก้อนไว้ใน doc เดียว
+   กันไว้ก่อนดีกว่าให้ setDoc เด้ง error งงๆ ตอนรายงานใหญ่ (ราว 1,000+ คอนเทนต์)
+   ต้องวัดเป็น "ไบต์" ไม่ใช่จำนวนตัวอักษร เพราะภาษาไทย 1 ตัว = 3 ไบต์ */
+const ANA_DOC_LIMIT = 900000;
+const anaEnc = (typeof TextEncoder !== 'undefined') ? new TextEncoder() : null;
+function anaDocBytes(obj){
+  const s = JSON.stringify(obj);
+  return anaEnc ? anaEnc.encode(s).length : s.length * 3;
+}
+async function anaPutReport(rp){
+  if(!anaCloudReady()) return false;
+  const body = {
+    title: rp.title, since: rp.since, until: rp.until,
+    createdAt: rp.createdAt, rows: rp.rows || [],
+  };
+  const size = anaDocBytes(body);
+  if(size > ANA_DOC_LIMIT){
+    showToast('⚠ รายงานใหญ่เกินที่คลาวด์รับได้ (' + Math.round(size/1024) + ' KB จากลิมิต ~900 KB) — ลองแบ่งช่วงวันให้สั้นลง');
+    return false;
+  }
+  try{
+    await fb.fs.setDoc(anaRef('analyses', rp.id), body);
+    return true;
+  }catch(e){ console.warn('anaPutReport failed', e); showToast('⚠ บันทึกรายงานไม่สำเร็จ: ' + (e.message||e)); return false; }
+}
+async function anaPutNotes(scope){
+  if(!anaCloudReady()) return false;
+  try{
+    await fb.fs.setDoc(anaRef('anaNotes', scope), { json: JSON.stringify(anaNotes[scope] || {}) });
+    return true;
+  }catch(e){ console.warn('anaPutNotes failed', e); showToast('⚠ บันทึกโน้ตไม่สำเร็จ: ' + (e.message||e)); return false; }
+}
+async function anaPutImgs(scope){
+  if(!anaCloudReady()) return false;
+  try{
+    await fb.fs.setDoc(anaRef('anaImages', scope), { json: JSON.stringify(anaImgs[scope] || {}) });
+    return true;
+  }catch(e){ console.warn('anaPutImgs failed', e); showToast('⚠ บันทึกรูปไม่สำเร็จ: ' + (e.message||e)); return false; }
+}
 
 function anaCurRows(){
   if(anaCurrent==='live') return metaAdContent;
@@ -3982,134 +4110,198 @@ function anaBadgeCls(score){
 }
 
 /* --- โน้ตวิเคราะห์ที่นนท์พิมพ์เอง (แยกตาม scope: 'live' หรือ id รายงาน) --- */
-const ANA_NOTES = 'sook_ana_notes';
-function anaLoadNotes(){ try{ return JSON.parse(localStorage.getItem(ANA_NOTES)||'{}')||{}; }catch(e){ return {}; } }
-let anaNotes = anaLoadNotes();
+const ANA_NOTES = 'sook_ana_notes';   // ใช้แค่ตอน migrate
+let anaNotes = {};
 let anaNotesDirty = false;
-function anaStoreNotes(){ try{ localStorage.setItem(ANA_NOTES, JSON.stringify(anaNotes)); }catch(e){} }
 
 /* --- รูป Creative/คอนเทนต์ที่แนบเองต่อคอนเทนต์ (แยกตาม scope เหมือนโน้ต)
-   ใช้ตอนที่ Meta ไม่มี thumbnail หรืออยากใส่รูปที่ชัดกว่าให้ดูคู่กับข้อวิเคราะห์ --- */
-const ANA_IMGS = 'sook_ana_imgs';
-function anaLoadImgs(){ try{ return JSON.parse(localStorage.getItem(ANA_IMGS)||'{}')||{}; }catch(e){ return {}; } }
-let anaImgs = anaLoadImgs();
-function anaStoreImgs(){ try{ localStorage.setItem(ANA_IMGS, JSON.stringify(anaImgs)); }catch(e){} }
+   ใช้ตอนที่ Meta ไม่มี thumbnail หรืออยากใส่รูปที่ชัดกว่าให้ดูคู่กับข้อวิเคราะห์
+   เก็บเป็นไฟล์จริงบน Storage — ใน Firestore เก็บแค่ URL --- */
+const ANA_IMGS = 'sook_ana_imgs';     // ใช้แค่ตอน migrate
+let anaImgs = {};
 function anaGetImg(ad){ const s = anaImgs[anaScopeKey()]; return (s && s[ad]) ? s[ad] : ''; }
-function anaSetImg(ad, dataUrl){
+async function anaSetImg(ad, dataUrl){
   const scope = anaScopeKey();
-  if(!anaImgs[scope]) anaImgs[scope] = {};
-  if(dataUrl) anaImgs[scope][ad] = dataUrl; else delete anaImgs[scope][ad];
-  anaStoreImgs();
-  anaSchedulePublish();
+  const path  = `boards/${FB_BOARD}/ana/${safeName(scope)}/${safeName(ad)}`;
+  if(dataUrl){
+    const url = await fbUploadImg(path, dataUrl);
+    if(!url){ showToast('⚠ แนบรูปไม่สำเร็จ — ยังไม่ได้บันทึก'); return false; }
+    /* ต้องหยิบ bucket ใหม่หลัง await เพราะ snapshot อาจเปลี่ยน anaImgs ทั้งก้อนไประหว่างรออัป */
+    if(!anaImgs[scope]) anaImgs[scope] = {};
+    anaImgs[scope][ad] = url;
+  }else{
+    if(anaImgs[scope]) delete anaImgs[scope][ad];
+    fbDeleteImg(path);
+  }
+  anaRerender();
+  return await anaPutImgs(scope);
 }
 let anaImgTargetAd = null;   // ad name ที่กำลังรอไฟล์รูปจาก input
 
-/* --- ไฟล์กลาง reports.json: ให้ทุกคนที่เปิดเว็บเห็นรายงาน+ข้อความวิเคราะห์ชุดเดียวกัน ---
-   โหลดตอนเปิดเว็บ (ไฟล์กลางเป็นฐาน · ของในเครื่องทับเฉพาะ id/โน้ตที่ตรงกัน) */
-async function anaLoadShared(){
-  try{
-    const res = await fetch('./reports.json?v=' + Date.now(), { cache:'no-store' });
-    if(!res.ok) return false;
-    const data = await res.json();
-    let changed = false;
-    if(data && Array.isArray(data.reports)){
-      const localById = {}; anaReports.forEach(r=>{ localById[r.id] = r; });
-      const merged = data.reports.map(r => localById[r.id] || r);            // ไฟล์กลางเป็นฐาน
-      anaReports.forEach(r=>{ if(!data.reports.some(s=>s.id===r.id)) merged.unshift(r); }); // รายงานในเครื่องที่ยังไม่ publish
-      anaReports = merged; changed = true;
-    }
-    if(data && data.notes && typeof data.notes==='object'){
-      const out = {};
-      Object.keys(data.notes).forEach(scope=>{ out[scope] = Object.assign({}, data.notes[scope]); });        // ฐานจากไฟล์กลาง
-      Object.keys(anaNotes).forEach(scope=>{ out[scope] = Object.assign(out[scope]||{}, anaNotes[scope]); }); // โน้ตในเครื่องทับ
-      anaNotes = out; changed = true;
-    }
-    if(data && data.images && typeof data.images==='object'){
-      const out = {};
-      Object.keys(data.images).forEach(scope=>{ out[scope] = Object.assign({}, data.images[scope]); });        // ฐานจากไฟล์กลาง
-      Object.keys(anaImgs).forEach(scope=>{ out[scope] = Object.assign(out[scope]||{}, anaImgs[scope]); });    // รูปในเครื่องทับ
-      anaImgs = out; changed = true;
-    }
-    return changed;
-  }catch(e){ return false; }   // ไม่มีไฟล์กลาง = ใช้ของในเครื่องตามเดิม
+/* =========================================================
+   MIGRATION — ย้ายของเก่าเข้า Firestore ครั้งเดียว แล้วจบ
+   แยกเป็นสองครึ่ง เพราะของเก่าอยู่คนละที่กัน
+     1) localStorage — เป็นของเฉพาะเบราว์เซอร์เครื่องนี้ ⇒ ธงต้องอยู่ในเครื่องนี้ด้วย
+        (ถ้าใช้ธงกลางร่วมกัน เครื่องที่ไม่มีของจะไปปักธงก่อน แล้วเครื่องที่มีของจริงจะข้าม = ข้อมูลหายถาวร)
+     2) reports.json ไฟล์กลางในรีโป — ทุกเครื่องเห็นเหมือนกัน ⇒ ธงกลางที่
+        boards/{board}/meta/migration.analyzeV1 จองด้วย transaction กันสองเครื่องชนกัน
+   การเขียน: ไม่ทับทั้งก้อน merge ทีละ field เสมอ และของที่อยู่ในคลาวด์แล้วถือว่าใหม่กว่า
+   ========================================================= */
+const LS_MIGRATED = 'sook_migrated_v1';
+
+function lsJson(key, fallback){
+  try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) || fallback; }
+  catch(e){ return fallback; }
 }
 
-/* ดาวน์โหลด reports.json (รายงาน + ข้อความวิเคราะห์ + รูปที่แนบทั้งหมด) เพื่อเอาไปอัปขึ้น GitHub */
-function anaExportShared(){
-  if(anaNotesDirty){ try{ anaSaveNotesNow(); }catch(e){} }   // เก็บที่พิมพ์ค้างก่อน
-  const data = { reports: anaReports, notes: anaNotes, images: anaImgs, exportedAt: new Date().toISOString() };
+/* คืน {ok:true,data} เมื่ออ่านไฟล์ได้จริง · {ok:false} เมื่อโหลดไม่ได้ (offline / file:// / Pages กำลัง build)
+   ต้องแยกสองกรณีนี้ให้ออก ไม่งั้นจะปักธงว่าย้ายเสร็จทั้งที่ยังไม่ได้อ่านอะไรเลย */
+async function anaFetchLegacyFile(){
   try{
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'reports.json';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url), 1500);
-    showToast('ดาวน์โหลด reports.json แล้ว — อัปไฟล์นี้ขึ้น GitHub (โฟลเดอร์เดียวกับ index.html) เพื่อให้ทุกคนเห็น');
-  }catch(e){ showToast('⚠ สร้างไฟล์ไม่สำเร็จ'); }
+    const res = await fetch('./' + GH_PATH + '?v=' + Date.now(), { cache:'no-store' });
+    if(res.status === 404) return { ok:true, data:{} };   // ไม่มีไฟล์ = ไม่มีของเก่า (จริง)
+    if(!res.ok) return { ok:false };
+    return { ok:true, data: (await res.json()) || {} };
+  }catch(e){ return { ok:false }; }
 }
 
-/* --- อัปเดตปุ่ม "บันทึกไฟล์กลาง" ตามสถานะเชื่อมต่อ GitHub --- */
-function renderAnaPublishBtn(){
-  const btn = document.getElementById('btnAnaPublish');
-  if(!btn) return;
-  if(GH_TOKEN){
-    btn.textContent = ghPublishing ? '⟳ กำลังบันทึกขึ้น GitHub…' : '☁ บันทึกขึ้น GitHub';
-    btn.title = 'บันทึก reports.json ขึ้น GitHub ให้ทุกคนเห็นทันที (เชื่อมต่อแล้ว)';
-    btn.disabled = ghPublishing;
-  } else {
-    btn.textContent = '🔗 เชื่อม GitHub เพื่อบันทึกอัตโนมัติ';
-    btn.title = 'ยังไม่ได้เชื่อม GitHub — กดเพื่อวาง token ครั้งเดียว หลังจากนั้นบันทึกอัตโนมัติทุกครั้ง';
-    btn.disabled = false;
-  }
-}
+function anaFlagRef(){ return fb.fs.doc(fb.db, 'boards', FB_BOARD, 'meta', 'migration'); }
 
-/* --- เขียน reports.json ขึ้น GitHub ตรงๆ ผ่าน Contents API (ไม่ต้องดาวน์โหลด/อัปโหลดเองอีกต่อไป)
-   ต้อง GET ไฟล์เดิมก่อนเพื่อเอา sha มาใส่ตอน PUT (กันเขียนทับกันเอง) --- */
-let ghPublishing = false;
-let ghPublishTimer = null;
-async function anaPublishToGithub(){
-  if(!GH_TOKEN){ showGhTokenModal(); return false; }
-  if(ghPublishing) return false;
-  if(anaNotesDirty){ try{ anaSaveNotesNow(true); }catch(e){} }
-  ghPublishing = true; renderAnaPublishBtn();
-  const data = { reports: anaReports, notes: anaNotes, images: anaImgs, exportedAt: new Date().toISOString() };
+/* จองธงกลางด้วย transaction — คืน true เฉพาะเครื่องที่จองได้เป็นคนแรก */
+async function anaClaimFlag(key){
   try{
-    const api = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
-    const headers = { 'Authorization': 'token ' + GH_TOKEN, 'Accept': 'application/vnd.github+json' };
-    const getRes = await fetch(api + '?ref=' + GH_BRANCH, { headers });
-    if(!getRes.ok) throw new Error('อ่านไฟล์เดิมบน GitHub ไม่สำเร็จ (' + getRes.status + (getRes.status===404?' — เช็คชื่อ owner/repo/path':'') + ')');
-    const getJson = await getRes.json();
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-    const putRes = await fetch(api, {
-      method: 'PUT',
-      headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-      body: JSON.stringify({
-        message: 'Update reports.json — auto publish from dashboard',
-        content, sha: getJson.sha, branch: GH_BRANCH
-      })
+    return await fb.fs.runTransaction(fb.db, async tx=>{
+      const ref  = anaFlagRef();
+      const snap = await tx.get(ref);
+      const cur  = snap.exists() ? (snap.data() || {}) : {};
+      if(cur[key]) return false;
+      cur[key] = true;
+      cur[key + 'At'] = Date.now();
+      tx.set(ref, cur);
+      return true;
     });
-    if(!putRes.ok){
-      const errJson = await putRes.json().catch(()=>({}));
-      throw new Error(errJson.message || ('push ไม่สำเร็จ (' + putRes.status + ')'));
-    }
-    showToast('✅ บันทึกขึ้น GitHub แล้ว — ทุกคนจะเห็นข้อมูลใหม่ (รอ GitHub Pages build ~1-2 นาที)');
-    return true;
-  }catch(e){
-    console.warn('anaPublishToGithub failed', e);
-    showToast('⚠ บันทึกขึ้น GitHub ไม่สำเร็จ: ' + (e.message || e) + ' — ดาวน์โหลดไฟล์ไว้แทนแล้ว');
-    try{ anaExportShared(); }catch(_e){}
-    return false;
-  }finally{
-    ghPublishing = false; renderAnaPublishBtn();
-  }
+  }catch(e){ console.warn('claim flag failed', key, e); return false; }
 }
 
-/* debounce กันยิง API ถี่เกินตอนพิมพ์รัว เรียกใช้หลังบันทึกโน้ต/แนบรูป */
-function anaSchedulePublish(){
-  if(!GH_TOKEN) return;
-  clearTimeout(ghPublishTimer);
-  ghPublishTimer = setTimeout(()=>{ anaPublishToGithub(); }, 1500);
+/* ปลดธงเมื่อย้ายไม่สำเร็จ เพื่อให้รอบหน้ามาลองใหม่ได้ */
+async function anaReleaseFlag(key){
+  try{ await fb.fs.setDoc(anaFlagRef(), { [key]: false }, { merge:true }); }catch(e){}
+}
+
+/* รวมเข้า doc เดิมทีละ field — อ่านของที่มีอยู่ก่อน เติมเฉพาะ key ที่ยังไม่มี
+   ของในคลาวด์ถือว่าใหม่กว่าของเก่าเสมอ จึงไม่ทับ
+   ต้องอ่าน-เขียนใน transaction เดียว เพราะสองเครื่องอาจ migrate พร้อมกัน
+   (ครึ่ง localStorage ไม่มีธงกลางกั้น) ถ้าอ่านแล้วค่อยเขียนแยกกัน คนเขียนทีหลังจะทับของคนแรก */
+async function anaMergeScopeDoc(coll, scope, add){
+  if(!add || !Object.keys(add).length) return;
+  const ref = fb.fs.doc(fb.db, 'boards', FB_BOARD, coll, scope);
+  await fb.fs.runTransaction(fb.db, async tx=>{
+    let cur = {};
+    const snap = await tx.get(ref);
+    if(snap.exists()){
+      try{ cur = JSON.parse((snap.data() || {}).json || '{}') || {}; }catch(e){ cur = {}; }
+    }
+    let changed = false;
+    Object.keys(add).forEach(k=>{
+      const v = add[k];
+      if(cur[k] === undefined && v !== undefined && v !== null && v !== ''){ cur[k] = v; changed = true; }
+    });
+    if(changed) tx.set(ref, { json: JSON.stringify(cur) });
+  });
+}
+
+/* ย้ายข้อมูลเก่าหนึ่งชุด (reports/notes/images) เข้า Firestore — idempotent ไม่ทับของที่มีอยู่แล้ว */
+async function anaMergeLegacy(src, label){
+  const { fs, db } = fb;
+  const reports = Array.isArray(src.reports) ? src.reports.filter(r=>r && r.id) : [];
+  const notes   = (src.notes  && typeof src.notes  === 'object') ? src.notes  : {};
+  const images  = (src.images && typeof src.images === 'object') ? src.images : {};
+
+  let nImg = 0;
+  Object.keys(images).forEach(s=>{ nImg += Object.keys(images[s] || {}).length; });
+  const nNote = Object.keys(notes).length;
+  if(!reports.length && !nNote && !nImg) return { reports:0, noteScopes:0, images:0 };
+
+  showToast('กำลังย้ายข้อมูลเก่า' + label + ' — ' + reports.length + ' รายงาน, ' + nImg + ' รูป…');
+
+  /* รูป: อัป base64 ขึ้น Storage เปลี่ยนเป็น URL ก่อน ใบไหนอัปไม่ขึ้นก็ข้าม (ของเก่ายังอยู่ครบ) */
+  const imgOut = {};
+  for(const scope of Object.keys(images)){
+    imgOut[scope] = {};
+    for(const ad of Object.keys(images[scope] || {})){
+      const v = images[scope][ad];
+      if(!v) continue;
+      const url = await fbUploadImg(`boards/${FB_BOARD}/ana/${safeName(scope)}/${safeName(ad)}`, v);
+      if(url) imgOut[scope][ad] = url;
+    }
+  }
+
+  /* รายงาน: id ไม่ซ้ำกันอยู่แล้ว แต่ข้ามถ้ามีตัวนั้นในคลาวด์แล้ว (ของในคลาวด์ใหม่กว่า) */
+  const skipped = [];
+  for(const r of reports){
+    const ref = fs.doc(db, 'boards', FB_BOARD, 'analyses', r.id);
+    try{
+      const snap = await fs.getDoc(ref);
+      if(snap.exists()) continue;
+    }catch(e){}
+    const body = {
+      title: r.title || '(ไม่มีชื่อ)',
+      since: r.since || '',
+      until: r.until || '',
+      createdAt: num(r.createdAt) || Date.now(),
+      rows: Array.isArray(r.rows) ? r.rows : [],
+    };
+    /* รายงานเก่าที่ใหญ่เกินลิมิต: ข้าม ไม่ปล่อยให้ throw
+       ไม่งั้นจะปักธงไม่ได้ แล้ววนอัปรูปใหม่ทุกครั้งที่เปิดเว็บ */
+    if(anaDocBytes(body) > ANA_DOC_LIMIT){
+      console.warn('legacy report too large, skipped', r.id);
+      skipped.push(r.title || r.id);
+      continue;
+    }
+    await fs.setDoc(ref, body);
+  }
+  if(skipped.length) showToast('⚠ ย้ายไม่ได้ ' + skipped.length + ' รายงานเพราะใหญ่เกินลิมิตคลาวด์: ' + skipped.join(', '));
+
+  for(const s of Object.keys(notes))  await anaMergeScopeDoc('anaNotes',  s, notes[s]);
+  for(const s of Object.keys(imgOut)) await anaMergeScopeDoc('anaImages', s, imgOut[s]);
+
+  return { reports: reports.length, noteScopes: nNote, images: nImg };
+}
+
+async function anaMigrateOnce(){
+  if(!fbReady) return;
+  let moved = 0;
+
+  /* --- ครึ่งที่ 1: localStorage ของเครื่องนี้ (ธงอยู่ในเครื่องนี้) --- */
+  try{
+    if(localStorage.getItem(LS_MIGRATED) !== '1'){
+      const r = await anaMergeLegacy({
+        reports: lsJson(ANA_STORE, []),
+        notes:   lsJson(ANA_NOTES, {}),
+        images:  lsJson(ANA_IMGS, {}),
+      }, 'ในเครื่องนี้');
+      localStorage.setItem(LS_MIGRATED, '1');   // ปักธงเฉพาะตอนย้ายผ่านจริง
+      moved += r.reports + r.images;
+    }
+  }catch(e){
+    console.warn('migrate local failed', e);
+    showToast('⚠ ย้ายข้อมูลในเครื่องไม่สำเร็จ: ' + (e.message||e) + ' — ของเก่ายังอยู่ครบ ลองรีเฟรชอีกครั้ง');
+  }
+
+  /* --- ครึ่งที่ 2: reports.json ไฟล์กลาง (ธงกลางที่ Firestore) --- */
+  const file = await anaFetchLegacyFile();
+  if(!file.ok){ if(moved) showToast('✅ ย้ายข้อมูลในเครื่องเข้าคลาวด์แล้ว'); return; }
+  if(!(await anaClaimFlag('analyzeV1'))){ if(moved) showToast('✅ ย้ายข้อมูลในเครื่องเข้าคลาวด์แล้ว'); return; }
+  try{
+    const r = await anaMergeLegacy(file.data, 'จากไฟล์กลาง');
+    moved += r.reports + r.images;
+  }catch(e){
+    console.warn('migrate file failed', e);
+    await anaReleaseFlag('analyzeV1');   // ปลดธงให้รอบหน้ามาลองใหม่
+    showToast('⚠ ย้ายข้อมูลจากไฟล์กลางไม่สำเร็จ: ' + (e.message||e) + ' — ของเก่ายังอยู่ครบ');
+  }
+
+  if(moved) showToast('✅ ย้ายข้อมูลเก่าเข้าคลาวด์แล้ว');
 }
 
 function anaScopeKey(){ return anaCurrent || 'live'; }
@@ -4184,6 +4376,11 @@ function thDate(s){
 function renderAnalyze(){
   const gallery = $('anaGallery'), detail = $('anaDetailWrap'), tag = $('anaTag'), xls = $('btnAnaXls');
 
+  /* วาดใหม่ทีไร = ของที่ค้างบนจอถูกทิ้งไปแล้ว ต้องล้างธงทุกทางออกของฟังก์ชันนี้
+     ไม่งั้นธงค้าง true แล้ว snapshot จากเครื่องอื่นจะถูกบล็อกถาวรจนกว่าจะรีเฟรช */
+  anaNotesDirty = false;
+  const dirtyBadge = $('anaDirty'); if(dirtyBadge) dirtyBadge.hidden = true;
+
   /* ===== หน้ารวม: กล่องรายงาน ===== */
   if(!anaCurrent){
     if(detail) detail.hidden = true;
@@ -4241,7 +4438,6 @@ function renderAnalyze(){
   const b = anaBench(rows);
   const scores = anaScoreAll(rows);
 
-  anaNotesDirty = false;
   const ncol = ANA_COLS.length;
 
   /* แต่ละคอนเทนต์: แถวข้อมูล + แถบวิเคราะห์แก้ไขเอง (แนบใต้แถวเดียวกัน) */
@@ -4395,12 +4591,13 @@ function anaFillSystem(card){
   ul.innerHTML = anaInsRowsHTML(ins);
   anaMarkDirty();
 }
-function anaSaveNotesNow(skipPublish){
+async function anaSaveNotesNow(){
   const rep = $('anaBody'); if(!rep) return;
   const scope = anaScopeKey();
-  const store = {};
+  const store = {}, shown = {};
   rep.querySelectorAll('.ana-card').forEach(card=>{
     const ad = card.dataset.ad;
+    shown[ad] = 1;
     const lines = [];
     card.querySelectorAll('ul.ana-ins > li').forEach(li=>{
       const t = (li.querySelector('.ins-text')?.textContent || '').trim();
@@ -4410,12 +4607,21 @@ function anaSaveNotesNow(skipPublish){
     });
     if(lines.length) store[ad] = lines;
   });
-  anaNotes[scope] = store;
-  anaStoreNotes();
+  /* store มีเฉพาะการ์ดที่แสดงอยู่ตอนนี้
+     - แอดที่ไม่ได้แสดง (หลุดออกจาก metaAdContent ไปแล้ว) ต้องเก็บโน้ตเดิมไว้ ห้ามลบ
+     - แอดที่แสดงอยู่แต่ลบข้อความจนหมด ต้องลบจริง ไม่ใช่เด้งกลับมาตอน render รอบหน้า */
+  const prev = anaNotes[scope] || {};
+  const next = {};
+  Object.keys(prev).forEach(ad=>{ if(!shown[ad]) next[ad] = prev[ad]; });
+  Object.assign(next, store);
+  anaNotes[scope] = next;
+
+  const ok = await anaPutNotes(scope);
+  if(!ok){ anaNotes[scope] = prev; return; }   // เขียนไม่ผ่าน = ยังไม่เคลียร์ธง ของที่พิมพ์ยังอยู่บนจอ
+
   anaNotesDirty = false;
   const d = $('anaDirty'); if(d) d.hidden = true;
-  showToast(GH_TOKEN ? 'บันทึกการวิเคราะห์แล้ว — กำลังอัปขึ้น GitHub…' : 'บันทึกการวิเคราะห์แล้ว (เฉพาะเครื่องนี้ — ยังไม่เชื่อม GitHub)');
-  if(!skipPublish) anaSchedulePublish();
+  showToast('บันทึกการวิเคราะห์แล้ว — ทุกเครื่องเห็นตรงกันทันที');
 }
 function anaClearNotesUI(){
   if(!confirm('ล้างข้อความวิเคราะห์ทั้งหมดในหน้านี้ให้เป็นแถบว่าง? (จะยังไม่หายจนกว่าจะกดบันทึก)')) return;
@@ -4461,9 +4667,12 @@ async function anaCreateReport(){
     if(!rows){ warn('ดึงข้อมูลไม่สำเร็จ — เช็ค token/สิทธิ์ แล้วลองใหม่'); return; }
     if(!rows.length){ warn('ช่วงวันที่นี้ไม่มีคอนเทนต์ที่มีการใช้จ่าย ลองขยายช่วง'); return; }
     const rp = { id:'ana_'+Date.now(), title, since, until, createdAt:Date.now(), rows };
+    if(!anaCloudReady()){ warn('ยังต่อคลาวด์ไม่ได้ — รอสักครู่แล้วกดใหม่'); return; }
+    /* เขียนขึ้นคลาวด์ให้ผ่านก่อน ค่อยโชว์ — ไม่งั้นรายงานจะขึ้นบนจอแล้วหายตอนรีเฟรช */
+    if(ok) ok.textContent = 'กำลังบันทึก…';
+    const saved = await anaPutReport(rp);
+    if(!saved){ warn('บันทึกขึ้นคลาวด์ไม่สำเร็จ — ยังไม่ได้สร้างรายงาน ลองใหม่อีกครั้ง'); return; }
     anaReports.unshift(rp);
-    anaSaveReports();
-    anaSchedulePublish();
     anaCurrent = rp.id;
     anaCloseModal();
     renderAnalyze();
@@ -4476,17 +4685,27 @@ async function anaCreateReport(){
   }
 }
 
-function anaDeleteById(id){
+async function anaDeleteById(id){
   if(!id || id==='live') return;
   const rp = anaReports.find(x=>x.id===id);
   if(!rp) return;
   if(!confirm('ลบรายงาน "'+rp.title+'" ถาวร?')) return;
+  if(!anaCloudReady()) return;
   anaReports = anaReports.filter(x=>x.id!==id);
-  anaSaveReports();
-  anaSchedulePublish();
   if(anaCurrent===id) anaCurrent = null;   // ถ้ากำลังดูอยู่ → กลับหน้ารวม
   renderAnalyze();
-  showToast('ลบรายงานแล้ว');
+  /* ลบรายงาน + โน้ต + รูปของ scope นั้นให้หมด ไม่ให้เหลือขยะค้างในคลาวด์ */
+  const imgs = anaImgs[id] || {};
+  Object.keys(imgs).forEach(ad=>{ fbDeleteImg(`boards/${FB_BOARD}/ana/${safeName(id)}/${safeName(ad)}`); });
+  delete anaNotes[id]; delete anaImgs[id];
+  try{
+    await Promise.all([
+      fb.fs.deleteDoc(anaRef('analyses',  id)),
+      fb.fs.deleteDoc(anaRef('anaNotes',  id)),
+      fb.fs.deleteDoc(anaRef('anaImages', id)),
+    ]);
+    showToast('ลบรายงานแล้ว');
+  }catch(e){ console.warn('anaDeleteById failed', e); showToast('⚠ ลบไม่สำเร็จ: ' + (e.message||e)); }
 }
 function anaDeleteReport(){ anaDeleteById(anaCurrent); }
 
@@ -4812,7 +5031,6 @@ document.addEventListener('click', e=>{
 
   if(e.target.closest('#btnLeadXls')){ exportLeads(); return; }
   if(e.target.closest('#btnAnaXls')){ exportAnalyze(); return; }
-  if(e.target.closest('#btnAnaPublish')){ if(GH_TOKEN) anaPublishToGithub(); else showGhTokenModal(); return; }
   if(e.target.closest('#btnAnaNew')){ anaOpenModal(); return; }
   const anadel = e.target.closest('[data-anadel]');
   if(anadel){ e.stopPropagation(); anaDeleteById(anadel.dataset.anadel); return; }
@@ -4832,7 +5050,7 @@ document.addEventListener('click', e=>{
   const anaimgadd = e.target.closest('[data-anaimgadd]');
   if(anaimgadd){ anaImgTargetAd = anaimgadd.dataset.anaimgadd; const f=$('anaImgFile'); if(f) f.click(); return; }
   const anaimgrm = e.target.closest('[data-anaimgrm]');
-  if(anaimgrm){ anaSetImg(anaimgrm.dataset.anaimgrm, ''); renderAnalyze(); showToast('ลบรูปที่แนบแล้ว'); return; }
+  if(anaimgrm){ anaSetImg(anaimgrm.dataset.anaimgrm, '').then(()=>{ renderAnalyze(); showToast('ลบรูปที่แนบแล้ว'); }); return; }
   const anaimgview = e.target.closest('[data-anaimgview]');
   if(anaimgview){ openLbox(anaimgview.src); return; }
 
@@ -4920,7 +5138,9 @@ document.addEventListener('change', e=>{
     e.target.value = '';
     if(f && ad){
       shrinkImg(f, url=>{
-        if(url){ anaSetImg(ad, url); renderAnalyze(); showToast('แนบรูปคอนเทนต์แล้ว'); }
+        if(!url) return;
+        showToast('กำลังอัปรูปขึ้นคลาวด์…');
+        anaSetImg(ad, url).then(()=>{ renderAnalyze(); showToast('แนบรูปคอนเทนต์แล้ว'); });
       });
     }
     return;
@@ -4989,11 +5209,8 @@ document.addEventListener('drop', e=>{
   applyActual();
   markSaved();          // ค่าที่โหลดขึ้นมาตอนเปิด = ค่าที่บันทึกไว้แล้ว
   render();
-  fbInit();
+  fbInit();   // รายงาน/โน้ต/รูป หน้า Analyze โหลดจาก Firestore ผ่าน fbWatch
   initMetaSDK();
-  /* โหลดรายงาน+ข้อความวิเคราะห์จากไฟล์กลาง reports.json (ถ้ามี) แล้ว re-render */
-  anaLoadShared().then(changed=>{ if(changed) renderAnalyze(); });
-  renderAnaPublishBtn();
 })();
 /* Esc = ปิดกล่องยืนยัน, Enter = ยืนยัน (ถ้าปุ่มกดได้) */
 document.addEventListener('keydown', e=>{

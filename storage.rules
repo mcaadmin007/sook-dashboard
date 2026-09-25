@@ -1,0 +1,28 @@
+/* =========================================================
+   Firebase Storage rules — sook-lead-generation
+   เก็บรูปแนบทั้งหมดใต้ boards/{board}/...
+   อ่านต้องเปิดสาธารณะ เพราะรูปแสดงผ่าน <img src="downloadURL"> ซึ่งไม่ส่ง token ไปด้วย
+   (URL เดาไม่ได้ เพราะมี token ต่อท้ายอยู่แล้ว)
+   เอาไปวางใน Firebase Console → Storage → Rules → Publish
+   ========================================================= */
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /boards/{board}/{allPaths=**} {
+      allow read: if true;
+
+      /* เขียน/ลบ ต้องล็อกอินก่อน · อัปได้เฉพาะรูป ไม่เกิน 10 MB
+         request.resource == null คือกรณีลบไฟล์ (ไม่มีไฟล์ขาเข้า) */
+      allow write: if request.auth != null
+        && (request.resource == null
+            || (request.resource.size < 10 * 1024 * 1024
+                && request.resource.contentType.matches('image/.*')));
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
