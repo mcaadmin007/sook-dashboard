@@ -1995,15 +1995,20 @@ async function fbInit(){
   clearTimeout(fbRetryTimer); fbRetryTimer = null;
   try{
     const base = 'https://www.gstatic.com/firebasejs/' + FB_VER + '/';
+    /* ไม่โหลด firebase-storage.js ตอนแผนฟรี — เสียเวลาโหลดเปล่าๆ เพราะไม่มี bucket ให้ใช้ */
     const [App, Auth, FS, ST] = await Promise.all([
       import(base + 'firebase-app.js'),
       import(base + 'firebase-auth.js'),
       import(base + 'firebase-firestore.js'),
-      import(base + 'firebase-storage.js'),
+      FB_USE_STORAGE ? import(base + 'firebase-storage.js') : Promise.resolve(null),
     ]);
     const app = App.initializeApp(FB_CONFIG);
     await Auth.signInAnonymously(Auth.getAuth(app));
-    fb = { db: FS.getFirestore(app), fs: FS, st: ST, storage: ST.getStorage(app) };
+    /* getStorage แยก try เอง — โปรเจกต์แผนฟรีไม่มี bucket ถ้ามันโยน ต้องไม่ลากทั้งแอปตาย
+       (Firestore ต่างหากที่เป็นหัวใจ รูปเก็บใน Firestore อยู่แล้ว) */
+    let storage = null;
+    if(FB_USE_STORAGE){ try{ storage = ST.getStorage(app); }catch(e){ console.warn('storage unavailable', e); } }
+    fb = { db: FS.getFirestore(app), fs: FS, st: ST, storage };
     fbReady = true;
     fbErr(false);
     fbWatch();
@@ -2018,15 +2023,28 @@ async function fbInit(){
 }
 
 /* =========================================================
-   FIREBASE STORAGE — รูปทุกใบเก็บเป็นไฟล์จริง ไม่ใช่ base64 ใน database
-   ส่ง dataURL เข้ามา คืน https URL ออกไป · ถ้าเป็น URL อยู่แล้วคืนค่าเดิม
+   FIREBASE STORAGE — ปิดอยู่ (FB_USE_STORAGE = false)
+
+   ⚠ Cloud Storage ใช้ได้เฉพาะแผน Blaze (ต้องผูกบัตร) โปรเจกต์นี้อยู่แผน Spark ฟรี
+     เปิดหน้า Storage ใน Console จะเจอปุ่ม "Upgrade project" ไม่มี bucket ให้ใช้
+     ถ้าปล่อยให้โค้ดยิงอัปโหลดต่อไป = พังทุกใบ ช้า และเด้ง toast หลอกว่า "เช็ค rules"
+     ทั้งที่แก้ rules ยังไงก็ไม่ติด
+
+   เลยเก็บรูปเป็น base64 ลง Firestore แทน · ปลอดภัยเพราะรูปถูกย่อก่อนเสมอ
+   (shrinkImg: ด้านยาวสุด 1000px, JPEG, ไม่เกิน ~680 KB) ซึ่งพอดีกับลิมิต doc ละ 1 MB
+   ⚠ ข้อแลกเปลี่ยน: Firestore แผนฟรีให้พื้นที่รวม 1 GB ⇒ รูปราว 1,500–5,000 ใบ
+     ถ้าวันหนึ่งจะเก็บมากกว่านั้น ค่อยอัปเป็น Blaze แล้วเปลี่ยนธงนี้เป็น true
+
+   ตัวแปรและฟังก์ชันด้านล่างยังอยู่ครบ เผื่ออนาคตเปิดใช้ — ไม่ได้ลบทิ้ง
    ========================================================= */
+const FB_USE_STORAGE = false;
 const isUrl = v => /^https?:\/\//.test(String(v||''));
 
 /* คืน https URL = สำเร็จ · คืน '' = ไม่สำเร็จ (ผู้เรียกต้องจัดการเอง ห้ามคิดว่าสำเร็จ) */
 async function fbUploadImg(path, dataUrl){
   if(!dataUrl) return '';
   if(isUrl(dataUrl)) return dataUrl;                 // อัปไปแล้ว ไม่ต้องอัปซ้ำ
+  if(!FB_USE_STORAGE) return '';                     // แผนฟรี — ไม่มี bucket ให้อัป
   if(!fbReady || !fb.storage) return '';
   try{
     const r = fb.st.ref(fb.storage, path);
@@ -2036,6 +2054,7 @@ async function fbUploadImg(path, dataUrl){
 }
 /* เตือนครั้งเดียวพอ ไม่ให้ toast ถล่มตอนอัปหลายรูปพร้อมกัน */
 let fbStWarned = false;
+let fbImgBigWarned = false;   // แยกธงกับอันบน ไม่ให้เตือนเรื่องหนึ่งไปปิดปากอีกเรื่อง
 function fbStorageWarn(e){
   if(fbStWarned) return;
   fbStWarned = true;
@@ -2043,6 +2062,7 @@ function fbStorageWarn(e){
   showToast('⚠ อัปรูปขึ้น Storage ไม่ได้ (' + why + ') — เช็ค Storage rules ใน Firebase Console');
 }
 async function fbDeleteImg(path){
+  if(!FB_USE_STORAGE) return;
   if(!fbReady || !fb.storage) return;
   try{ await fb.st.deleteObject(fb.st.ref(fb.storage, path)); }catch(e){}
 }
@@ -2184,7 +2204,7 @@ function fbWatch(){
     const next = {};
     snap.forEach(doc=>{
       const d = doc.data()||{};
-      const v = (typeof d.url === 'string' && d.url) ? d.url : d.data;   // url = แบบใหม่ (Storage) · data = ของเก่า base64
+      const v = (typeof d.url === 'string' && d.url) ? d.url : d.data;   // url = รูปเก่าที่เคยอยู่บน Storage · data = base64 (แบบที่ใช้อยู่)
       if(typeof v === 'string' && v) next[doc.id] = v;
     });
     fbApply('cimg', ()=>{ state.cimg = next; });
@@ -2255,11 +2275,40 @@ function fbWatch(){
     anaRerender();
   });
 
+  /* รูป Analyze: doc ละใบ (id = anaImgId(scope, ad)) เก็บ base64 ที่ย่อแล้ว
+     เดิมยัดรูปทุกใบของรายงานหนึ่งไว้ใน doc เดียวเป็น map {ad: url}
+     ซึ่งพอไม่มี Storage ให้ชี้ URL ไปหา ก็ต้องเก็บ base64 = 2-3 ใบก็ทะลุลิมิต 1 MB แล้ว
+     แบบเก่ายังอ่านได้อยู่ (doc ที่มีฟิลด์ json) แล้วค่อยแตกเป็น doc ย่อยให้อัตโนมัติ */
   sub('anaImages', snap=>{
-    const next = {};
-    snap.forEach(doc=>{ try{ next[doc.id] = JSON.parse((doc.data()||{}).json || '{}') || {}; }catch(e){} });
+    const next = {}, legacy = [];
+    anaOwned.clear();
+    snap.forEach(doc=>{
+      const d = doc.data() || {};
+      if(d.json !== undefined){                       // แบบเก่า: map ทั้งรายงานใน doc เดียว
+        try{
+          const m = JSON.parse(d.json || '{}') || {};
+          if(Object.keys(m).length) legacy.push({ id: doc.id, map: m });
+        }catch(e){}
+        return;
+      }
+      if(!d.ad) return;
+      const s = d.scope || '';
+      (next[s] || (next[s] = {}))[d.ad] = d.data || d.url || '';
+      anaOwned.add(anaOwnKey(s, d.ad));
+    });
+    /* ของเก่าเติมเฉพาะช่องที่ doc ย่อยยังไม่มี และผู้ใช้ยังไม่ได้แตะ — สองอย่างนั้นใหม่กว่าเสมอ */
+    anaLegacyImgs = {};
+    legacy.forEach(L=>{
+      const cur = next[L.id] || (next[L.id] = {});
+      Object.keys(L.map).forEach(ad=>{
+        const k = anaOwnKey(L.id, ad);
+        if(!anaOwned.has(k) && !anaImgTouched.has(k)) cur[ad] = L.map[ad];
+      });
+      anaLegacyImgs[L.id] = L.map;
+    });
     anaImgs = next;
     anaRerender();
+    if(legacy.length) anaSplitLegacyImgs(legacy);
   });
 
   /* meta: ตาราง Live + Meta token + ธง migration อยู่รวมกันในคอลเลกชันนี้ */
@@ -2380,7 +2429,8 @@ async function cloudPushRun(){
     if(!seenC[k]) job(fs.deleteDoc(ref('content', k)), ()=>{ delete fbLast.content[k]; });
   });
 
-  /* รูปคอนเทนต์: อัปเป็นไฟล์จริงขึ้น Storage แล้วเก็บแค่ URL ลง Firestore */
+  /* รูปคอนเทนต์: doc ละใบ เก็บ base64 ที่ย่อแล้ว (แผนฟรีไม่มี Storage — ดูหมายเหตุที่ fbUploadImg)
+     รูปเก่าที่เคยเป็น URL บน Storage ยังใช้ได้ เขียนกลับเป็น url เหมือนเดิม */
   for(const k of Object.keys(state.cimg)){
     const before = state.cimg[k];
     if(fbLast.cimg[k] === imgSig(before)) continue;
@@ -2389,16 +2439,26 @@ async function cloudPushRun(){
       job(fs.setDoc(ref('contentImages', k), { url: before }), ()=>{ fbLast.cimg[k] = imgSig(before); });
       continue;
     }
-    const url = await fbUploadImg(`boards/${FB_BOARD}/content/${safeName(k)}`, before);
+    const url = FB_USE_STORAGE
+      ? await fbUploadImg(`boards/${FB_BOARD}/content/${safeName(k)}`, before)
+      : '';
     if(state.cimg[k] !== before) continue;  // ผู้ใช้เปลี่ยน/ลบรูประหว่างรออัป — ปล่อยให้รอบหน้าจัดการ
     if(url){
       state.cimg[k] = url;
       job(fs.setDoc(ref('contentImages', k), { url }), ()=>{ fbLast.cimg[k] = imgSig(url); });
-    }else{
-      /* อัปไม่ผ่าน — เก็บ base64 ลง Firestore ไว้ก่อนไม่ให้รูปหาย
-         และตั้งใจไม่ปั๊ม เพื่อให้ลองอัปใหม่ในรอบถัดไป */
-      job(fs.setDoc(ref('contentImages', k), { data: before }));
+      continue;
     }
+    /* รูปใหญ่เกิน doc เดียวรับไหว — ข้ามแต่บอกให้รู้ ไม่ปล่อยให้ push พังทั้งชุดเพราะรูปใบเดียว
+       (ปกติไม่ถึง เพราะ shrinkImg คุมไว้ที่ ~680 KB แล้ว) */
+    if(anaDocBytes({ data: before }) > ANA_DOC_LIMIT){
+      if(!fbImgBigWarned){ fbImgBigWarned = true; showToast('⚠ รูปคอนเทนต์บางใบใหญ่เกินที่คลาวด์รับได้ — ยังไม่ได้บันทึกรูปนั้น ลองใส่รูปที่เล็กกว่านี้'); }
+      /* ปั๊มไว้ด้วย ไม่งั้นจะวนพยายามเขียนรูปใบนี้ใหม่ทุกรอบไม่จบ กินโควตาเขียนของแผนฟรีทิ้ง */
+      job(Promise.resolve(), ()=>{ fbLast.cimg[k] = imgSig(before); });
+      continue;
+    }
+    /* ⚠ ต้องปั๊มด้วย — เดิมตั้งใจไม่ปั๊มเพราะคิดว่าเดี๋ยวจะลองอัป Storage ใหม่
+       พอ Storage ปิดถาวร การไม่ปั๊ม = เขียนรูปใบเดิมซ้ำทุกรอบ push ตลอดกาล */
+    job(fs.setDoc(ref('contentImages', k), { data: before }), ()=>{ fbLast.cimg[k] = imgSig(before); });
   }
   /* ⚠ คีย์ของ state.cimg ถ่ายไว้ก่อน await อัปรูป ซึ่งกินเวลาเป็นวินาที
      ระหว่างนั้น snapshot จากเครื่องอื่นอาจเข้ามาเพิ่มรูปใหม่ (fbApply → fbStamp ปั๊ม fbLast ให้แล้ว)
@@ -4263,7 +4323,9 @@ function anaInsightsFor(r, b, sc){
    โครงข้อมูล  boards/{FB_BOARD}/
      analyses/{id}       { title, since, until, createdAt, rows[] }
      anaNotes/{scope}    { json }    ← โน้ตวิเคราะห์ของ scope นั้น
-     anaImages/{scope}   { json }    ← map ad → URL รูปบน Storage
+     anaImages/{scope__ad}  { scope, ad, data|url, at }   ← รูปหนึ่งใบต่อหนึ่ง doc (base64 ที่ย่อแล้ว)
+     anaImages/{scope}      { json }   ← โครงเก่า (map ad → รูปทั้งรายงานใน doc เดียว)
+                                         ยังอ่านได้ และจะถูกแตกเป็น doc ย่อยให้เองตอนเปิดเว็บ
    ========================================================= */
 const ANA_STORE = 'sook_analyses';   // ใช้แค่ตอน migrate ของเก่าเข้า Firestore
 let anaReports = [];
@@ -4315,12 +4377,115 @@ async function anaPutNotes(scope){
     return true;
   }catch(e){ console.warn('anaPutNotes failed', e); showToast('⚠ บันทึกโน้ตไม่สำเร็จ: ' + (e.message||e)); return false; }
 }
-async function anaPutImgs(scope){
-  if(!anaCloudReady()) return false;
+/* id ของ doc รูปหนึ่งใบ — ต้องไม่ชนกับ id แบบเก่า (ซึ่งเป็น scope ล้วน) เลยคั่นด้วย __ */
+function anaImgId(scope, ad){ return safeName(scope) + '__' + safeName(ad); }
+
+/* คีย์ในหน่วยความจำของ "รูปใบนี้มี doc ย่อยแล้ว" — คั่นด้วยขึ้นบรรทัดใหม่ เพราะชื่อคอนเทนต์มีช่องว่างได้
+   (ถ้าคั่นด้วยช่องว่างเฉยๆ scope 'a' + ad 'b c' จะชนกับ scope 'a b' + ad 'c') */
+function anaOwnKey(scope, ad){ return String(scope) + '\n' + String(ad); }
+
+/* สามชุดนี้คือ "ความจริงล่าสุด" ที่ตัวแตก doc ต้องเช็คก่อนเขียนทุกครั้ง
+   ⚠ ห้าม snapshot ไว้ก่อนเข้าลูป เพราะลูปมี await คั่นทุกใบ ระหว่างรอนั้นผู้ใช้แนบ/ลบรูปได้
+     ถ้าใช้ของที่ถ่ายไว้ตอนเริ่ม จะเขียนทับรูปที่เพิ่งแนบ หรือปลุกรูปที่เพิ่งลบขึ้นมา
+   anaOwned   — ad ที่มี doc ย่อยบนคลาวด์แล้ว (สร้างใหม่ทุก snapshot)
+   anaImgTouched — ad ที่ผู้ใช้เพิ่งแตะในเครื่องนี้ (ปักทันทีก่อน await เพื่อชนะ snapshot ที่ยังไม่มา)
+   anaDeadScopes — รายงานที่ถูกลบไปแล้ว ห้ามเขียนอะไรกลับเข้าไปอีก */
+const anaOwned = new Set();
+const anaImgTouched = new Set();
+const anaDeadScopes = new Set();
+
+/* แตก doc แบบเก่า (map ทั้งรายงาน) ออกเป็น doc ต่อรูป แล้วลบใบเก่าทิ้ง
+   กันสองอย่างที่พลาดง่ายมาก:
+   1) ห้ามเขียนทับ ad ที่มี doc ย่อยอยู่แล้ว — ไม่งั้นรูปที่เพิ่งแนบใหม่จะถูกของเก่าย้อนกลับ
+      (และรูปที่เพิ่งลบจะฟื้นกลับมา) เพราะ doc เก่ายังคาอยู่ใน snapshot รอบถัดไป
+   2) doc เก่าใบไหนย้ายไม่ครบ (รูปใหญ่เกิน / เขียนพลาด) จะลบไม่ได้ ⇒ snapshot รอบหน้าจะเข้ามา
+      แตกซ้ำ เขียน at ใหม่ = snapshot ใหม่ = วนไม่จบ กิน quota ฟรีทิ้ง ⇒ จำว่าแตะใบนี้แล้ว
+      ในรอบเปิดเว็บนี้ แล้วไม่แตะอีก */
+let anaSplitting = false;
+const anaSplitTried = new Set();
+/* เก็บ promise ของรอบที่กำลังวนไว้ ให้ฝั่งลบรายงานรอให้มันจบก่อนค่อยลบ
+   ไม่งั้น setDoc ใบที่ลอยอยู่กลางอากาศจะลงหลังเราลบเสร็จ = เหลือขยะลบไม่ออก */
+let anaSplitPromise = null;
+function anaSplitLegacyImgs(legacy){
+  /* ⚠ ถ้ารอบก่อนยังวนอยู่ ต้องคืน promise ของรอบนั้น ห้ามทับด้วยรอบใหม่ที่ return ทันที
+     ไม่งั้น anaSplitPromise จะกลายเป็น promise ที่ resolve แล้ว = ฝั่งลบไม่ได้รออะไรเลย */
+  if(anaSplitting && anaSplitPromise) return anaSplitPromise;
+  const p = anaSplitRun(legacy);
+  anaSplitPromise = p;
+  p.catch(()=>{}).then(()=>{ if(anaSplitPromise === p) anaSplitPromise = null; });
+  return p;
+}
+async function anaSplitRun(legacy){
+  /* ใช้ cloudLive() ตรงๆ ไม่ใช่ anaCloudReady() — อันนั้นเด้ง toast + ปักแถบแดง
+     ซึ่งไม่ควรเกิดจากงานเบื้องหลังที่ผู้ใช้ไม่ได้สั่ง */
+  if(anaSplitting || !cloudLive()) return;
+  const todo = legacy.filter(L=>!anaSplitTried.has(L.id) && !anaDeadScopes.has(L.id));
+  if(!todo.length) return;
+  anaSplitting = true;
   try{
-    await fb.fs.setDoc(anaRef('anaImages', scope), { json: JSON.stringify(anaImgs[scope] || {}) });
+    for(const L of todo){
+      anaSplitTried.add(L.id);
+      let stuck = 0;
+      for(const ad of Object.keys(L.map)){
+        if(anaDeadScopes.has(L.id)) break;   // รายงานถูกลบระหว่างที่กำลังแตก — หยุดทันที
+        const v = L.map[ad];
+        if(!v) continue;
+        /* ⚠ เช็คตรงนี้ ไม่ใช่ก่อนเข้าลูป เพราะ await ใบก่อนหน้าเปิดช่องให้ผู้ใช้แนบ/ลบรูปได้
+           - มี doc ย่อยบนคลาวด์แล้ว = ย้ายเสร็จจริง ไม่นับ stuck (ลบ doc เก่าได้)
+           - ผู้ใช้เพิ่งแตะ แต่ยังไม่เห็น doc ย่อยจากคลาวด์ = ยังไม่รู้ว่าของเขาลงจริงไหม
+             ต้องนับ stuck ไว้ ไม่งั้นลบ doc เก่าทิ้งแล้วของเขาพลาดพอดี = base64 หายถาวร */
+        const k = anaOwnKey(L.id, ad);
+        if(anaOwned.has(k)) continue;
+        if(anaImgTouched.has(k)){ stuck++; continue; }
+        const body = { scope: L.id, ad, at: Date.now() };
+        if(isUrl(v)) body.url = v; else body.data = v;
+        if(anaDocBytes(body) > ANA_DOC_LIMIT){ stuck++; continue; }   // ใบที่ใหญ่เกิน ปล่อยไว้ใน doc เก่า
+        try{ await fb.fs.setDoc(anaRef('anaImages', anaImgId(L.id, ad)), body); }
+        catch(e){ stuck++; console.warn('split ana image failed', L.id, ad, e); }
+      }
+      /* ลบใบเก่าเฉพาะตอนไม่มีรูปที่ย้ายไม่ได้ค้างอยู่ ไม่งั้นรูปนั้นจะหายถาวร */
+      if(!stuck){ try{ await fb.fs.deleteDoc(anaRef('anaImages', L.id)); }catch(e){} }
+      else console.warn('legacy ana image doc kept (' + stuck + ' image(s) could not move)', L.id);
+    }
+  }finally{ anaSplitting = false; }
+}
+
+/* ถอน ad หนึ่งออกจาก doc แบบเก่า — ต้องทำตอนลบรูป ไม่งั้นของเก่าจะเติมกลับมาใน snapshot ถัดไป
+   คืน true = ไม่มีอะไรต้องทำ หรือทำสำเร็จ · false = เขียนไม่ผ่าน (ผู้เรียกต้องบอกผู้ใช้ ห้ามบอกว่าลบแล้ว) */
+async function anaStripLegacyImg(scope, ad){
+  const map = anaLegacyImgs[scope];
+  if(!map || map[ad] === undefined) return true;
+  const keep = map[ad];
+  delete map[ad];
+  const left = Object.keys(map).filter(a=>map[a]);
+  try{
+    if(left.length) await fb.fs.setDoc(anaRef('anaImages', scope), { json: JSON.stringify(map) });
+    else await fb.fs.deleteDoc(anaRef('anaImages', scope));
     return true;
-  }catch(e){ console.warn('anaPutImgs failed', e); showToast('⚠ บันทึกรูปไม่สำเร็จ: ' + (e.message||e)); return false; }
+  }catch(e){
+    map[ad] = keep;   // เขียนไม่ผ่าน = ของเก่ายังอยู่บนคลาวด์ ต้องใส่กลับไม่ให้ในจอกับคลาวด์เพี้ยนกัน
+    console.warn('strip legacy ana image failed', scope, ad, e);
+    return false;
+  }
+}
+
+/* ลบรูปทุกใบของรายงานหนึ่ง (ใช้ตอนลบรายงาน) — ต้องไล่ลบทีละ doc เพราะแยกใบแล้ว */
+async function anaDeleteScopeImgs(scope){
+  /* ⚠ เก็บรายชื่อรูปก่อน await ตัวแรก — ผู้เรียก (anaDeleteById) ลบ anaImgs[scope] ทิ้งระหว่างที่เรารออยู่
+     ถ้าอ่านหลัง await จะได้ {} แล้วไม่ลบ doc รูปอะไรเลย = base64 ค้างในคลาวด์ถาวร */
+  const ads = Object.keys(anaImgs[scope] || {});
+  const run = ()=>{
+    const jobs = ads.map(ad =>
+      fb.fs.deleteDoc(anaRef('anaImages', anaImgId(scope, ad))).catch(()=>{}));
+    jobs.push(fb.fs.deleteDoc(anaRef('anaImages', scope)).catch(()=>{}));   // เผื่อ doc แบบเก่ายังค้าง
+    return Promise.all(jobs);
+  };
+  /* ⚠ ห้าม await ตัวแตก doc ก่อนลบ — ตอนเน็ตหลุด setDoc ไม่ reject มันค้างเงียบๆ
+     ถ้ารอมันจะไม่ได้ลบอะไรเลย เหลือ base64 ของรายงานที่ไม่มีอยู่แล้วค้างในคลาวด์
+     เลยลบทันที แล้วกวาดอีกรอบตอนตัวแตก doc จบ เผื่อมันเขียนใบไหนกลับมาหลังเราลบ */
+  const p = anaSplitPromise;
+  if(p) p.catch(()=>{}).then(run).catch(()=>{});
+  await run();
 }
 
 function anaCurRows(){
@@ -4350,25 +4515,82 @@ let anaNotesDirty = false;
 
 /* --- รูป Creative/คอนเทนต์ที่แนบเองต่อคอนเทนต์ (แยกตาม scope เหมือนโน้ต)
    ใช้ตอนที่ Meta ไม่มี thumbnail หรืออยากใส่รูปที่ชัดกว่าให้ดูคู่กับข้อวิเคราะห์
-   เก็บเป็นไฟล์จริงบน Storage — ใน Firestore เก็บแค่ URL --- */
+   เก็บเป็น base64 ที่ย่อแล้วใน Firestore doc ละใบ (แผนฟรีไม่มี Storage)
+   รูปเก่าที่เคยอัปขึ้น Storage ยังเก็บเป็น url ได้เหมือนเดิม --- */
 const ANA_IMGS = 'sook_ana_imgs';     // ใช้แค่ตอน migrate
 let anaImgs = {};
+let anaLegacyImgs = {};   // {scope: map} ของ doc แบบเก่าที่ยังค้างอยู่บนคลาวด์
 function anaGetImg(ad){ const s = anaImgs[anaScopeKey()]; return (s && s[ad]) ? s[ad] : ''; }
 async function anaSetImg(ad, dataUrl){
+  if(!anaCloudReady()) return false;
   const scope = anaScopeKey();
-  const path  = `boards/${FB_BOARD}/ana/${safeName(scope)}/${safeName(ad)}`;
+  const id    = anaImgId(scope, ad);
+  const tk    = anaOwnKey(scope, ad);
+  /* ตัวแตก doc เก่ากำลังวนอยู่ไหม — ถ้าใช่ ใบที่มันเขียนอาจลงหลังของเรา ต้องทับกลับตอนมันจบ
+     (มันเช็คธง touched ก่อน await ของมันเอง = คนละจังหวะกับเรา กันด้วยธงล้วนไม่พอ) */
+  const raced = anaSplitting;
+  const reapply = ()=>{
+    if(!raced || !anaSplitPromise) return;
+    const p = anaSplitPromise;
+    p.catch(()=>{}).then(()=>{
+      if(anaDeadScopes.has(scope)) return;
+      const w = dataUrl
+        ? fb.fs.setDoc(anaRef('anaImages', id), (()=>{ const b = { scope, ad, at: Date.now() };
+            if(isUrl(dataUrl)) b.url = dataUrl; else b.data = dataUrl; return b; })())
+        : fb.fs.deleteDoc(anaRef('anaImages', id));
+      return w.catch(()=>{});
+    }).catch(()=>{});
+  };
+  /* ธง "ผู้ใช้แตะใบนี้แล้ว" ต้องปักก่อน await ทุกตัว ตัวแตก doc เก่าที่กำลังวนอยู่จะได้ไม่เขียนทับ
+     ⚠ แต่ต้องถอนธงคืนทุกเส้นที่พลาด — ถ้าค้างไว้ ตัวแตก doc จะข้ามรูปนั้น
+       แล้วลบ doc เก่าทิ้งทั้งที่ยังไม่ได้ย้าย = รูปหายถาวร
+     ⚠ และเช็คขนาดต้องมาก่อนปักธง เพราะเส้นนั้นไม่ได้แตะคลาวด์เลย */
   if(dataUrl){
-    const url = await fbUploadImg(path, dataUrl);
-    if(!url){ showToast('⚠ แนบรูปไม่สำเร็จ — ยังไม่ได้บันทึก'); return false; }
-    /* ต้องหยิบ bucket ใหม่หลัง await เพราะ snapshot อาจเปลี่ยน anaImgs ทั้งก้อนไประหว่างรออัป */
+    const body = { scope, ad, at: Date.now() };
+    if(isUrl(dataUrl)) body.url = dataUrl; else body.data = dataUrl;
+    const size = anaDocBytes(body);
+    if(size > ANA_DOC_LIMIT){
+      showToast('⚠ รูปนี้ใหญ่เกินที่คลาวด์รับได้ (' + Math.round(size/1024) + ' KB จากลิมิต ~900 KB) — ลองรูปที่เล็กกว่านี้');
+      return false;
+    }
+    anaImgTouched.add(tk);
+    try{ await fb.fs.setDoc(anaRef('anaImages', id), body); }
+    catch(e){
+      anaImgTouched.delete(tk);
+      console.warn('anaSetImg failed', e); showToast('⚠ แนบรูปไม่สำเร็จ: ' + (e.message||e)); return false;
+    }
+    /* รายงานถูกลบไประหว่างที่เรารอเขียน — ต้องเก็บ doc ที่เพิ่งเขียนทิ้ง
+       ไม่งั้นเหลือ base64 ของรายงานที่ไม่มีแล้ว ลบไม่ออกจาก UI ไหนเลย */
+    if(anaDeadScopes.has(scope)){
+      fb.fs.deleteDoc(anaRef('anaImages', id)).catch(()=>{});
+      anaImgTouched.delete(tk);
+      return false;
+    }
+    /* ต้องหยิบ bucket ใหม่หลัง await เพราะ snapshot อาจเปลี่ยน anaImgs ทั้งก้อนไประหว่างรอเขียน */
     if(!anaImgs[scope]) anaImgs[scope] = {};
-    anaImgs[scope][ad] = url;
+    anaImgs[scope][ad] = dataUrl;
+    reapply();
   }else{
+    anaImgTouched.add(tk);
+    try{ await fb.fs.deleteDoc(anaRef('anaImages', id)); }
+    catch(e){
+      anaImgTouched.delete(tk);
+      console.warn('anaSetImg delete failed', e); showToast('⚠ ลบรูปไม่สำเร็จ: ' + (e.message||e)); return false;
+    }
     if(anaImgs[scope]) delete anaImgs[scope][ad];
-    fbDeleteImg(path);
+    /* ต้องถอนออกจาก doc แบบเก่าด้วย ไม่งั้นรูปฟื้นกลับมาใน snapshot ถัดไป
+       ถ้าถอนไม่ผ่าน = บนคลาวด์ยังมีอยู่ ห้ามบอกผู้ใช้ว่าลบแล้ว */
+    if(!await anaStripLegacyImg(scope, ad)){
+      anaImgTouched.delete(tk);
+      showToast('⚠ ลบรูปไม่สำเร็จ (ของเก่าบนคลาวด์ยังอยู่) — ลองใหม่อีกครั้ง');
+      anaRerender();
+      return false;
+    }
+    fbDeleteImg(`boards/${FB_BOARD}/ana/${safeName(scope)}/${safeName(ad)}`);   // เผื่อรูปเก่าที่เคยอยู่บน Storage
+    reapply();
   }
   anaRerender();
-  return await anaPutImgs(scope);
+  return true;
 }
 let anaImgTargetAd = null;   // ad name ที่กำลังรอไฟล์รูปจาก input
 
@@ -4458,17 +4680,26 @@ async function anaMergeLegacy(src, label){
 
   showToast('กำลังย้ายข้อมูลเก่า' + label + ' — ' + reports.length + ' รายงาน, ' + nImg + ' รูป…');
 
-  /* รูป: อัป base64 ขึ้น Storage เปลี่ยนเป็น URL ก่อน ใบไหนอัปไม่ขึ้นก็ข้าม (ของเก่ายังอยู่ครบ) */
-  const imgOut = {};
+  /* รูป: เขียนเป็น doc ละใบตรงๆ (base64 ที่ย่อไว้แล้ว) ใบไหนใหญ่เกินลิมิตก็ข้าม
+     ⚠ ห้ามรวมเป็น map ก้อนเดียวเหมือนเดิม — รายงานที่มีหลายรูปจะทะลุ 1 MB แล้วย้ายไม่ผ่านทั้งก้อน */
+  let imgSkipped = 0;
   for(const scope of Object.keys(images)){
-    imgOut[scope] = {};
     for(const ad of Object.keys(images[scope] || {})){
       const v = images[scope][ad];
       if(!v) continue;
-      const url = await fbUploadImg(`boards/${FB_BOARD}/ana/${safeName(scope)}/${safeName(ad)}`, v);
-      if(url) imgOut[scope][ad] = url;
+      const id   = anaImgId(scope, ad);
+      const body = { scope, ad, at: Date.now() };
+      if(isUrl(v)) body.url = v; else body.data = v;
+      if(anaDocBytes(body) > ANA_DOC_LIMIT){ imgSkipped++; continue; }
+      try{
+        const ref = fs.doc(db, 'boards', FB_BOARD, 'anaImages', id);
+        const snap = await fs.getDoc(ref);
+        if(snap.exists()) continue;          // มีในคลาวด์แล้ว ของใหม่กว่า ไม่ทับ
+        await fs.setDoc(ref, body);
+      }catch(e){ console.warn('migrate ana image failed', scope, ad, e); imgSkipped++; }
     }
   }
+  if(imgSkipped) showToast('⚠ ย้ายรูปไม่ได้ ' + imgSkipped + ' ใบ เพราะใหญ่เกินลิมิตคลาวด์');
 
   /* รายงาน: id ไม่ซ้ำกันอยู่แล้ว แต่ข้ามถ้ามีตัวนั้นในคลาวด์แล้ว (ของในคลาวด์ใหม่กว่า) */
   const skipped = [];
@@ -4497,7 +4728,8 @@ async function anaMergeLegacy(src, label){
   if(skipped.length) showToast('⚠ ย้ายไม่ได้ ' + skipped.length + ' รายงานเพราะใหญ่เกินลิมิตคลาวด์: ' + skipped.join(', '));
 
   for(const s of Object.keys(notes))  await anaMergeScopeDoc('anaNotes',  s, notes[s]);
-  for(const s of Object.keys(imgOut)) await anaMergeScopeDoc('anaImages', s, imgOut[s]);
+  /* ⚠ ไม่มี anaMergeScopeDoc('anaImages', …) แล้ว — รูปถูกเขียนเป็น doc ละใบไปข้างบนแล้ว
+     ถ้าเขียนซ้ำที่นี่จะได้ doc แบบเก่า (map ก้อนเดียว) กลับมาอีก แล้วตัวแตก doc ต้องมาเก็บกวาดใหม่ */
 
   return { reports: reports.length, noteScopes: nNote, images: nImg };
 }
@@ -4925,18 +5157,26 @@ async function anaDeleteById(id){
   if(!rp) return;
   if(!confirm('ลบรายงาน "'+rp.title+'" ถาวร?')) return;
   if(!anaCloudReady()) return;
+  /* ปักว่า scope นี้ตายแล้ว — ถ้าตัวแตก doc แบบเก่ากำลังวนรูปของรายงานนี้อยู่ มันจะหยุดทันที
+     ไม่งั้นมันจะเขียน base64 กลับเข้าไปหลังลบ = ขยะที่ลบไม่ออก กินพื้นที่ฟรี 1 GB ทิ้ง */
+  anaDeadScopes.add(id);
+  anaSplitTried.add(id);
   anaReports = anaReports.filter(x=>x.id!==id);
   if(anaCurrent===id) anaCurrent = null;   // ถ้ากำลังดูอยู่ → กลับหน้ารวม
   renderAnalyze();
-  /* ลบรายงาน + โน้ต + รูปของ scope นั้นให้หมด ไม่ให้เหลือขยะค้างในคลาวด์ */
-  const imgs = anaImgs[id] || {};
-  Object.keys(imgs).forEach(ad=>{ fbDeleteImg(`boards/${FB_BOARD}/ana/${safeName(id)}/${safeName(ad)}`); });
+  /* ลบรายงาน + โน้ต + รูปของ scope นั้นให้หมด ไม่ให้เหลือขยะค้างในคลาวด์
+     รูปแยกเป็น doc ละใบแล้ว ต้องไล่ลบทีละใบ (anaDeleteScopeImgs จัดการ doc แบบเก่าให้ด้วย)
+     เรียกก่อน delete anaImgs[id] เพราะมันต้องอ่านรายชื่อรูปจากตรงนั้น */
+  const rmImgs = anaDeleteScopeImgs(id);
+  Object.keys(anaImgs[id] || {}).forEach(ad=>{
+    fbDeleteImg(`boards/${FB_BOARD}/ana/${safeName(id)}/${safeName(ad)}`);   // เผื่อรูปเก่าบน Storage
+  });
   delete anaNotes[id]; delete anaImgs[id];
   try{
     await Promise.all([
+      rmImgs,
       fb.fs.deleteDoc(anaRef('analyses',  id)),
       fb.fs.deleteDoc(anaRef('anaNotes',  id)),
-      fb.fs.deleteDoc(anaRef('anaImages', id)),
     ]);
     showToast('ลบรายงานแล้ว');
   }catch(e){ console.warn('anaDeleteById failed', e); showToast('⚠ ลบไม่สำเร็จ: ' + (e.message||e)); }
@@ -5279,7 +5519,8 @@ document.addEventListener('click', e=>{
   const anaimgadd = e.target.closest('[data-anaimgadd]');
   if(anaimgadd){ anaImgTargetAd = anaimgadd.dataset.anaimgadd; const f=$('anaImgFile'); if(f) f.click(); return; }
   const anaimgrm = e.target.closest('[data-anaimgrm]');
-  if(anaimgrm){ anaSetImg(anaimgrm.dataset.anaimgrm, '').then(()=>{ renderAnalyze(); showToast('ลบรูปที่แนบแล้ว'); }); return; }
+  /* ok=false แปลว่าคลาวด์ไม่รับ — anaSetImg เตือนไปแล้ว ห้ามทับด้วย toast ว่าสำเร็จ */
+  if(anaimgrm){ anaSetImg(anaimgrm.dataset.anaimgrm, '').then(ok=>{ renderAnalyze(); if(ok) showToast('ลบรูปที่แนบแล้ว'); }); return; }
   const anaimgview = e.target.closest('[data-anaimgview]');
   if(anaimgview){ openLbox(anaimgview.src); return; }
 
@@ -5370,7 +5611,7 @@ document.addEventListener('change', e=>{
       shrinkImg(f, url=>{
         if(!url) return;
         showToast('กำลังอัปรูปขึ้นคลาวด์…');
-        anaSetImg(ad, url).then(()=>{ renderAnalyze(); showToast('แนบรูปคอนเทนต์แล้ว'); });
+        anaSetImg(ad, url).then(ok=>{ renderAnalyze(); if(ok) showToast('แนบรูปคอนเทนต์แล้ว'); });
       });
     }
     return;
