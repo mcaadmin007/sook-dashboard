@@ -973,9 +973,25 @@
     transition:.16s var(--ease)}
   .cf select:focus{outline:none;border-color:var(--blue);box-shadow:var(--ring)}
 
-  .fb-err{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;
-    background:#d93a30;color:#fff;font-size:12px;font-weight:600;letter-spacing:.01em;
-    padding:8px 15px;border-radius:999px;box-shadow:0 8px 22px rgba(217,58,48,.34)}
+  /* แถบเตือนตอนต่อคลาวด์ไม่ได้ — ค้างบนสุดของจอจนกว่าจะต่อติด
+     ข้อมูลทุกอย่างอยู่ออนไลน์ ต่อไม่ได้ = ดูของที่โหลดมาได้ แต่บันทึกอะไรไม่ได้ */
+  .fb-err{position:fixed;top:0;left:0;right:0;z-index:70;
+    background:#d93a30;color:#fff;font-size:12.5px;font-weight:600;letter-spacing:.01em;
+    padding:9px 16px;text-align:center;line-height:1.45;
+    box-shadow:0 4px 18px rgba(217,58,48,.34)}
+  .fb-err b{font-weight:800}
+  .fb-err .thin{font-weight:500;opacity:.92}
+  .fb-err button{margin-left:10px;font:inherit;font-weight:700;color:#d93a30;background:#fff;
+    border:0;border-radius:999px;padding:3px 12px;cursor:pointer}
+  .fb-err button:hover{background:#ffe9e7}
+  /* padding จริงถูกเซ็ตด้วย JS จากความสูงแถบ (fbErr) — บรรทัดนี้เป็นค่าสำรองกันจอกระตุก */
+  body.offline{padding-top:40px}
+  /* จอแคบ: ตัดคำอธิบายยาวออก เหลือหัวข้อ + ปุ่ม แถบจะไม่สูงจนกินพื้นที่ */
+  @media (max-width:640px){
+    body.offline{padding-top:56px}
+    .fb-err{font-size:12px;padding:8px 12px}
+    .fb-err .thin{display:none}
+  }
   @media (prefers-reduced-motion:reduce){
     *{animation:none !important;transition:none !important}
     .tab:hover,.kpi:hover,.btn-add:hover{transform:none}
@@ -1368,7 +1384,9 @@
 </div>
 <div class="lbox" id="lbox" hidden><img id="lboxImg" alt=""></div>
 <input type="file" id="anaImgFile" accept="image/*" hidden>
-<div id="fbErr" class="fb-err" hidden>เชื่อมต่อคลาวด์ไม่ได้</div>
+<div id="fbErr" class="fb-err" hidden><b>⚠ ยังไม่ได้ต่อคลาวด์</b>
+  <span class="thin">— ข้อมูลบนจอเป็นของที่โหลดมาได้ล่าสุด ยังบันทึกอะไรไม่ได้จนกว่าจะต่อติด</span>
+  <button id="fbErrRetry" type="button">ลองต่อใหม่</button></div>
 
 <script>
 /* ===== ค่าคงที่ ===== */
@@ -1378,9 +1396,11 @@ const CONV = { message: 0.10, click: 0.005 };
    META CONFIG — System User Token (Business Manager)
    ⚠  ถ้า repo เป็น Public ให้ย้าย token ไปเก็บใน env/secret
    ========================================================= */
-/* Token ไม่ hardcode ในไฟล์แล้ว (กัน token รั่วบน GitHub) — เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น
-   กดปุ่ม "Connect Meta" มุมขวาบนเพื่อวาง token ครั้งเดียว จะถูกจำไว้ใน localStorage */
-let META_TOKEN = (()=>{ try{ return localStorage.getItem('meta_token') || ''; }catch(e){ return ''; } })();
+/* Token ไม่ hardcode ในไฟล์แล้ว (กัน token รั่วบน GitHub)
+   กดปุ่ม "Connect Meta" มุมขวาบนเพื่อวาง token ครั้งเดียว ใช้ได้ทุกเครื่อง
+   Meta token เก็บบนคลาวด์ที่ meta/metaToken — ใส่ครั้งเดียวใช้ได้ทุกเครื่อง
+   ไม่มีสำเนาในเครื่อง ตอนเปิดเว็บจะว่างไว้ก่อนแล้วรอ snapshot เติมให้ */
+let META_TOKEN = '';
 const META_ACCOUNT_ID = 'act_2293937604431894';
 
 /* GitHub auto-publish ถูกถอดออกแล้ว — ข้อมูลทุกอย่างอยู่ที่ Firestore ที่เดียว
@@ -1591,7 +1611,15 @@ function blockedByDraft(){
   showToast('ยังมีตัวเลขในตารางที่ยังไม่บันทึก — กดยืนยันบันทึก หรือยกเลิกก่อน');
   return true;
 }
-function commitStructure(){ markSaved('plans'); renderSaveBars(); saveNow(); cloudPush(); }
+/* ซ่อน/คืนค่า/ลบเดือน + เพิ่มเดือน — เขียนขึ้นคลาวด์ทันที ไม่มีปุ่มยืนยัน
+   ต้องผ่าน cloudOK เหมือนปุ่มบันทึก ไม่งั้นตอนต่อไม่ติดจะขึ้น "ซ่อนแล้ว" ให้ดู
+   แล้วคำสั่งลบ/ซ่อนจะไปเขียน (หรือไม่เขียน) ทีหลังโดยไม่มีใครรู้
+   คืน false = ไม่ผ่าน ผู้เรียกต้องย้อนสิ่งที่เพิ่งแก้บนจอกลับ */
+function commitStructure(){
+  if(!cloudOK()) return false;
+  markSaved('plans'); renderSaveBars(); cloudPush();
+  return true;
+}
 
 /* --- ซ่อนเดือน: ข้อมูลอยู่ครบทั้งในเครื่องและบนคลาวด์ แค่ไม่แสดงบนแท็บ --- */
 function hideMonth(month){
@@ -1599,20 +1627,24 @@ function hideMonth(month){
   if(visPlans().length<=1){ showToast('ต้องเหลือไว้อย่างน้อย 1 เดือน'); return; }
   const p = state.plans.find(x=>x.month===month);
   if(!p || p.hidden) return;
+  if(!cloudOK('ต่อคลาวด์ไม่ได้ — ซ่อนเดือนไม่ได้')) return;   // เช็คก่อนแก้บนจอ ไม่งั้นจอกับคลาวด์ไม่ตรงกัน
   p.hidden = true;
   fixActive();
   render();
-  commitStructure();
+  /* คลาวด์หลุดระหว่างนี้ = ย้อนจอกลับ ไม่โชว์ว่าซ่อนแล้วทั้งที่คลาวด์ยังไม่รู้ */
+  if(!commitStructure()){ p.hidden = false; fixActive(); render(); return; }
   showToast('ซ่อน ' + label(month) + ' แล้ว — กดคืนค่าได้จากปุ่มจัดการเดือน');
 }
 function unhideMonth(month){
   if(blockedByDraft()) return;
   const p = state.plans.find(x=>x.month===month);
   if(!p || !p.hidden) return;
+  if(!cloudOK('ต่อคลาวด์ไม่ได้ — คืนค่าเดือนไม่ได้')) return;
+  const prevActive = state.active;
   p.hidden = false;
   state.active = month;
   render();
-  commitStructure();
+  if(!commitStructure()){ p.hidden = true; state.active = prevActive; fixActive(); render(); }
 }
 
 /* =========================================================
@@ -1676,40 +1708,34 @@ window.updateActual = updateActual;
 window.fetchActual  = fetchActual;
 
 /* =========================================================
-   AUTO SAVE — เก็บลงเครื่องผู้ใช้ บันทึกเองทุกครั้งที่แก้
+   AUTO SAVE — เขียนขึ้นคลาวด์อย่างเดียว
+   ไม่มีสำเนาในเครื่องแล้ว: ถ้าเก็บไว้ในเครื่องด้วย สองที่จะหลุดออกจากกัน
+   แล้วของเก่าในเครื่องจะไปทับของใหม่บนคลาวด์ตอนเปิดเว็บ (เคยเกิดมาแล้ว)
+   ต่อคลาวด์ไม่ได้ = ไม่บันทึก + ขึ้นแถบเตือนค้างไว้ ดีกว่าบันทึกลงที่ที่คนอื่นมองไม่เห็น
    ========================================================= */
-const SKEY = 'sook-leadgen-v2';
-const store = (()=>{ try{ const s=window.localStorage; s.setItem('__t','1'); s.removeItem('__t'); return s; }catch(e){ return null; } })();
-let saveTimer=null;
-
-function saveNow(){
-  if(!store) return;
-  /* ตารางแผนกับช่องตั้งค่า จะถูกบันทึกก็ต่อเมื่อกดยืนยันเท่านั้น
-     ระหว่างที่ยังไม่กด ให้เก็บ "ค่าที่บันทึกไว้ล่าสุด" ลงเครื่องแทนค่าที่กำลังพิมพ์อยู่ */
-  const keepPlans = planDirty() ? JSON.parse(cPlans) : state.plans.map(planDoc);
-  const keepSet   = setDirty()  ? JSON.parse(cSettings) : settingsDoc();
-  const snap = ({
-      v:1,
-      plans: keepPlans,
-      active: state.active,
-      src: state.src,
-      page: state.page,
-      leadFilter: state.leadFilter,
-      leadScore: state.leadScore,
-      budget: keepSet.budget,
-      target: keepSet.target,
-      months: keepSet.months,
-      content: state.content,
-      cMonth: state.cMonth,
-      timeline: state.timeline,
-      logs: state.logs,
-      logFilter: state.logFilter,
-      at: Date.now()
-    });
-  try{ store.setItem(SKEY, JSON.stringify(Object.assign({}, snap, { cimg: state.cimg }))); }
-  catch(e){ try{ store.setItem(SKEY, JSON.stringify(snap)); }catch(e2){} }
+let saveTimer=null, offWarnAt = 0;
+/* ช่วงเปิดเว็บ: render() เรียก save() ตั้งแต่ยัง import Firebase ไม่เสร็จ
+   ถ้าเตือนตรงนั้น แถบแดงจะขึ้น + toast จะเด้งทุกครั้งที่เปิดหน้า (ทั้งที่เน็ตปกติ)
+   แถมยังกินโควตาเตือน 20 วิ ทำให้ถ้าเน็ตหลุดจริงในช่วงนั้นกลับไม่มีใครเตือน
+   ช่วงนี้ปล่อยให้ตัวจับเวลา 8 วิ ที่ init() ทำหน้าที่ขึ้นแถบแทน */
+const bootAt = Date.now(), BOOT_GRACE = 8000;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    saveTimer = null;
+    if(!cloudWritable()){
+      if(!fbSynced && Date.now() - bootAt < BOOT_GRACE) return;
+      fbErr(true);
+      /* เตือนอย่างมากทุก 20 วิ ไม่ให้ toast ถล่มตอนพิมพ์รัวๆ ทั้งที่เน็ตหลุด */
+      if(Date.now() - offWarnAt > 20000){
+        offWarnAt = Date.now();
+        showToast('⚠ ต่อคลาวด์ไม่ได้ — ที่แก้ตอนนี้ไม่ถูกบันทึก และจะถูกแทนด้วยของบนคลาวด์เมื่อต่อติด ต้องแก้ใหม่อีกครั้ง');
+      }
+      return;
+    }
+    cloudPush();
+  }, 400);
 }
-function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ saveNow(); cloudPush(); }, 400); }
 
 function planFromRaw(sp){
   if(!sp || !/^\d{4}-\d{2}$/.test(String(sp.month||''))) return null;
@@ -1733,54 +1759,9 @@ function cleanScore(raw){
   return Object.keys(clean).length ? clean : null;
 }
 
-function loadSaved(){
-  if(!store) return false;
-  let d; try{ d = JSON.parse(store.getItem(SKEY)||'null'); }catch(e){ return false; }
-  if(!d || !Array.isArray(d.plans) || !d.plans.length) return false;
-  try{
-    state.plans = d.plans.map(planFromRaw).filter(Boolean);
-    if(!state.plans.length) return false;
-    state.plans.sort((a,b)=>a.month<b.month?-1:1);
-    if(!visPlans().length) state.plans.forEach(p=>{ p.hidden = false; });   // กันกรณีซ่อนหมดทุกเดือน
-    state.active = visPlans().some(p=>p.month===d.active) ? d.active : visPlans()[visPlans().length-1].month;
-    if(LEAD_COLS[d.src]) state.src = d.src;
-    if(d.leadScore && typeof d.leadScore==='object'){
-      Object.keys(d.leadScore).forEach(k=>{
-        const clean = cleanScore(d.leadScore[k]);
-        if(clean) state.leadScore[k] = clean;
-      });
-    }
-    if(d.content && typeof d.content==='object'){
-      Object.keys(d.content).forEach(k=>{ const c = cleanContent(d.content[k]); if(c) state.content[k] = c; });
-    }
-    if(d.cimg && typeof d.cimg==='object'){
-      Object.keys(d.cimg).forEach(k=>{ if(state.content[k] && typeof d.cimg[k]==='string') state.cimg[k] = d.cimg[k]; });
-    }
-    if(d.timeline && typeof d.timeline==='object'){
-      Object.keys(d.timeline).forEach(k=>{ const t = cleanTask(d.timeline[k]); if(t) state.timeline[k] = t; });
-    }
-    if(d.logs && typeof d.logs==='object'){
-      Object.keys(d.logs).forEach(k=>{ const l = cleanLog(d.logs[k]); if(l) state.logs[k] = l; });
-    }
-    if(d.logFilter && typeof d.logFilter==='object'){
-      if(LOG_PLAT.some(p=>p.id===d.logFilter.platform)||d.logFilter.platform==='') state.logFilter.platform = d.logFilter.platform||'';
-      if(/^\d{4}-\d{2}-\d{2}$/.test(String(d.logFilter.dateFrom||''))) state.logFilter.dateFrom = d.logFilter.dateFrom;
-      if(/^\d{4}-\d{2}-\d{2}$/.test(String(d.logFilter.dateTo||''))) state.logFilter.dateTo = d.logFilter.dateTo;
-    }
-    if(/^\d{4}-\d{2}$/.test(String(d.cMonth||''))) state.cMonth = d.cMonth;
-    if(PAGES.some(p=>p.id===d.page)) state.page = d.page;
-    if(d.leadFilter==='none' || LEAD_STATUS.some(s=>s.v===d.leadFilter)) state.leadFilter = d.leadFilter;
-    if(d.budget>0) $('inBudget').value = d.budget;
-    if(d.target>0) $('inTarget').value = d.target;
-    if(d.months>0) $('inMonths').value = d.months;
-    return true;
-  }catch(e){ return false; }
-}
-
 /* =========================================================
-   CLOUD SYNC — Firebase Firestore
+   CLOUD SYNC — Firebase Firestore (ที่เก็บข้อมูลที่เดียวของระบบ)
    วางค่า firebaseConfig จาก Firebase Console ตรง FB_CONFIG
-   ปล่อยว่าง = ใช้เฉพาะเครื่องนี้ (localStorage)
 
    โครงข้อมูล  boards/{FB_BOARD}/
      plans/{YYYY-MM}                        ← หน้าเว็บเขียน
@@ -1804,9 +1785,79 @@ const FB_BOARD = 'sook';
 const FB_VER   = '10.12.2';
 
 let fb = null, fbReady = false, fbApplying = false;
+/* fbSynced  = snapshot ของ plans มาถึงแล้ว = รู้ความจริงบนคลาวด์แล้ว
+   ห้าม push ก่อนหน้านั้นเด็ดขาด — ตอนเปิดเว็บ state.plans ยังเป็นเดือนเปล่าที่สร้างชั่วคราว
+   ถ้า push ไปก่อน มันจะไปทับแผนจริงบนคลาวด์ให้เป็นศูนย์ทั้งเดือน
+   fbSetSynced = snapshot ของ settings มาถึงแล้ว · ต้องแยกธงกัน เพราะช่อง
+   Budget/เป้า Lead มีค่า default ติดมาใน HTML (0 / 200 / 6) ถ้า push ก่อน snapshot มาถึง
+   ค่าจริงจะถูกทับเป็น default แล้วกู้ไม่ได้ (ตัวอ่านข้ามค่า 0 ทิ้ง)
+   fbLive = ยังคุยกับเซิร์ฟเวอร์ได้จริงตอนนี้ (ไม่ใช่แค่ต่อครั้งแรกผ่าน) */
+let fbSynced = false, fbSetSynced = false, fbLive = false;
+let planWarned = false;   // เตือน "plans บนคลาวด์ผิดรูปแบบ" ครั้งเดียวพอ
 const fbLast = { plans:{}, scores:{}, settings:'', content:{}, cimg:{}, timeline:{}, logs:{} };
 
-function fbErr(on){ const el = document.getElementById('fbErr'); if(el) el.hidden = !on; }
+/* แถบเตือนบนสุดของจอ — โชว์ค้างไว้ตลอดเวลาที่ต่อคลาวด์ไม่ได้
+   ดันเนื้อหาลงด้วย padding ที่ body ไม่ให้แถบทับหัวเว็บ (วัดความสูงจริง เพราะบนมือถือแถบพับหลายบรรทัด) */
+function fbErr(on){
+  const el = document.getElementById('fbErr');
+  if(el) el.hidden = !on;
+  document.body.classList.toggle('offline', !!on);
+  document.body.style.paddingTop = (on && el) ? (el.offsetHeight + 6) + 'px' : '';
+}
+
+/* ประตูเดียวที่ตัดสินว่า "ออนไลน์อยู่จริงไหม"
+   ฝั่งขึ้นแถบหน่วง 3 วิ เพราะตอนเปิดเว็บ snapshot ใบแรกมาจากแคชในหน่วยความจำก่อนเสมอ
+   ถ้าโชว์ทันทีแถบแดงจะกระพริบทุกครั้งที่เปิดหน้า */
+let fbOffTimer = null;
+/* cpFail = เขียนขึ้นคลาวด์พลาดอยู่ และยังไม่มีรอบไหนเขียนผ่าน
+   ต้องมีธงนี้ เพราะ snapshot ที่ไหลเข้ามาเรื่อยๆ จะเรียก fbOnline(true) แล้วปลดแถบให้
+   ทั้งที่การเขียนยังพลาดอยู่ (เช่นโดน rules ปฏิเสธ) = แถบหาย แต่ของที่แก้ไม่ได้ขึ้นจริง */
+let cpFail = false, cpFailTimer = null;
+/* ลองเขียนใหม่ให้เอง แต่เว้นระยะ 10 วิ
+   ถ้าไม่เว้น: เขียนพลาด → fbOnline(false) → snapshot ถัดไป → เขียนใหม่ → พลาด … วนรัวไม่หยุด
+   (cloudPush เทียบกับ fbLast ก่อนเขียน ถ้าไม่มีอะไรค้างก็จบเฉยๆ) */
+function cpRetryLater(){
+  if(cpFailTimer) return;
+  cpFailTimer = setTimeout(()=>{
+    cpFailTimer = null;
+    if(!cpFail) return;
+    /* ตอนเขียนพลาดเราสั่ง fbOnline(false) ไปแล้ว = fbLive เป็น false
+       แต่ cloudPush ต้องการ fbLive จริงถึงจะยิง ถ้าไม่ตั้งนาฬิกาใหม่ตรงนี้
+       กรณีที่ไม่มี snapshot ไหลเข้ามาอีก (เช่นโดน rules ปฏิเสธล้วนๆ) จะไม่มีใครลองใหม่เลย
+       ทั้งที่ toast บอกผู้ใช้ไว้ว่า "ระบบจะลองใหม่ให้เอง" */
+    if(fbLive) cloudPush();
+    else cpRetryLater();
+  }, 10000);
+}
+function fbOnline(ok){
+  const back = !!ok && !fbLive;
+  fbLive = !!ok;
+  if(back && cpFail && fbSynced) cpRetryLater();
+  if(ok && fbSynced && !cpFail){ clearTimeout(fbOffTimer); fbOffTimer = null; fbErr(false); return; }
+  if(fbOffTimer) return;
+  fbOffTimer = setTimeout(()=>{
+    fbOffTimer = null;
+    if(!(fbLive && fbSynced) || cpFail) fbErr(true);
+  }, 3000);
+}
+
+/* ด่านเดียวที่ทุกปุ่มบันทึกต้องผ่าน — ยังต่อไม่ติดก็บอกตรงๆ ว่าเขียนไม่ได้
+   cloudLive   = คุยกับเซิร์ฟเวอร์ได้ (พอสำหรับของที่ไม่เกี่ยวกับตารางแผน เช่น Analyze / Meta)
+   cloudWritable = cloudLive + รู้ความจริงเรื่องแผนแล้ว (สำหรับ cloudPush ที่แตะ plans/settings) */
+function cloudLive(){ return fbReady && fbLive; }
+function cloudWritable(){ return cloudLive() && fbSynced; }
+function cloudOK(msg){
+  /* เขียนรอบก่อนพลาดค้างอยู่ = ห้ามบอกว่า "บันทึกแล้ว" จะเข้าใจผิดว่าของขึ้นไปแล้ว */
+  if(cpFail){
+    fbErr(true);
+    showToast('⚠ รอบก่อนเขียนขึ้นคลาวด์ไม่สำเร็จ ระบบกำลังลองใหม่อยู่ — รอให้แถบแดงหายก่อนแล้วกดอีกครั้ง');
+    return false;
+  }
+  if(cloudWritable()) return true;
+  fbErr(true);
+  showToast('⚠ ' + (msg || 'ยังต่อคลาวด์ไม่ได้ — บันทึกไม่ได้') + ' · ข้อมูลทั้งหมดอยู่ออนไลน์ ลองเช็คเน็ตแล้วกดใหม่');
+  return false;
+}
 
 const planDoc = p => ({
   month: p.month,
@@ -1830,8 +1881,11 @@ const livePlans = () => JSON.stringify(state.plans.map(planDoc));
 const liveSet   = () => JSON.stringify(settingsDoc());
 const planDirty = () => cPlans    !== null && cPlans    !== livePlans();
 const setDirty  = () => cSettings !== null && cSettings !== liveSet();
-/* รวมโน้ตหน้า Analyze ที่ยังไม่บันทึกด้วย — ปิดแท็บทิ้งแล้วหาย */
-const anyDirty  = () => planDirty() || setDirty() || anaNotesDirty;
+/* รวมโน้ตหน้า Analyze ที่ยังไม่บันทึกด้วย — ปิดแท็บทิ้งแล้วหาย
+   และรวมงานเขียนที่ยังค้างอยู่ด้วย: คอนเทนต์/ไทม์ไลน์/log/คะแนนลีด ไม่มีปุ่มยืนยัน
+   มันวิ่งผ่าน debounce 400 มิลลิ + คิวของ cloudPush ปิดแท็บในจังหวะนั้นคือหายจริง */
+const writePending = () => saveTimer !== null || cpRunning || cpAgain || cpFail;
+const anyDirty  = () => planDirty() || setDirty() || anaNotesDirty || writePending();
 
 /* จำค่าปัจจุบันว่า "นี่คือค่าที่บันทึกแล้ว" */
 function markSaved(which){
@@ -1865,17 +1919,26 @@ function diffMonths(){
   });
   return out;
 }
-/* กดยืนยัน = ปล่อยให้ตัวเซฟทำงานตามปกติ */
+/* กดยืนยัน = เขียนขึ้นคลาวด์ · ต่อคลาวด์ไม่ได้ก็ไม่ให้กด จะได้ไม่เข้าใจผิดว่าบันทึกแล้ว */
 function commitPlans(){
+  if(!cloudOK()) return;
   markSaved('plans');
   renderSaveBars();
-  saveNow(); cloudPush();
+  cloudPush();
   showToast('บันทึกตารางแผนแล้ว');
 }
 function commitSettings(){
+  if(!cloudOK()) return;
+  /* cloudPushRun เขียน settings เฉพาะเมื่อ fbSetSynced — ถ้าไม่เช็คตรงนี้ด้วย
+     จะขึ้น "บันทึกการตั้งค่าแล้ว" ทั้งที่ของถูกทิ้งเงียบๆ */
+  if(!fbSetSynced){
+    fbErr(true);
+    showToast('⚠ ยังไม่ได้อ่านค่าตั้งค่าจากคลาวด์ — บันทึกตอนนี้จะทับของจริง รอสักครู่แล้วกดใหม่');
+    return;
+  }
   markSaved('settings');
   renderSaveBars();
-  saveNow(); cloudPush();
+  cloudPush();
   showToast('บันทึกการตั้งค่าแล้ว');
 }
 /* กดยกเลิก = ย้อนกลับไปค่าที่บันทึกไว้ล่าสุด */
@@ -1924,8 +1987,12 @@ function fbApply(which, fn){
   finally{ fbApplying = false; }
 }
 
+let fbRetryTimer = null, fbBooting = false;
 async function fbInit(){
   if(!FB_CONFIG.projectId) return;
+  if(fbReady || fbBooting) return;   // กันเรียกซ้อน ไม่งั้น fbWatch จะสมัคร listener ซ้ำเป็นสองชุด
+  fbBooting = true;
+  clearTimeout(fbRetryTimer); fbRetryTimer = null;
   try{
     const base = 'https://www.gstatic.com/firebasejs/' + FB_VER + '/';
     const [App, Auth, FS, ST] = await Promise.all([
@@ -1940,9 +2007,14 @@ async function fbInit(){
     fbReady = true;
     fbErr(false);
     fbWatch();
-    cloudPush();   // เผื่อมีการกดยืนยันบันทึกไปก่อนที่ต่อคลาวด์จะเสร็จ ให้ดันขึ้นคลาวด์ทันทีที่พร้อม
+    /* ไม่ push ตรงนี้ — ต้องรอ snapshot ชุดแรกมาก่อน ไม่งั้นเดือนเปล่าที่สร้างชั่วคราว
+       ตอนเปิดเว็บจะไปทับแผนจริงบนคลาวด์ (ดูคอมเมนต์ที่ fbSynced) */
     anaMigrateOnce();   // ของเก่าใน reports.json/localStorage ย้ายเข้า Firestore ครั้งเดียว
-  }catch(e){ fbErr(true); }
+  }catch(e){
+    console.warn('firebase init failed', e);
+    fbErr(true);
+    fbRetryTimer = setTimeout(fbInit, 15000);   // เน็ตหลุดตอนเปิดเว็บ — ลองต่อใหม่เองเรื่อยๆ
+  }finally{ fbBooting = false; }
 }
 
 /* =========================================================
@@ -1982,27 +2054,56 @@ function safeName(s){
   return h.toString(36) + '_' + str.replace(/[^a-zA-Z0-9]/g,'').slice(0,24);
 }
 
+/* เก็บตัวยกเลิก subscription ไว้ เผื่อต้องรื้อแล้วสมัครใหม่ตอนกด "ลองต่อใหม่" */
+let fbUnsubs = [];
+
 function fbWatch(){
   const { db, fs } = fb;
   const sub = (name, fn) => {
     let first = true;
-    return fs.onSnapshot(
+    const un = fs.onSnapshot(
       fs.collection(db, 'boards', FB_BOARD, name),
+      { includeMetadataChanges: true },   // ต้องเปิด ไม่งั้นจับ "เน็ตหลุดกลางทาง" ไม่ได้
       snap => {
+        /* fromCache = true คือ SDK ตอบจากแคชในหน่วยความจำ เพราะคุยกับเซิร์ฟเวอร์ไม่ได้
+           เป็นทางเดียวที่รู้ว่าเน็ตหลุด เพราะ onSnapshot ไม่ยิง error เวลาเน็ตหาย
+           และ setDoc ก็ไม่ reject มันแค่ค้างรอไว้เฉยๆ */
+        fbOnline(!snap.metadata.fromCache);
         if(snap.metadata.hasPendingWrites) return;
-        try{ fn(snap, first); }catch(e){}
+        /* ⚠ ห้ามเอา snapshot จากแคชมาตัดสินว่า "รู้ความจริงบนคลาวด์แล้ว"
+           ตอนเปิดเว็บทั้งที่เน็ตหลุด SDK จะยิง snapshot เปล่าจากแคชมาให้ทันที
+           ถ้าปล่อยผ่าน ตัวจับ plans จะเห็น snap.empty แล้ว fbSeed() ดันเดือนเปล่าขึ้นคิวเขียน
+           คิวเขียนของ Firestore ยกเลิกไม่ได้ พอเน็ตกลับมามันจะไปทับแผนจริงให้เป็นศูนย์
+           ของที่โหลดมาได้แล้วยังอยู่บนจอ (เราไม่ทับ) = ตรงกับที่ต้องการ "ดูได้แต่แก้ไม่ได้" */
+        if(snap.metadata.fromCache) return;
+        try{ fn(snap, first); }catch(e){ console.warn('snapshot handler failed', name, e); }
         first = false;
       },
-      () => fbErr(true)
+      e => { console.warn('snapshot error', name, e); fbOnline(false); fbErr(true); }
     );
+    fbUnsubs.push(un);
+    return un;
   };
 
   sub('plans', snap=>{
-    if(snap.empty){ fbSeed(); return; }
+    if(snap.empty){ fbSynced = true; fbSeed(); return; }
     const list = [];
     snap.forEach(doc=>{ const d = Object.assign({ month:doc.id }, doc.data()); list.push(d); });
     const plans = list.map(planFromRaw).filter(Boolean).sort((a,b)=>a.month<b.month?-1:1);
-    if(!plans.length) return;
+    /* doc เสียรูปทั้งหมด = ยังไม่รู้ความจริง ห้ามปักธง ไม่งั้นเดือนเปล่าชั่วคราวจะถูก push ทับ
+       แต่ต้องบอกให้รู้ตัว ไม่ใช่ปล่อยแถบแดงค้างแบบไม่มีสาเหตุ */
+    if(!plans.length){
+      if(!planWarned){
+        planWarned = true;
+        showToast('⚠ อ่านตารางแผนบนคลาวด์ไม่ได้ — ข้อมูลใน plans ผิดรูปแบบทั้งหมด จะยังบันทึกอะไรไม่ได้จนแก้ตรงนี้ก่อน');
+      }
+      return;
+    }
+    planWarned = false;
+    fbSynced = true;   // ของจริงจากคลาวด์มาถึงแล้ว จากนี้ push ได้
+    /* sub() เรียก fbOnline() ก่อนจะมาถึงบรรทัดนี้ ตอนนั้น fbSynced ยังเป็น false
+       แถบจึงยังไม่ถูกปลด ต้องปลดตรงนี้เอง ไม่ใช่รอ snapshot ใบถัดไป (ซึ่งอาจไม่มี) */
+    if(fbLive) fbOnline(true);   // ผ่าน fbOnline เพื่อให้มันเคลียร์นาฬิกา 3 วิ ที่ค้างอยู่ด้วย
     /* กำลังแก้ตารางอยู่และยังไม่กดยืนยัน >> ห้ามเอาของจากคลาวด์มาทับสิ่งที่พิมพ์ค้างไว้ */
     if(planDirty()){
       cPlans = JSON.stringify(plans.map(planDoc));   // เก็บไว้เป็นฐานใหม่ ไว้เทียบ/ยกเลิก
@@ -2020,16 +2121,47 @@ function fbWatch(){
   });
 
   sub('settings', snap=>{
+    /* snapshot มาถึงแล้ว = รู้ความจริงแล้ว แม้จะไม่มี doc ก็ถือว่ารู้ (คือยังไม่เคยตั้งค่า)
+       ปักธงก่อน return เสมอ ไม่งั้นบอร์ดที่ยังไม่เคยตั้งค่าจะบันทึกค่าตั้งค่าไม่ได้ตลอดกาล */
+    fbSetSynced = true;
     const doc = snap.docs.find(x=>x.id==='app');
     if(!doc) return;
     const d = doc.data()||{};
-    if(setDirty()) return;   // กำลังแก้ช่องตั้งค่าอยู่ ห้ามให้ของจากคลาวด์มาทับ
-    fbApply('settings', ()=>{
-      if(num(d.budget)>0) $('inBudget').value = num(d.budget);
-      if(num(d.target)>0) $('inTarget').value = num(d.target);
-      if(num(d.months)>0) $('inMonths').value = num(d.months);
-      cSettings = liveSet();
+    /* เติมทีละช่อง ไม่ bail ทั้งก้อนตอน dirty
+       ถ้า bail: พิมพ์แค่ช่องเป้า Lead ค้างไว้ก่อน snapshot มาถึง = ค่าจริงของช่อง Budget
+       จะไม่เคยโหลดลงมาเลย (ค้างเป็น default 0) แล้วตอนกดยืนยันจะเขียน 0 ทับของจริงบนคลาวด์
+       ตัวอ่านข้ามค่า 0 ทิ้ง = กู้กลับไม่ได้ */
+    const KEY   = { inBudget:'budget', inTarget:'target', inMonths:'months' };
+    const base  = cSettings ? JSON.parse(cSettings) : null;
+    /* ⚠ ต้องเป็น fbApply(null, …) ไม่ใช่ 'settings'
+       fbStamp('settings') ปั๊ม fbLast.settings จาก "ค่าบนจอ" (settingsDoc())
+       ถ้าผู้ใช้พิมพ์ 999 ค้างไว้ก่อน snapshot มาถึง (คลาวด์เป็น 500) จะกลายเป็น
+       fbLast.settings = {999} ทั้งที่คลาวด์ยังเป็น 500 → กดยืนยันแล้ว sj ตรงกับ fbLast
+       = ไม่มีใบเขียนเลย แต่ toast บอกว่าบันทึกแล้ว ของหายตอนรีเฟรช
+       เลยปั๊มเองด้วย "ค่าจากคลาวด์" ข้างล่างนี้ */
+    fbApply(null, ()=>{
+      Object.keys(KEY).forEach(id=>{
+        const v = num(d[KEY[id]]);
+        if(!(v > 0)) return;                 // คลาวด์ไม่มีค่าจริงของช่องนี้ ปล่อยค่าบนจอไว้
+        const el = $(id);
+        /* ค่าบนจอ ≠ ค่าที่บันทึกไว้ล่าสุด = ผู้ใช้พิมพ์ค้างอยู่ ไม่ทับให้เสียของที่พิมพ์ */
+        if(base && num(el.value) !== num(base[KEY[id]])) return;
+        el.value = v;
+      });
+      /* ฐานเทียบใหม่ = ค่าบนคลาวด์ (ช่องไหนคลาวด์ไม่มีก็ใช้ค่าบนจอ)
+         เพื่อให้ setDirty() ชี้ถูกว่าช่องที่พิมพ์ค้างยังไม่ได้บันทึก */
+      cSettings = JSON.stringify({
+        budget: num(d.budget) > 0 ? num(d.budget) : num($('inBudget').value),
+        target: num(d.target) > 0 ? num(d.target) : num($('inTarget').value),
+        months: num(d.months) > 0 ? num(d.months) : num($('inMonths').value),
+      });
+      /* ปั๊มด้วยของจริงบนคลาวด์ (ไม่ใช่ค่าบนจอ) เรียงคีย์ให้ตรงกับ settingsDoc()
+         ช่องที่คลาวด์ยังไม่มี (0) จะไม่ตรงกับค่าบนจอ = รอบเขียนถัดไปจะเติมขึ้นไปให้เอง */
+      fbLast.settings = JSON.stringify({
+        budget: num(d.budget), target: num(d.target), months: num(d.months),
+      });
     });
+    renderSaveBars();
   });
 
   sub('leadScores', snap=>{
@@ -2038,15 +2170,17 @@ function fbWatch(){
     fbApply('scores', ()=>{ state.leadScore = next; });
   });
 
-  sub('content', (snap, first)=>{
-    if(first && snap.empty && Object.keys(state.content).length){ fbStamp('content'); fbLast.content={}; cloudPush(); return; }
+  /* หมายเหตุ: เคยมีท่อน "คลาวด์ว่างแต่ในเครื่องมีของ ⇒ ดันขึ้นไป" ตรงนี้ ถอดออกแล้ว
+     ตั้งแต่ไม่มี localStorage state ก็ไม่มีของในเครื่องตอนเปิดเว็บอีกแล้ว ท่อนนั้นเป็นโค้ดตาย
+     และยังอันตราย: หลังกด "ลองต่อใหม่" listener สมัครใหม่ first จะกลับเป็น true
+     ถ้าตอนนั้นมีคนลบคอนเทนต์ทิ้งหมดจากเครื่องอื่น มันจะดันของที่ค้างบนจอกลับขึ้นไปทั้งชุด */
+  sub('content', snap=>{
     const next = {};
     snap.forEach(doc=>{ const c = cleanContent(doc.data()); if(c) next[doc.id] = c; });
     fbApply('content', ()=>{ state.content = next; });
   });
 
-  sub('contentImages', (snap, first)=>{
-    if(first && snap.empty && Object.keys(state.cimg).length){ fbLast.cimg={}; cloudPush(); return; }
+  sub('contentImages', snap=>{
     const next = {};
     snap.forEach(doc=>{
       const d = doc.data()||{};
@@ -2056,8 +2190,7 @@ function fbWatch(){
     fbApply('cimg', ()=>{ state.cimg = next; });
   });
 
-  sub('timeline', (snap, first)=>{
-    if(first && snap.empty && Object.keys(state.timeline).length){ fbStamp('timeline'); fbLast.timeline={}; cloudPush(); return; }
+  sub('timeline', snap=>{
     const next = {};
     snap.forEach(doc=>{ const t = cleanTask(doc.data()); if(t) next[doc.id] = t; });
     fbApply('timeline', ()=>{ state.timeline = next; });
@@ -2089,8 +2222,7 @@ function fbWatch(){
     fbApply(null, ()=>{ ACTUAL = next; applyActual(); });
   });
 
-  sub('logs', (snap, first)=>{
-    if(first && snap.empty && Object.keys(state.logs).length){ fbStamp('logs'); fbLast.logs={}; cloudPush(); return; }
+  sub('logs', snap=>{
     const next = {};
     snap.forEach(doc=>{ const l = cleanLog(doc.data()); if(l) next[doc.id] = l; });
     fbApply(null, ()=>{ state.logs = next; renderLog(); });
@@ -2129,6 +2261,31 @@ function fbWatch(){
     anaImgs = next;
     anaRerender();
   });
+
+  /* meta: ตาราง Live + Meta token + ธง migration อยู่รวมกันในคอลเลกชันนี้ */
+  sub('meta', snap=>{
+    let touched = false;
+    snap.forEach(doc=>{
+      const d = doc.data() || {};
+      if(doc.id === 'adContent'){
+        try{
+          const rows = JSON.parse(d.json || '[]');
+          if(Array.isArray(rows)){ metaAdContent = rows; touched = true; }
+        }catch(e){}
+      }else if(doc.id === 'metaToken'){
+        const t = String(d.token || '');
+        if(t !== META_TOKEN){
+          const wasEmpty = !META_TOKEN;
+          META_TOKEN = t;
+          try{ renderMetaBtn(); }catch(e){}
+          /* token เพิ่งมาถึงจากคลาวด์ — auto-sync ตอนเปิดเว็บยิงไปแล้วและ bail เพราะยังไม่มี token
+             ต้องยิงใหม่ตรงนี้ ไม่งั้นต้องรอ interval 30 นาที */
+          if(wasEmpty && t) try{ metaSyncAll(); }catch(e){}
+        }
+      }
+    });
+    if(touched) anaRerender();
+  });
 }
 
 /* re-render หน้า Analyze เฉพาะตอนที่เปิดหน้านั้นอยู่จริง
@@ -2138,13 +2295,20 @@ function anaRerender(){
   try{ if(state.page === 'analyze') renderAnalyze(); }catch(e){}
 }
 
-function fbSeed(){ fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = ''; fbLast.content = {}; fbLast.cimg = {}; fbLast.timeline = {}; cloudPush(); }
+function fbSeed(){
+  fbLast.plans = {}; fbLast.scores = {}; fbLast.settings = '';
+  fbLast.content = {}; fbLast.cimg = {}; fbLast.timeline = {}; fbLast.logs = {};
+  cloudPush();
+}
 
 /* ตัวล็อกกันเรียกซ้อน — ตั้งแต่มีการ await อัปรูป cloudPush ไม่ใช่งานที่จบในทีเดียวอีกแล้ว
    ถ้าเรียกซ้อนเข้ามาระหว่างที่รออัป จะจำไว้แล้วรันอีกรอบหลังรอบปัจจุบันจบ */
 let cpRunning = false, cpAgain = false;
 async function cloudPush(){
-  if(!fbReady || fbApplying) return;
+  /* ต้องเช็ค fbLive ด้วย ไม่ใช่แค่ fbReady
+     คิวเขียนของ Firestore ยกเลิกไม่ได้ ยิง setDoc ตอนเน็ตหลุด = มันจะไปลงจริงตอนเน็ตกลับมา
+     ซึ่งอาจทับของที่เครื่องอื่นเขียนไว้ระหว่างนั้น */
+  if(!fbReady || fbApplying || !fbSynced || !fbLive) return;
   if(cpRunning){ cpAgain = true; return; }
   cpRunning = true;
   try{ await cloudPushRun(); }
@@ -2155,10 +2319,20 @@ async function cloudPush(){
   }
 }
 
+/* setDoc ตอนเน็ตหลุดจะ "ค้าง" ไม่ reject — ถ้าไม่ตั้งเวลาไว้ cpRunning จะค้าง true ตลอดกาล
+   แล้วการแก้ครั้งต่อๆ ไปจะไม่ได้ push เลยแบบเงียบๆ */
+function cpTimeout(ms){
+  return new Promise((_, rej)=> setTimeout(()=> rej(new Error('cloud write timeout')), ms));
+}
+
 async function cloudPushRun(){
   const { db, fs } = fb;
   const ref  = (name, id) => fs.doc(db, 'boards', FB_BOARD, name, id);
+  /* jobs = [{ p: promise ของการเขียน, s: ตัวปั๊มว่า "ค่านี้ขึ้นไปแล้ว" }]
+     ต้องผูกคู่กันทีละใบ ไม่ใช่เก็บแยกสองลิสต์ เพราะเราปั๊มทีละใบตามผลจริงของใบนั้น
+     ปั๊มก่อนเขียน = เขียนพลาดแล้วไม่มีใครลองใหม่ ของที่แก้หายเงียบๆ ตลอดกาล */
   const jobs = [];
+  const job  = (p, s) => jobs.push({ p, s: s || null });
 
   /* ยังไม่กดยืนยัน = ยังไม่ส่งขึ้นคลาวด์ ส่งค่าที่บันทึกไว้ล่าสุดแทน */
   const pushPlans = planDirty() ? JSON.parse(cPlans) : state.plans.map(planDoc);
@@ -2166,89 +2340,142 @@ async function cloudPushRun(){
   pushPlans.forEach(doc=>{
     const j = JSON.stringify(doc);
     seenM[doc.month] = 1;
-    if(fbLast.plans[doc.month] !== j){ fbLast.plans[doc.month] = j; jobs.push(fs.setDoc(ref('plans', doc.month), doc)); }
+    if(fbLast.plans[doc.month] !== j)
+      job(fs.setDoc(ref('plans', doc.month), doc), ()=>{ fbLast.plans[doc.month] = j; });
   });
   Object.keys(fbLast.plans).forEach(m=>{
-    if(!seenM[m]){ delete fbLast.plans[m]; jobs.push(fs.deleteDoc(ref('plans', m))); }
+    if(!seenM[m]) job(fs.deleteDoc(ref('plans', m)), ()=>{ delete fbLast.plans[m]; });
   });
 
   const seenS = {};
   Object.keys(state.leadScore).forEach(k=>{
     const j = JSON.stringify(state.leadScore[k]);
     seenS[k] = 1;
-    if(fbLast.scores[k] !== j){ fbLast.scores[k] = j; jobs.push(fs.setDoc(ref('leadScores', k), state.leadScore[k])); }
+    if(fbLast.scores[k] !== j)
+      job(fs.setDoc(ref('leadScores', k), state.leadScore[k]), ()=>{ fbLast.scores[k] = j; });
   });
   Object.keys(fbLast.scores).forEach(k=>{
-    if(!seenS[k]){ delete fbLast.scores[k]; jobs.push(fs.deleteDoc(ref('leadScores', k))); }
+    if(!seenS[k]) job(fs.deleteDoc(ref('leadScores', k)), ()=>{ delete fbLast.scores[k]; });
   });
 
   const seenT = {};
   Object.keys(state.timeline).forEach(k=>{
     const j = JSON.stringify(state.timeline[k]);
     seenT[k] = 1;
-    if(fbLast.timeline[k] !== j){ fbLast.timeline[k] = j; jobs.push(fs.setDoc(ref('timeline', k), state.timeline[k])); }
+    if(fbLast.timeline[k] !== j)
+      job(fs.setDoc(ref('timeline', k), state.timeline[k]), ()=>{ fbLast.timeline[k] = j; });
   });
   Object.keys(fbLast.timeline).forEach(k=>{
-    if(!seenT[k]){ delete fbLast.timeline[k]; jobs.push(fs.deleteDoc(ref('timeline', k))); }
+    if(!seenT[k]) job(fs.deleteDoc(ref('timeline', k)), ()=>{ delete fbLast.timeline[k]; });
   });
 
   const seenC = {};
   Object.keys(state.content).forEach(k=>{
     const j = JSON.stringify(state.content[k]);
     seenC[k] = 1;
-    if(fbLast.content[k] !== j){ fbLast.content[k] = j; jobs.push(fs.setDoc(ref('content', k), state.content[k])); }
+    if(fbLast.content[k] !== j)
+      job(fs.setDoc(ref('content', k), state.content[k]), ()=>{ fbLast.content[k] = j; });
   });
   Object.keys(fbLast.content).forEach(k=>{
-    if(!seenC[k]){ delete fbLast.content[k]; jobs.push(fs.deleteDoc(ref('content', k))); }
+    if(!seenC[k]) job(fs.deleteDoc(ref('content', k)), ()=>{ delete fbLast.content[k]; });
   });
 
   /* รูปคอนเทนต์: อัปเป็นไฟล์จริงขึ้น Storage แล้วเก็บแค่ URL ลง Firestore */
-  const seenI = {};
   for(const k of Object.keys(state.cimg)){
-    seenI[k] = 1;
     const before = state.cimg[k];
     if(fbLast.cimg[k] === imgSig(before)) continue;
 
     if(isUrl(before)){                      // อัปไว้แล้ว เขียน URL อย่างเดียว
-      fbLast.cimg[k] = imgSig(before);
-      jobs.push(fs.setDoc(ref('contentImages', k), { url: before }));
+      job(fs.setDoc(ref('contentImages', k), { url: before }), ()=>{ fbLast.cimg[k] = imgSig(before); });
       continue;
     }
     const url = await fbUploadImg(`boards/${FB_BOARD}/content/${safeName(k)}`, before);
     if(state.cimg[k] !== before) continue;  // ผู้ใช้เปลี่ยน/ลบรูประหว่างรออัป — ปล่อยให้รอบหน้าจัดการ
     if(url){
-      state.cimg[k]  = url;
-      fbLast.cimg[k] = imgSig(url);
-      jobs.push(fs.setDoc(ref('contentImages', k), { url }));
+      state.cimg[k] = url;
+      job(fs.setDoc(ref('contentImages', k), { url }), ()=>{ fbLast.cimg[k] = imgSig(url); });
     }else{
       /* อัปไม่ผ่าน — เก็บ base64 ลง Firestore ไว้ก่อนไม่ให้รูปหาย
-         และตั้งใจไม่ stamp fbLast เพื่อให้ลองอัปใหม่ในรอบถัดไป */
-      jobs.push(fs.setDoc(ref('contentImages', k), { data: before }));
+         และตั้งใจไม่ปั๊ม เพื่อให้ลองอัปใหม่ในรอบถัดไป */
+      job(fs.setDoc(ref('contentImages', k), { data: before }));
     }
   }
+  /* ⚠ คีย์ของ state.cimg ถ่ายไว้ก่อน await อัปรูป ซึ่งกินเวลาเป็นวินาที
+     ระหว่างนั้น snapshot จากเครื่องอื่นอาจเข้ามาเพิ่มรูปใหม่ (fbApply → fbStamp ปั๊ม fbLast ให้แล้ว)
+     ถ้าใช้ลิสต์เก่ามาเทียบ รูปใหม่ของเขาจะนับเป็น "ไม่มีในจอ" แล้วถูกลบทั้ง doc และไฟล์ใน Storage
+     เลยต้องถ่ายใหม่ตรงนี้ให้ตรงกับ state ตอนนี้ */
+  const liveI = {};
+  Object.keys(state.cimg).forEach(k=>{ liveI[k] = 1; });
   Object.keys(fbLast.cimg).forEach(k=>{
-    if(!seenI[k]){
+    if(!liveI[k]) job(fs.deleteDoc(ref('contentImages', k)), ()=>{
       delete fbLast.cimg[k];
-      jobs.push(fs.deleteDoc(ref('contentImages', k)));
       fbDeleteImg(`boards/${FB_BOARD}/content/${safeName(k)}`);
-    }
+    });
   });
 
   const seenL = {};
   Object.keys(state.logs).forEach(k=>{
     const j = JSON.stringify(state.logs[k]);
     seenL[k] = 1;
-    if(fbLast.logs[k] !== j){ fbLast.logs[k] = j; jobs.push(fs.setDoc(ref('logs', k), state.logs[k])); }
+    if(fbLast.logs[k] !== j)
+      job(fs.setDoc(ref('logs', k), state.logs[k]), ()=>{ fbLast.logs[k] = j; });
   });
   Object.keys(fbLast.logs).forEach(k=>{
-    if(!seenL[k]){ delete fbLast.logs[k]; jobs.push(fs.deleteDoc(ref('logs', k))); }
+    if(!seenL[k]) job(fs.deleteDoc(ref('logs', k)), ()=>{ delete fbLast.logs[k]; });
   });
 
-  const st = setDirty() ? JSON.parse(cSettings) : settingsDoc(), sj = JSON.stringify(st);
-  if(fbLast.settings !== sj){ fbLast.settings = sj; jobs.push(fs.setDoc(ref('settings', 'app'), st)); }
+  /* ช่องตั้งค่า: รอ snapshot ของ settings มาก่อนเสมอ
+     ค่า default ใน HTML คือ 0/200/6 ถ้าดันขึ้นไปก่อนของจริงมาถึง ค่าจริงจะถูกทับหายไปเลย
+     (ตัวอ่านข้ามค่า 0 ทิ้ง เลยกู้กลับไม่ได้) */
+  if(fbSetSynced){
+    const st = setDirty() ? JSON.parse(cSettings) : settingsDoc(), sj = JSON.stringify(st);
+    if(fbLast.settings !== sj)
+      job(fs.setDoc(ref('settings', 'app'), st), ()=>{ fbLast.settings = sj; });
+  }
 
-  if(!jobs.length) return;
-  try{ await Promise.all(jobs); fbErr(false); }catch(e){ fbErr(true); }
+  if(!jobs.length){
+    /* ไม่มีอะไรต้องเขียน — ถ้าเมื่อกี้ค้างสถานะพลาดอยู่ แปลว่าของมันขึ้นไปถึงแล้ว
+       (เช่นรอบก่อน timeout แต่ปลายทางรับไปจริง แล้ว snapshot ปั๊ม fbLast ให้เรียบร้อย)
+       ต้องปลดธงและปลดแถบด้วย ไม่งั้นแถบแดงค้างทั้งที่ไม่มีงานค้างเลย */
+    if(cpFail){ cpFail = false; fbOnline(fbLive); }
+    return;
+  }
+
+  let res;
+  try{
+    /* allSettled ไม่ใช่ all — ถ้าใช้ all แล้วมีใบเดียวที่เขียนไม่ผ่านตลอด (เช่น doc ใหญ่เกิน 1 MB)
+       จะไม่มีใบไหนได้ปั๊มเลยทั้งชุด ทั้งแอปค้างสถานะ "เขียนพลาด" ถาวร กดบันทึกอะไรไม่ได้อีก
+       แยกทีละใบ = ใบที่ผ่านปั๊มไป เหลือเฉพาะใบที่พลาดไว้ลองใหม่ */
+    res = await Promise.race([ Promise.allSettled(jobs.map(j=>j.p)), cpTimeout(12000) ]);
+  }catch(e){
+    /* timeout: promise ยังค้างอยู่ อาจไปลงทีหลังก็ได้ ไม่ปั๊มอะไรเลย รอบหน้าเขียนซ้ำ (ซ้ำได้ ไม่เสียหาย) */
+    console.warn('cloudPushRun timeout', e);
+    cpWriteFailed();
+    return;
+  }
+
+  let bad = 0;
+  res.forEach((r, i)=>{
+    if(r.status === 'fulfilled'){ if(jobs[i].s) try{ jobs[i].s(); }catch(e){} }
+    else { bad++; console.warn('cloud write rejected', r.reason); }
+  });
+  if(bad){ cpWriteFailed(bad); return; }
+
+  cpFail = false;            // ต้องเคลียร์ก่อนเรียก fbOnline ไม่งั้นแถบไม่ยอมหาย
+  fbOnline(true);
+}
+
+/* เขียนไม่ผ่าน — ไม่ปั๊มใบที่พลาด ขึ้นแถบแดง แล้วลองใหม่เองใน 10 วิ */
+function cpWriteFailed(bad){
+  cpFail = true;
+  fbOnline(false);
+  fbErr(true);
+  cpRetryLater();
+  if(Date.now() - offWarnAt > 20000){
+    offWarnAt = Date.now();
+    showToast('⚠ เขียนขึ้นคลาวด์ไม่สำเร็จ' + (bad ? ' (' + bad + ' รายการ)' : '') +
+              ' — ระบบจะลองใหม่ให้เอง อย่าปิดหน้านี้จนกว่าแถบแดงจะหาย');
+  }
 }
 
 /* ===== content plan ===== */
@@ -3628,11 +3855,18 @@ function showMetaTokenModal(){
   if(inp){ inp.focus(); inp.select(); }
   const close = ()=>{ const m=document.getElementById('metaTokenModal'); if(m) m.remove(); };
   document.getElementById('metaTokenCancel').onclick = close;
-  document.getElementById('metaTokenSave').onclick = ()=>{
+  document.getElementById('metaTokenSave').onclick = async ()=>{
     const t = (document.getElementById('metaTokenInput').value || '').trim();
     if(!t){ inp.style.borderColor='#ef4444'; inp.focus(); return; }
+    if(!cloudLive()){ fbErr(true); showToast('⚠ ยังต่อคลาวด์ไม่ได้ — รอสักครู่แล้วกดบันทึกใหม่'); return; }
+    try{
+      await fb.fs.setDoc(fb.fs.doc(fb.db,'boards',FB_BOARD,'meta','metaToken'), { token:t, at:Date.now() });
+    }catch(e){
+      console.warn('save meta token failed', e);
+      showToast('⚠ บันทึก token ไม่สำเร็จ: ' + (e.message||e));
+      return;
+    }
     META_TOKEN = t;
-    try{ localStorage.setItem('meta_token', META_TOKEN); }catch(e){}
     close();
     renderMetaBtn();
     metaSyncAll();
@@ -3643,17 +3877,8 @@ function showMetaTokenModal(){
 /* GitHub token modal ถูกถอดออกแล้ว — ไม่ต้องใช้ token ส่วนตัวอีกต่อไป
    ทุกอย่างบันทึกเข้า Firestore/Storage ผ่าน anonymous auth โดยตรง */
 
-/* --- โหลด cache จาก localStorage แสดงข้อมูลทันที ก่อน API ตอบ --- */
-function loadMetaCache(){
-  try{
-    const ac = localStorage.getItem('meta_actuals_cache');
-    if(ac){ const d = JSON.parse(ac); if(d && d.data) updateActual(d.data); }
-  }catch(e){}
-  try{
-    const lc = localStorage.getItem('meta_leads_cache');
-    if(lc){ const d = JSON.parse(lc); if(d && d.data) updateLeads({ meta: d.data }); }
-  }catch(e){}
-}
+/* cache ใน localStorage ถูกถอดออกแล้ว — actuals/leads/ตาราง Live มาจาก Firestore
+   ผ่าน onSnapshot อย่างเดียว ไม่มีสำเนาในเครื่องให้หลุดออกจากกันได้อีก */
 
 /* --- sync ทั้งสอง feed พร้อมกัน ---
    กันเคสตัวเลขงบ/เป้า/ตารางแผนที่พิมพ์ค้างไว้ยังไม่กดยืนยันบันทึก แล้วดูเหมือนถูก Sync รีค่ากลับ:
@@ -3766,25 +3991,15 @@ async function metaSyncActuals(){
 
   if(!Object.keys(actuals).length) return;
 
-  // บันทึก cache (กัน API ล่มรอบหน้า)
-  try{ localStorage.setItem('meta_actuals_cache', JSON.stringify({ ts:Date.now(), data:actuals })); }catch(e){}
-
-  if(fb && fbReady){
-    const { db, fs } = fb;
-    await Promise.all(Object.entries(actuals).map(([k,v]) =>
-      fs.setDoc(fs.doc(db,'boards',FB_BOARD,'actuals',k), Object.assign(
-        { spend:Math.round(v.spend), result:Math.round(v.result) },
-        v.parts ? { parts: roundParts(v.parts) } : {}
-      ))
-    ));
-  } else {
-    updateActual(Object.fromEntries(
-      Object.entries(actuals).map(([k,v])=>[k, Object.assign(
-        { spend:Math.round(v.spend), result:Math.round(v.result) },
-        v.parts ? { parts: roundParts(v.parts) } : {}
-      )])
-    ));
-  }
+  /* เขียนขึ้นคลาวด์อย่างเดียว ไม่มี cache ในเครื่อง — ต่อคลาวด์ไม่ได้ก็ไม่เก็บ */
+  if(!cloudLive()){ fbErr(true); showToast('⚠ ยังต่อคลาวด์ไม่ได้ — ตัวเลขที่ดึงมายังไม่ถูกบันทึก'); return; }
+  const { db, fs } = fb;
+  await Promise.all(Object.entries(actuals).map(([k,v]) =>
+    fs.setDoc(fs.doc(db,'boards',FB_BOARD,'actuals',k), Object.assign(
+      { spend:Math.round(v.spend), result:Math.round(v.result) },
+      v.parts ? { parts: roundParts(v.parts) } : {}
+    ))
+  ));
 }
 
 /* =========================================================
@@ -3798,7 +4013,9 @@ async function metaSyncActuals(){
      • View rate  = ยอดวิว ÷ Reach (จำนวนคน)
      • ภาพนิ่งไม่มี video metric → แสดง "-"
    ========================================================= */
-let metaAdContent = (()=>{ try{ const c=JSON.parse(localStorage.getItem('meta_adcontent_cache')||'null'); return (c&&c.data)||[]; }catch(e){ return []; } })();
+/* ตาราง Live (Lifetime) — เก็บบนคลาวด์ที่ meta/adContent ไม่มีสำเนาในเครื่อง
+   เครื่องไหน Sync Meta ก็ตาม เครื่องอื่นเห็นตารางเดียวกันทันทีโดยไม่ต้อง sync เอง */
+let metaAdContent = [];
 
 const _av = (arr,type)=>{ const a=(arr||[]).find(x=>x.action_type===type); return a?num(a.value):0; };
 const _v0 = arr => { const a=(arr||[])[0]; return a?num(a.value):0; };
@@ -3904,13 +4121,23 @@ async function anaFetchRows(timeRange){
   return rows;
 }
 
-/* Sync แบบ Lifetime (auto-refresh 30 นาที + ตอนกด Sync Meta) */
+/* Sync แบบ Lifetime (auto-refresh 30 นาที + ตอนกด Sync Meta)
+   เขียนขึ้น meta/adContent แล้วให้ snapshot เป็นคนอัปเดตตัวแปร ทุกเครื่องจึงเห็นพร้อมกัน */
 async function metaSyncAdContent(){
   const rows = await anaFetchRows(null);
   if(!rows) return;                       // ดึงไม่สำเร็จ (แจ้ง error แล้ว)
-  metaAdContent = rows;
-  try{ localStorage.setItem('meta_adcontent_cache', JSON.stringify({ ts:Date.now(), data:rows })); }catch(e){}
-  renderAnalyze();
+  if(!cloudLive()){ fbErr(true); showToast('⚠ ยังต่อคลาวด์ไม่ได้ — ตาราง Live ที่ดึงมายังไม่ถูกบันทึก'); return; }
+  const body = { json: JSON.stringify(rows), at: Date.now() };
+  if(anaDocBytes(body) > ANA_DOC_LIMIT){
+    showToast('⚠ ตาราง Live ใหญ่เกินที่คลาวด์รับได้ — ยังไม่ได้บันทึก');
+    return;
+  }
+  try{
+    await fb.fs.setDoc(fb.fs.doc(fb.db,'boards',FB_BOARD,'meta','adContent'), body);
+  }catch(e){
+    console.warn('metaSyncAdContent save failed', e);
+    showToast('⚠ บันทึกตาราง Live ไม่สำเร็จ: ' + (e.message||e));
+  }
 }
 
 const ANA_COLS = [
@@ -4045,7 +4272,8 @@ let anaCurrent = null;    // null = หน้ารวมกล่อง · 'liv
 /* ตัวช่วยเขียนลง Firestore — ถ้ายังต่อคลาวด์ไม่ได้จะเตือนแทนการเงียบหาย */
 function anaRef(coll, id){ return fb.fs.doc(fb.db, 'boards', FB_BOARD, coll, id); }
 function anaCloudReady(){
-  if(fbReady) return true;
+  if(cloudLive()) return true;
+  fbErr(true);   // ขึ้นแถบเตือนค้างไว้ด้วย ไม่ใช่แค่ toast ที่วืบไป
   showToast('⚠ ยังต่อคลาวด์ไม่ได้ — รอสักครู่แล้วลองใหม่ (ข้อมูลจะไม่ถูกบันทึกตอนนี้)');
   return false;
 }
@@ -4076,8 +4304,14 @@ async function anaPutReport(rp){
 }
 async function anaPutNotes(scope){
   if(!anaCloudReady()) return false;
+  const body = { json: JSON.stringify(anaNotes[scope] || {}) };
+  const size = anaDocBytes(body);
+  if(size > ANA_DOC_LIMIT){
+    showToast('⚠ โน้ตในรายงานนี้ใหญ่เกินที่คลาวด์รับได้ (' + Math.round(size/1024) + ' KB จากลิมิต ~900 KB) — ลบโน้ตเก่าที่ไม่ใช้ออกบ้าง');
+    return false;
+  }
   try{
-    await fb.fs.setDoc(anaRef('anaNotes', scope), { json: JSON.stringify(anaNotes[scope] || {}) });
+    await fb.fs.setDoc(anaRef('anaNotes', scope), body);
     return true;
   }catch(e){ console.warn('anaPutNotes failed', e); showToast('⚠ บันทึกโน้ตไม่สำเร็จ: ' + (e.message||e)); return false; }
 }
@@ -4787,24 +5021,19 @@ async function metaSyncLeads(){
 
   if(!docs.length) return;
 
-  // บันทึก cache
-  try{ localStorage.setItem('meta_leads_cache', JSON.stringify({ ts:Date.now(), data:docs })); }catch(e){}
-
-  if(fb && fbReady){
-    const { db, fs } = fb;
-    await Promise.all(docs.map(d => {
-      const { id, ...rest } = d;
-      return fs.setDoc(fs.doc(db,'boards',FB_BOARD,'leads',`meta|${id}`), rest);
-    }));
-  } else {
-    updateLeads({ meta: docs });
-  }
+  /* เขียนขึ้นคลาวด์อย่างเดียว ไม่มี cache ในเครื่อง */
+  if(!cloudLive()){ fbErr(true); showToast('⚠ ยังต่อคลาวด์ไม่ได้ — ลีดที่ดึงมายังไม่ถูกบันทึก'); return; }
+  const { db, fs } = fb;
+  await Promise.all(docs.map(d => {
+    const { id, ...rest } = d;
+    return fs.setDoc(fs.doc(db,'boards',FB_BOARD,'leads',`meta|${id}`), rest);
+  }));
 }
 
-/* --- init: แสดงปุ่ม + โหลด cache ทันที + auto-sync + ตั้ง interval 30 นาที --- */
+/* --- init: แสดงปุ่ม + auto-sync + ตั้ง interval 30 นาที ---
+   ไม่มี cache ให้โหลดแล้ว ข้อมูลมาจาก Firestore snapshot ทันทีที่ต่อติด */
 function initMetaSDK(){
   renderMetaBtn();
-  loadMetaCache(); // แสดงข้อมูลจาก cache ก่อน API ตอบ
 
   // รอ Firebase พร้อมก่อน sync (max 5 วิ)
   const waitAndSync = (tries) => {
@@ -5106,6 +5335,7 @@ document.addEventListener('click', e=>{
       danger:  true,
       onOk:    () => {
         if(blockedByDraft()) return;
+        if(!cloudOK('ต่อคลาวด์ไม่ได้ — ลบถาวรไม่ได้')) return;   // ลบบนจอแล้วลบบนคลาวด์ไม่ได้ = เดือนกลับมาเองตอน snapshot มา
         removePlan(m);
         commitStructure();          // ลบถาวรคือคำสั่งที่ยืนยันแล้ว บันทึกทันที
         renderMonthMgr();
@@ -5121,7 +5351,7 @@ document.addEventListener('click', e=>{
   if(e.target.id==='btnAdd'){
     focusKey=null;
     if(!state.adding){ setAdding(true); }
-    else if(!blockedByDraft() && addPlan($('inMonth').value)){ setAdding(false); commitStructure(); }
+    else if(!blockedByDraft() && cloudOK('ต่อคลาวด์ไม่ได้ — เพิ่มเดือนไม่ได้') && addPlan($('inMonth').value)){ setAdding(false); commitStructure(); }
   }
 });
 document.addEventListener('change', e=>{
@@ -5201,16 +5431,42 @@ document.addEventListener('drop', e=>{
 /* ===== init ===== */
 (function init(){
   state.cMonth = monthKey(new Date());
-  if(!loadSaved()){
-    const cur = monthKey(new Date());
-    state.plans = [ makePlan(cur, 0) ];
-    state.active = cur;
-  }
+
+  /* เดือนเปล่าไว้ให้หน้าเว็บมีอะไรวาดระหว่างรอคลาวด์ ไม่ใช่ข้อมูลจริง
+     ของจริงมาจาก snapshot ทั้งหมด (fbSynced กันไม่ให้ก้อนนี้ถูก push ขึ้นไปทับ) */
+  const cur = monthKey(new Date());
+  state.plans  = [ makePlan(cur, 0) ];
+  state.active = cur;
+
   applyActual();
-  markSaved();          // ค่าที่โหลดขึ้นมาตอนเปิด = ค่าที่บันทึกไว้แล้ว
+  markSaved();
   render();
-  fbInit();   // รายงาน/โน้ต/รูป หน้า Analyze โหลดจาก Firestore ผ่าน fbWatch
+
+  /* ต่อคลาวด์ไม่ติดใน 8 วิ = ขึ้นแถบเตือนไปก่อน ไม่ปล่อยให้นั่งมองจอเปล่าเงียบๆ */
+  setTimeout(()=>{ if(!fbSynced) fbErr(true); }, 8000);
+
+  fbInit();   // ข้อมูลทุกหน้าโหลดจาก Firestore ผ่าน fbWatch
   initMetaSDK();
+})();
+
+/* ลองต่อใหม่ — ครอบสามกรณี
+     ยังไม่เคยต่อติด        ⇒ fbInit
+     ต่อติดและ snapshot ดี  ⇒ แค่ปลดแถบ (หลุดไปเองแล้วกลับมาแล้ว)
+     ต่อติดแต่ listener ตาย ⇒ รื้อ subscription ทั้งชุดแล้วสมัครใหม่ ไม่งั้นค้างบันทึกไม่ได้ตลอดกาล */
+function fbRetry(){
+  if(!fbReady){ fbInit(); return; }
+  if(cpFail) cpRetryLater();                  // มีงานเขียนค้างพลาดอยู่ ลองเขียนใหม่ด้วย ไม่ใช่แค่ต่อ listener
+  if(fbSynced && fbLive && !cpFail){ fbErr(false); return; }
+  fbUnsubs.forEach(u=>{ try{ u(); }catch(e){} });
+  fbUnsubs = [];
+  fbSynced = false; fbSetSynced = false;
+  fbWatch();
+}
+
+/* ปุ่มบนแถบเตือน — กดแล้วลองต่อใหม่ทันที ไม่ต้องรอ 15 วิ */
+(function(){
+  const b = document.getElementById('fbErrRetry');
+  if(b) b.onclick = ()=>{ showToast('กำลังลองต่อคลาวด์ใหม่…'); fbRetry(); };
 })();
 /* Esc = ปิดกล่องยืนยัน, Enter = ยืนยัน (ถ้าปุ่มกดได้) */
 document.addEventListener('keydown', e=>{
@@ -5220,9 +5476,23 @@ document.addEventListener('keydown', e=>{
 });
 
 window.addEventListener('beforeunload', e=>{
-  saveNow();
-  /* ปิดหน้าทั้งที่ยังไม่กดยืนยัน = ตัวเลขที่พิมพ์ค้างจะหาย เตือนก่อน */
+  /* ไม่มีที่เก็บในเครื่องแล้ว ปิดหน้าทั้งที่ยังไม่กดยืนยัน = ของที่พิมพ์ค้างหายจริง เตือนก่อน */
   if(anyDirty()){ e.preventDefault(); e.returnValue = ''; return ''; }
+});
+
+/* ย่อ/ขยายจอตอนแถบโชว์อยู่ = แถบพับบรรทัดใหม่ ความสูงเปลี่ยน ต้องวัดใหม่
+   ไม่วัดใหม่ = padding-top ค้างค่าเก่า แถบจะทับหัวตาราง หรือเหลือช่องว่างเปล่า */
+window.addEventListener('resize', ()=>{
+  const el = document.getElementById('fbErr');
+  if(el && !el.hidden) fbErr(true);
+});
+
+/* เน็ตกลับมา/สลับแท็บกลับมา = ลองต่อใหม่ให้เลย */
+window.addEventListener('online',  ()=> fbRetry());
+window.addEventListener('offline', ()=>{ fbLive = false; fbErr(true); });
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState !== 'visible') return;
+  if(!fbReady || !fbSynced || !fbLive) fbRetry();
 });
 </script>
 </body>

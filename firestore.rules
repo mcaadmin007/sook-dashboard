@@ -26,7 +26,14 @@ service cloud.firestore {
           'analyses',       // รายงาน Analyze
           'anaNotes',       // โน้ตวิเคราะห์รายคอนเทนต์
           'anaImages',      // รูปแนบใน Analyze (เก็บ url)
-          'meta'            // ธง migration
+          /* meta/ เก็บ 3 ใบ:
+               migration   — ธงกันย้ายข้อมูลเก่าซ้ำ
+               adContent   — ตาราง Live (Lifetime) ที่ Sync Meta ดึงมา
+               metaToken   — Meta System User token
+             ⚠ ใครที่ล็อกอิน Anonymous เข้าโปรเจกต์นี้ได้ อ่าน metaToken ได้ด้วย
+                ถ้าจะล็อกให้แน่นขึ้น ต้องเปลี่ยนไปใช้ Auth แบบมีตัวตน (Google sign-in)
+                แล้วเช็ค uid/email ในกฎนี้ */
+          'meta'
         ];
       }
     }
