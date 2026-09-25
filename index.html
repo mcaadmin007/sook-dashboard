@@ -525,6 +525,21 @@
     background:#f4f5f8;color:#9aa3b2;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .rcard .rc-del:hover{background:#fbe9e7;color:#c9302c}
   .rcard .rc-open{margin-top:12px;font-size:11.5px;color:var(--blue);font-weight:700}
+  /* กล่องที่ผูกลิงก์สไลด์ไว้ */
+  .rcard.slides{background:linear-gradient(180deg,#fffaf4,#fff3e6);border-color:#f3dcc0}
+  .rcard.slides:hover{border-color:#e9c79a}
+  .rcard .rc-ppt{font-size:12px;font-weight:700;color:#b4531b;background:#fdeadb;padding:3px 9px;border-radius:99px}
+  .rcard .rc-open.ppt{color:#b4531b}
+  /* ลิงก์สไลด์ในหน้ารายละเอียด */
+  .am-slides{display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:4px 10px;border-radius:99px;
+    background:#fdeadb;color:#b4531b;font-size:11.5px;font-weight:700;text-decoration:none}
+  .am-slides:hover{background:#fbdcc6}
+  /* ช่วงวันที่แบบพับเก็บในโมดัล Create Analyze */
+  .ana-adv{margin:2px 0 10px;border-top:1px solid var(--line-2,#eef0f4);padding-top:10px}
+  .ana-adv>summary{cursor:pointer;font-size:11.5px;font-weight:700;color:var(--ink-3);list-style:none}
+  .ana-adv>summary::-webkit-details-marker{display:none}
+  .ana-adv>summary::before{content:'▸ ';color:var(--ink-4)}
+  .ana-adv[open]>summary::before{content:'▾ '}
   /* แถบ back ในหน้ารายละเอียด */
   .ana-back{display:flex;align-items:center;gap:10px;padding:12px 14px 0}
   .btn-back{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-3,#e1e5ec);background:#fff;
@@ -1049,7 +1064,7 @@
         <h2>Analyze Content</h2>
       </div>
       <div class="head-right">
-        <button class="btn-ana" id="btnAnaNew" title="สร้างรายงานวิเคราะห์จากช่วงวันที่ที่เลือก">
+        <button class="btn-ana" id="btnAnaNew" title="สร้างกล่องรายงาน — วางลิงก์ PowerPoint (หรือเลือกช่วงวันที่เพื่อดึงข้อมูล Meta)">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M8 3.2v9.6M3.2 8h9.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
           </svg>Create Analyze
@@ -1367,17 +1382,26 @@
         <input type="text" id="anaFTitle" placeholder="เช่น สรุปคอนเทนต์ ก.ย. 2568" autocomplete="off">
       </div>
       <div class="field">
-        <label>ตั้งแต่วันที่</label>
-        <input type="date" id="anaFSince">
+        <label>ลิงก์ PowerPoint / Google Slides</label>
+        <input type="url" id="anaFLink" placeholder="วางลิงก์ที่นี่ เช่น https://docs.google.com/presentation/d/..."
+               autocomplete="off" spellcheck="false">
+        <div class="fhint">วางลิงก์แล้วกดสร้าง — จะได้กล่องที่คลิกเข้าไปดูสไลด์ได้เลย</div>
       </div>
-      <div class="field">
-        <label>ถึงวันที่</label>
-        <input type="date" id="anaFUntil">
-      </div>
+      <details class="ana-adv">
+        <summary>ดึงข้อมูล Meta ตามช่วงวันที่ด้วย (ไม่ใส่ก็ได้)</summary>
+        <div class="field">
+          <label>ตั้งแต่วันที่</label>
+          <input type="date" id="anaFSince">
+        </div>
+        <div class="field">
+          <label>ถึงวันที่</label>
+          <input type="date" id="anaFUntil">
+        </div>
+      </details>
       <p class="cf-warn" id="anaFWarn" hidden></p>
       <div class="cf-act">
         <button class="cf-btn" id="anaFCancel" type="button">ยกเลิก</button>
-        <button class="cf-btn go" id="anaFOk" type="button">ดึงข้อมูล & วิเคราะห์</button>
+        <button class="cf-btn go" id="anaFOk" type="button">สร้างกล่องรายงาน</button>
       </div>
     </div>
   </div>
@@ -2258,6 +2282,7 @@ function fbWatch(){
         title: d.title || '(ไม่มีชื่อ)',
         since: d.since || '',
         until: d.until || '',
+        slidesUrl: String(d.slidesUrl || ''),
         createdAt: num(d.createdAt) || 0,
         rows: Array.isArray(d.rows) ? d.rows : [],
       });
@@ -4351,7 +4376,8 @@ function anaDocBytes(obj){
 async function anaPutReport(rp){
   if(!anaCloudReady()) return false;
   const body = {
-    title: rp.title, since: rp.since, until: rp.until,
+    title: rp.title, since: rp.since || '', until: rp.until || '',
+    slidesUrl: rp.slidesUrl || '',
     createdAt: rp.createdAt, rows: rp.rows || [],
   };
   const size = anaDocBytes(body);
@@ -4839,6 +4865,28 @@ function thDate(s){
   return `${+p[2]} ${THMON[+p[1]-1]||''} ${(+p[0]+543)%100}`;
 }
 
+/* timestamp → yyyy-mm-dd ตามเวลาเครื่อง
+   ⚠ ห้ามใช้ toISOString() ตรงนี้ มันเป็น UTC — ของที่สร้างตอนเที่ยงคืน-เจ็ดโมงเช้าจะโชว์เป็นวันก่อนหน้า
+   กัน Invalid Date ด้วย เพราะ toISOString() ของวันที่เสียจะ throw ทำให้กล่องทั้งหน้าไม่ขึ้น */
+function ymdLocal(ts){
+  const d = new Date(ts);
+  if(isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
+
+/* ลิงก์สไลด์ที่ผู้ใช้วางมา — เติม https:// ให้ถ้าลืม แล้วยอมรับแค่ http(s)
+   ⚠ ต้องกรองตรงนี้ให้ครบ เพราะค่านี้ถูกเอาไปใส่ href และ window.open
+     ถ้าปล่อย javascript: หรือ data: ผ่าน = ใครแก้ข้อมูลในคลาวด์ได้ก็รันสคริปต์ในหน้านี้ได้ */
+function anaNormLink(v){
+  let s = String(v==null?'':v).trim();
+  if(!s) return '';
+  if(/^\/\//.test(s)) s = 'https:' + s;                            // แบบ //docs.google.com/...
+  else if(!/^[a-z][a-z0-9+.\-]*:/i.test(s)) s = 'https://' + s;    // วางมาแบบ docs.google.com/... ก็ยังใช้ได้
+  if(!/^https?:\/\//i.test(s)) return '';
+  return s;
+}
+
 function renderAnalyze(){
   const gallery = $('anaGallery'), detail = $('anaDetailWrap'), tag = $('anaTag'), xls = $('btnAnaXls');
 
@@ -4855,16 +4903,31 @@ function renderAnalyze(){
     if(gallery){
       const cards = anaReports.map(rp=>{
         const n = (rp.rows||[]).length;
-        const avg = anaAvgScore(rp.rows);
-        return `<div class="rcard" data-anaopen="${rp.id}">`
-          + `<button class="rc-del" data-anadel="${rp.id}" title="ลบรายงาน">×</button>`
+        const link = anaNormLink(rp.slidesUrl);
+        /* กล่องที่มาจากลิงก์อย่างเดียวไม่มีช่วงวันที่ — โชว์วันที่สร้างแทนไม่ให้บรรทัดนี้ว่าง */
+        const sub = (rp.since && rp.until)
+          ? `ช่วง ${thDate(rp.since)} – ${thDate(rp.until)}`
+          : (rp.createdAt ? `สร้างเมื่อ ${thDate(ymdLocal(rp.createdAt))}` : '');
+        /* มีแต่ลิงก์ (ไม่มีตาราง) → คลิกที่ไหนในกล่องก็เปิดสไลด์ ไม่พาเข้าไปเจอตารางเปล่า
+           นอกนั้นคลิกกล่อง = เข้าหน้าข้อมูลเหมือนเดิม (ลิงก์ย้ายไปอยู่ที่ชิป PowerPoint)
+           ⚠ เคส rows ว่าง+ไม่มีลิงก์ ต้องยังกดเข้าได้ ไม่งั้นรายงานเก่าที่ข้อมูลหายจะเปิดดูโน้ตไม่ได้เลย */
+        const slidesOnly = !!link && !n;
+        const act = slidesOnly ? ` data-anaslides="${esc(link)}"` : ` data-anaopen="${esc(rp.id)}"`;
+        return `<div class="rcard${link?' slides':''}"${act}>`
+          + `<button class="rc-del" data-anadel="${esc(rp.id)}" title="ลบรายงาน">×</button>`
           + `<div class="rc-title">${esc(rp.title)}</div>`
-          + `<div class="rc-range">ช่วง ${thDate(rp.since)} – ${thDate(rp.until)}</div>`
-          + `<div class="rc-stats"><span class="rc-ads">${fmt(n)} คอนเทนต์</span></div>`
-          + `<div class="rc-open">คลิกเพื่อดูข้อมูล →</div></div>`;
+          + `<div class="rc-range">${esc(sub)}</div>`
+          + `<div class="rc-stats">`
+            + (n ? `<span class="rc-ads">${fmt(n)} คอนเทนต์</span>` : '')
+            + (link ? `<span class="rc-ppt" data-anaslides="${esc(link)}" title="เปิดสไลด์ในแท็บใหม่">▣ PowerPoint</span>` : '')
+            + (!n && !link ? `<span class="rc-ads">ไม่มีข้อมูล</span>` : '')
+          + `</div>`
+          + (slidesOnly ? `<div class="rc-open ppt">คลิกเพื่อเปิด PowerPoint ↗</div>`
+                        : `<div class="rc-open">คลิกเพื่อดูข้อมูล →</div>`)
+          + `</div>`;
       }).join('');
       gallery.innerHTML = `<div class="ana-gallery">${cards}</div>`
-        + (anaReports.length ? '' : `<div class="ana-empty">ยังไม่มีรายงานที่บันทึกไว้ — กด <b>Create Analyze</b> เพื่อสร้างรายงานจากช่วงวันที่ที่ต้องการ</div>`);
+        + (anaReports.length ? '' : `<div class="ana-empty">ยังไม่มีรายงานที่บันทึกไว้ — กด <b>Create Analyze</b> แล้ววางลิงก์ PowerPoint เพื่อสร้างกล่องแรก</div>`);
     }
     return;
   }
@@ -4881,10 +4944,14 @@ function renderAnalyze(){
   /* --- meta bar (หัวข้อ + ช่วงวันที่) --- */
   const mbar = $('anaMeta');
   if(mbar){
+    const mlink = meta ? anaNormLink(meta.slidesUrl) : '';
     mbar.innerHTML = meta
       ? `<div class="ana-meta"><span class="am-title">${esc(meta.title)}</span>`
-        + `<span class="am-range">ช่วง ${thDate(meta.since)} – ${thDate(meta.until)}`
-        + (meta.createdAt?` · สร้างเมื่อ ${thDate(new Date(meta.createdAt).toISOString().slice(0,10))}`:'') + `</span></div>`
+        + `<span class="am-range">`
+        + ((meta.since && meta.until) ? `ช่วง ${thDate(meta.since)} – ${thDate(meta.until)}` : '')
+        + (meta.createdAt?`${(meta.since&&meta.until)?' · ':''}สร้างเมื่อ ${thDate(ymdLocal(meta.createdAt))}`:'') + `</span>`
+        + (mlink ? `<a class="am-slides" href="${esc(mlink)}" target="_blank" rel="noopener noreferrer">▣ เปิด PowerPoint ↗</a>` : '')
+        + `</div>`
       : `<div class="ana-meta"><span class="am-title">🔴 Live · Lifetime</span><span class="am-range">ข้อมูลล่าสุดทั้งหมด</span></div>`;
   }
   const delBtn = $('btnAnaDel'); if(delBtn) delBtn.hidden = (anaCurrent==='live');
@@ -5104,13 +5171,14 @@ function anaClearNotesUI(){
    ========================================================= */
 function anaOpenModal(){
   const m = $('anaModal'); if(!m) return;
-  const today = new Date();
-  const until = today.toISOString().slice(0,10);
-  const since = new Date(today.getTime() - 29*864e5).toISOString().slice(0,10);
-  const t = $('anaFTitle'), s = $('anaFSince'), u = $('anaFUntil'), w = $('anaFWarn');
-  if(s) s.value = since;
-  if(u) u.value = until;
+  const t = $('anaFTitle'), lk = $('anaFLink'), s = $('anaFSince'), u = $('anaFUntil'), w = $('anaFWarn');
   if(t) t.value = '';
+  if(lk) lk.value = '';
+  /* ⚠ ต้องล้างวันที่ให้ว่าง ห้ามเติมค่าเริ่มต้นเหมือนเดิม
+     เพราะตอนนี้ "มีวันที่ = ให้ไปดึง Meta" ถ้าเติมไว้ทุกครั้ง คนที่แค่อยากวางลิงก์จะโดนบังคับดึงข้อมูล */
+  if(s) s.value = '';
+  if(u) u.value = '';
+  const adv = m.querySelector('.ana-adv'); if(adv) adv.open = false;
   if(w){ w.hidden = true; w.textContent = ''; }
   m.hidden = false;
   if(t) setTimeout(()=>t.focus(), 30);
@@ -5118,36 +5186,51 @@ function anaOpenModal(){
 function anaCloseModal(){ const m=$('anaModal'); if(m) m.hidden = true; }
 
 async function anaCreateReport(){
-  const t = $('anaFTitle'), s = $('anaFSince'), u = $('anaFUntil'), w = $('anaFWarn'), ok = $('anaFOk');
+  const t = $('anaFTitle'), lk = $('anaFLink'), s = $('anaFSince'), u = $('anaFUntil'), w = $('anaFWarn'), ok = $('anaFOk');
   const title = (t?t.value:'').trim();
+  const raw   = (lk?lk.value:'').trim();
   const since = s?s.value:'', until = u?u.value:'';
   const warn = msg => { if(w){ w.hidden=false; w.textContent=msg; } };
+  if(w){ w.hidden = true; w.textContent = ''; }   // ล้างคำเตือนรอบก่อน ไม่ให้ค้างจนอ่านผิด
   if(!title){ warn('ใส่หัวข้อรายงานก่อนนะครับ'); return; }
-  if(!since || !until){ warn('เลือกช่วงวันที่ให้ครบ'); return; }
-  if(since > until){ warn('วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด'); return; }
-  if(typeof META_TOKEN==='undefined' || !META_TOKEN){ warn('ยังไม่ได้ใส่ Meta Token — กด Sync Meta ใส่ token ก่อน'); return; }
+  const link = anaNormLink(raw);
+  if(raw && !link){ warn('ลิงก์ไม่ถูกต้อง — ต้องเป็นลิงก์ http:// หรือ https://'); return; }
+  const wantRows = !!(since || until);            // แตะวันที่ช่องใดช่องหนึ่ง = ตั้งใจจะดึง Meta
+  if(!link && !wantRows){ warn('วางลิงก์ PowerPoint หรือเลือกช่วงวันที่อย่างน้อยหนึ่งอย่าง'); return; }
+  if(wantRows){
+    if(!since || !until){ warn('ถ้าจะดึงข้อมูล Meta ต้องเลือกช่วงวันที่ให้ครบทั้งสองช่อง'); return; }
+    if(since > until){ warn('วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด'); return; }
+    if(typeof META_TOKEN==='undefined' || !META_TOKEN){ warn('ยังไม่ได้ใส่ Meta Token — กด Sync Meta ใส่ token ก่อน'); return; }
+  }
 
-  if(ok){ ok.disabled = true; ok.textContent = 'กำลังดึงข้อมูล…'; }
+  if(ok){ ok.disabled = true; ok.textContent = wantRows ? 'กำลังดึงข้อมูล…' : 'กำลังบันทึก…'; }
   try{
-    const rows = await anaFetchRows({ since, until });
-    if(!rows){ warn('ดึงข้อมูลไม่สำเร็จ — เช็ค token/สิทธิ์ แล้วลองใหม่'); return; }
-    if(!rows.length){ warn('ช่วงวันที่นี้ไม่มีคอนเทนต์ที่มีการใช้จ่าย ลองขยายช่วง'); return; }
-    const rp = { id:'ana_'+Date.now(), title, since, until, createdAt:Date.now(), rows };
+    let rows = [];
+    if(wantRows){
+      rows = await anaFetchRows({ since, until });
+      if(!rows){ warn('ดึงข้อมูลไม่สำเร็จ — เช็ค token/สิทธิ์ แล้วลองใหม่'); return; }
+      if(!rows.length){ warn('ช่วงวันที่นี้ไม่มีคอนเทนต์ที่มีการใช้จ่าย ลองขยายช่วง'); return; }
+    }
+    const rp = { id:'ana_'+Date.now(), title, since: wantRows?since:'', until: wantRows?until:'',
+                 slidesUrl: link, createdAt:Date.now(), rows };
     if(!anaCloudReady()){ warn('ยังต่อคลาวด์ไม่ได้ — รอสักครู่แล้วกดใหม่'); return; }
     /* เขียนขึ้นคลาวด์ให้ผ่านก่อน ค่อยโชว์ — ไม่งั้นรายงานจะขึ้นบนจอแล้วหายตอนรีเฟรช */
     if(ok) ok.textContent = 'กำลังบันทึก…';
     const saved = await anaPutReport(rp);
     if(!saved){ warn('บันทึกขึ้นคลาวด์ไม่สำเร็จ — ยังไม่ได้สร้างรายงาน ลองใหม่อีกครั้ง'); return; }
     anaReports.unshift(rp);
-    anaCurrent = rp.id;
+    /* กล่องลิงก์เปล่าไม่มีตารางให้ดู เปิดเข้าไปก็เจอ "รายงานนี้ไม่มีข้อมูล" → ค้างที่หน้ารวมดีกว่า */
+    anaCurrent = rows.length ? rp.id : null;
     anaCloseModal();
     renderAnalyze();
-    showToast('สร้างรายงาน "'+title+'" แล้ว ('+fmt(rows.length)+' คอนเทนต์)');
+    showToast(rows.length
+      ? ('สร้างรายงาน "'+title+'" แล้ว ('+fmt(rows.length)+' คอนเทนต์)')
+      : ('สร้างกล่อง "'+title+'" แล้ว — คลิกกล่องเพื่อเปิด PowerPoint'));
   }catch(e){
     console.warn('anaCreateReport failed', e);
     warn('เกิดข้อผิดพลาด: ' + (e && e.message ? e.message : 'ลองใหม่อีกครั้ง'));
   }finally{
-    if(ok){ ok.disabled = false; ok.textContent = 'ดึงข้อมูล & วิเคราะห์'; }
+    if(ok){ ok.disabled = false; ok.textContent = 'สร้างกล่องรายงาน'; }
   }
 }
 
@@ -5503,6 +5586,17 @@ document.addEventListener('click', e=>{
   if(e.target.closest('#btnAnaNew')){ anaOpenModal(); return; }
   const anadel = e.target.closest('[data-anadel]');
   if(anadel){ e.stopPropagation(); anaDeleteById(anadel.dataset.anadel); return; }
+  /* ⚠ ต้องเช็คก่อน data-anaopen — ชิป PowerPoint อยู่ในกล่องที่คลิกเข้าดูตารางได้
+     ถ้าเช็คทีหลัง closest() จะเจอกล่องก่อน แล้วชิปจะพาเข้าหน้าตารางแทนที่จะเปิดสไลด์ */
+  const anaslides = e.target.closest('[data-anaslides]');
+  if(anaslides){
+    e.stopPropagation();
+    const url = anaNormLink(anaslides.dataset.anaslides);   // กรองอีกชั้น เผื่อ DOM ถูกแก้กลางทาง
+    if(!url){ showToast('⚠ ลิงก์ของกล่องนี้ใช้ไม่ได้ — ลบแล้วสร้างใหม่อีกครั้ง'); return; }
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if(!win) showToast('⚠ เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — อนุญาต pop-up ให้เว็บนี้ก่อน');
+    return;
+  }
   const anaopen = e.target.closest('[data-anaopen]');
   if(anaopen){ anaCurrent = anaopen.dataset.anaopen; renderAnalyze(); return; }
   if(e.target.closest('#btnAnaBack')){ if(anaNotesDirty && !confirm('มีการแก้ไขที่ยังไม่บันทึก ออกโดยไม่บันทึก?')) return; anaCurrent = null; renderAnalyze(); return; }
@@ -5714,6 +5808,17 @@ document.addEventListener('keydown', e=>{
   if($('cfModal').hidden) return;
   if(e.key === 'Escape'){ e.preventDefault(); closeConfirm(); }
   else if(e.key === 'Enter' && !$('cfOk').disabled){ e.preventDefault(); runConfirm(); }
+});
+
+/* โมดัล Create Analyze: วางลิงก์แล้วกด Enter ได้เลย ไม่ต้องเอื้อมไปคลิกปุ่ม */
+document.addEventListener('keydown', e=>{
+  const m = $('anaModal'); if(!m || m.hidden) return;
+  if(e.key === 'Escape'){ e.preventDefault(); anaCloseModal(); return; }
+  if(e.key !== 'Enter') return;
+  if(!m.contains(e.target)) return;
+  const ok = $('anaFOk'); if(!ok || ok.disabled) return;   // กำลังบันทึกอยู่ = ห้ามยิงซ้ำ
+  e.preventDefault();
+  anaCreateReport();
 });
 
 window.addEventListener('beforeunload', e=>{
